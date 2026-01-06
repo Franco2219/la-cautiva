@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Trophy, Users, Grid3x3 } from "lucide-react"
 
@@ -906,6 +907,21 @@ export default function Home() {
       <div className="w-full max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="flex justify-center mb-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300" />
+              <div className="relative bg-card/50 backdrop-blur-sm rounded-full p-3 border border-border/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <Image
+                  src="/logo-club.png"
+                  alt="La Cautiva Tennis Club"
+                  width={128}
+                  height={128}
+                  className="object-contain w-24 h-24 md:w-32 md:h-32 transition-transform duration-300 group-hover:scale-105"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
             La Cautiva
           </h1>
