@@ -911,8 +911,14 @@ export default function Home() {
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-accent/15 to-secondary/15 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
               <div className="relative bg-card/60 backdrop-blur-sm rounded-full p-2.5 md:p-3 border border-border/40 shadow-md group-hover:shadow-lg transition-all duration-300">
-                <Image
-                  src="/logo-club.png"
+              <Image
+  src="/logo-club.png"
+  alt="La Cautiva Tennis Club"
+  width={144}
+  height={144}
+  className="object-contain w-28 h-28 md:w-36 md:h-36"
+  priority
+/>
                   alt="La Cautiva Tennis Club"
                   width={128}
                   height={128}
