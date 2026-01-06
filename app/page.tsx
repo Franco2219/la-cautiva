@@ -907,16 +907,16 @@ export default function Home() {
       <div className="w-full max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-5">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-secondary/20 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-300" />
-              <div className="relative bg-card/50 backdrop-blur-sm rounded-full p-3 border border-border/50 shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-accent/15 to-secondary/15 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+              <div className="relative bg-card/60 backdrop-blur-sm rounded-full p-2.5 md:p-3 border border-border/40 shadow-md group-hover:shadow-lg transition-all duration-300">
                 <Image
                   src="/logo-club.png"
                   alt="La Cautiva Tennis Club"
                   width={128}
                   height={128}
-                  className="object-contain w-24 h-24 md:w-32 md:h-32 transition-transform duration-300 group-hover:scale-105"
+                  className="object-contain w-28 h-28 md:w-36 md:h-36 transition-transform duration-300 group-hover:scale-[1.02]"
                   priority
                 />
               </div>
