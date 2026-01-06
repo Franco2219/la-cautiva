@@ -912,7 +912,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="relative z-10 flex justify-center">
         <Image
-          src="/logo-club.png"
+          src="/logo.png"
           alt="La Cautiva Tennis Club"
           width={180}
           height={180}
