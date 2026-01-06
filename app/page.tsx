@@ -997,7 +997,7 @@ export default function Home() {
                   size="lg"
                   variant="outline"
                   onClick={() => handleCategoryClick(category)}
-                  className="w-full text-lg h-16 border-2 bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:border-primary transform hover:scale-105 hover:shadow-lg transition-all duration-300 font-semibold"
+                  className="w-full text-lg h-20 border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transform hover:scale-105 hover:shadow-lg transition-all duration-300 font-semibold"
                 >
                   {category}
                 </Button>
@@ -1018,7 +1018,7 @@ export default function Home() {
                   size="lg"
                   variant="outline"
                   onClick={() => handleTournamentClick(tournament)}
-                  className="w-full text-lg h-16 border-2 hover:bg-secondary/10 hover:border-secondary transform hover:scale-105 hover:shadow-lg transition-all duration-300 font-semibold"
+                  className="w-full text-lg h-20 border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transform hover:scale-105 hover:shadow-lg transition-all duration-300 font-semibold"
                 >
                   {tournament.name}
                 </Button>
