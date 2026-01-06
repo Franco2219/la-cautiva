@@ -1112,7 +1112,8 @@ export default function Home() {
                                 }
                                 const matchKey = `${rowPlayer}-${colPlayer}`
                                 const reverseMatchKey = `${colPlayer}-${rowPlayer}`
-                                const result = group.results[matchKey] || group.results[reverseMatchKey] || "-"
+                                const results = group.results as unknown as Record<string, string>
+                                const result = results[matchKey] || results[reverseMatchKey] || "-"
                                 return (
                                   <td
                                     key={colPlayer}
