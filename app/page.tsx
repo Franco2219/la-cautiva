@@ -919,12 +919,6 @@ export default function Home() {
   className="object-contain w-28 h-28 md:w-36 md:h-36"
   priority
 />
-                  alt="La Cautiva Tennis Club"
-                  width={128}
-                  height={128}
-                  className="object-contain w-28 h-28 md:w-36 md:h-36 transition-transform duration-300 group-hover:scale-[1.02]"
-                  priority
-                />
               </div>
             </div>
           </div>
