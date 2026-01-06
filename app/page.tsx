@@ -908,16 +908,17 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-1000">
           <div className="flex justify-center mb-5">
-            <div className="relative group">
+            <div className="relative group w-32 h-32 md:w-44 md:h-44">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10 flex justify-center">
+              <div className="relative z-10 w-full h-full flex items-center justify-center">
                 <Image
                   src="/logo.png"
                   alt="La Cautiva Tennis Club"
                   width={180}
                   height={180}
-                  className="object-contain w-32 h-32 md:w-44 md:h-44 transition-transform duration-500 group-hover:scale-105"
+                  className="object-contain w-full h-full transition-transform duration-500 group-hover:scale-105"
                   priority
+                  unoptimized
                 />
               </div>
             </div>
