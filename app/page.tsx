@@ -81,7 +81,7 @@ export default function Home() {
     else setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
-  const buttonStyle = "w-full text-lg h-20 border-2 border-slate-200 bg-slate-100/80 backdrop-blur-sm hover:bg-orange-100 text-slate-700 transform hover:scale-[1.01] transition-all duration-300 font-bold shadow-sm rounded-2xl";
+  const buttonStyle = "w-full text-lg h-20 border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
@@ -161,11 +161,11 @@ export default function Home() {
           {navState.level === "group-phase" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
               {mockGroupData.map((group) => (
-                <div key={group.groupName} className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-xl">
-                  <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
+                <div key={group.groupName} className="bg-card border-2 border-border rounded-2xl p-6 shadow-md">
+                  <h3 className="text-2xl font-black mb-4 text-primary text-center">{group.groupName}</h3>
                   <table className="w-full text-left font-bold">
-                    <thead className="bg-slate-50 text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
-                    <tbody>{group.players.map(p => (<tr key={p} className="border-b border-slate-50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center">0</td></tr>))}</tbody>
+                    <thead className="bg-muted text-muted-foreground"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
+                    <tbody>{group.players.map(p => (<tr key={p} className="border-b border-border hover:bg-muted/50"><td className="p-3 uppercase text-foreground">{p}</td><td className="p-3 text-center text-foreground">0</td></tr>))}</tbody>
                   </table>
                 </div>
               ))}
@@ -181,14 +181,14 @@ export default function Home() {
           )}
 
           {navState.level === "ranking-view" && (
-            <div className="bg-white border-b-8 border-r-8 border-slate-200 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
-              <div className="bg-slate-800 p-6 rounded-2xl mb-8 text-center italic">
-                <h2 className="text-3xl md:text-5xl font-black text-white">{navState.selectedCategory} {navState.year}</h2>
+            <div className="bg-card border-2 border-border rounded-2xl p-4 md:p-8 shadow-lg overflow-hidden animate-in zoom-in-95 duration-500">
+              <div className="bg-primary p-6 rounded-xl mb-6 text-center italic">
+                <h2 className="text-3xl md:text-5xl font-black text-primary-foreground">{navState.selectedCategory} {navState.year}</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-lg font-bold">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-600">
+                    <tr className="bg-secondary/20 text-secondary-foreground">
                       <th className="p-4 text-left font-black">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
                       {/* Cabecera dinámica según el año */}
@@ -196,16 +196,16 @@ export default function Home() {
                         ? ['AO','IW','MC','RG','W','US'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
                         : ['S1','S8','AO','IW','MC','RG'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
                       }
-                      <th className="p-4 text-right font-black bg-slate-200">TOTAL</th>
+                      <th className="p-4 text-right font-black bg-secondary/40">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankingData.map((p, i) => (
                       <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                        <td className="p-4 text-slate-400">{i + 1}</td>
-                        <td className="p-4 uppercase text-slate-700">{p.name}</td>
+                        <td className="p-4 text-muted-foreground">{i + 1}</td>
+                        <td className="p-4 uppercase text-foreground">{p.name}</td>
                         {[p.c1, p.c2, p.c3, p.c4, p.c5, p.c6].map((val, idx) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val}</td>))}
-                        <td className="p-4 text-right text-slate-900 text-2xl font-black bg-slate-50/50">{p.total}</td>
+                        <td className="p-4 text-right text-primary text-2xl font-black bg-primary/10">{p.total}</td>
                       </tr>
                     ))}
                   </tbody>
