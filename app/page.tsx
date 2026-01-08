@@ -5,9 +5,9 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Trophy, Users, Grid3x3 } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS (IDs ACTUALIZADOS) ---
+// --- CONFIGURACIÓN DE DATOS (RANKING CONGELADO) ---
 const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
-const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Nuevo ID con Gviz activado
+const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 
 const GID_MAP_2026: Record<string, string> = {
   "A": "952153027",
@@ -25,7 +25,8 @@ const tournaments = [
   { id: "us", name: "US Open" },
 ]
 
-const mockGroupData = [
+// Datos para Caballeros
+const mockGroupDataCaballeros = [
   { groupName: "Grupo 1", players: ["Martín Rodríguez", "Santiago Fernández", "Luciano González"], results: {} },
   { groupName: "Grupo 2", players: ["Tomás Martínez", "Franco López", "Nicolás Díaz"], results: {} },
 ]
@@ -36,42 +37,31 @@ export default function Home() {
   const [headers, setHeaders] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // --- LÓGICA DE RANKING (CONGELADA) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true);
     const sheetName = `${categoryShort} ${year}`;
-    
-    // Ahora AMBOS años usan la tecnología gviz para actualización instantánea
     const spreadsheetId = year === "2025" ? ID_2025 : ID_2026;
     const gid = year === "2026" ? GID_MAP_2026[categoryShort] : null;
-    
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : `&sheet=${encodeURIComponent(sheetName)}`}`;
 
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = csvText.split('\n');
-      
       const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-      
-      // Definimos encabezados dinámicos según el año
       const dynamicHeaders = year === "2025" 
         ? ['AO','IW','MC','RG','W','US'] 
         : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]];
-      
       setHeaders(dynamicHeaders);
-
       const parsedData = rows.slice(1).map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          points: year === "2025" 
-            ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7]] 
-            : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
+          points: year === "2025" ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7]] : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
           total: year === "2025" ? (parseInt(cols[8]) || 0) : (parseInt(cols[11]) || 0)
         };
-      }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "")
-      .sort((a, b) => b.total - a.total);
-      
+      }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "").sort((a, b) => b.total - a.total);
       setRankingData(parsedData);
     } catch (error) { console.error("Error:", error); } finally { setIsLoading(false); }
   }
@@ -92,7 +82,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
-        {/* HEADER CON GLOW */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-44 h-44">
@@ -109,7 +98,7 @@ export default function Home() {
         )}
 
         <div className={`space-y-4 ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'w-full' : 'max-w-xl mx-auto'}`}>
-          {/* ... Se mantienen todas las secciones de navegación de botones intactas ... */}
+          
           {navState.level === "home" && (
             <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>
           )}
@@ -140,7 +129,7 @@ export default function Home() {
                     fetchRankingData(catShort, navState.year);
                     setNavState({ ...navState, level: "ranking-view", selectedCategory: cat });
                   } else {
-                    setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat });
+                    setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type });
                   }
                 }} className={buttonStyle}>{cat}</Button>
               ))}
@@ -165,16 +154,26 @@ export default function Home() {
           )}
 
           {navState.level === "group-phase" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
-              {mockGroupData.map((group) => (
-                <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md">
-                  <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
-                  <table className="w-full text-left font-bold">
-                    <thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
-                    <tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody>
-                  </table>
+            <div className="animate-in fade-in duration-500">
+              {navState.gender === "caballeros" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mockGroupDataCaballeros.map((group) => (
+                    <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md">
+                      <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
+                      <table className="w-full text-left font-bold">
+                        <thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
+                        <tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody>
+                      </table>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto">
+                  <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-2xl font-black text-slate-400 uppercase">Sin jugadoras</h3>
+                  <p className="text-slate-400 font-bold mt-2">No hay jugadoras inscriptas en esta categoría por el momento.</p>
+                </div>
+              )}
             </div>
           )}
 
