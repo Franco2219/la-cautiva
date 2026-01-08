@@ -56,13 +56,10 @@ export default function Home() {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          c1: parseInt(cols[2]) || 0,
-          c2: parseInt(cols[3]) || 0,
-          c3: parseInt(cols[4]) || 0,
-          c4: parseInt(cols[5]) || 0,
-          c5: parseInt(cols[6]) || 0,
-          c6: parseInt(cols[7]) || 0,
-          // Condicional: si es 2025 usa columna 8, si es 2026 usa columna 11 (L)
+          // Mapeamos todas las columnas posibles (hasta 9 para 2026)
+          points: year === "2025" 
+            ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7]] 
+            : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
           total: year === "2025" ? (parseInt(cols[8]) || 0) : (parseInt(cols[11]) || 0)
         };
       }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "")
@@ -81,7 +78,7 @@ export default function Home() {
     else setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
-  const buttonStyle = "w-full text-lg h-20 border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl";
+  const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
@@ -103,11 +100,10 @@ export default function Home() {
         )}
 
         <div className={`space-y-4 ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'w-full' : 'max-w-xl mx-auto'}`}>
-          
+          {/* Navegación (Home, Menú, Categorías) */}
           {navState.level === "home" && (
             <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>
           )}
-
           {navState.level === "main-menu" && (
             <div className="grid grid-cols-1 gap-4">
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
@@ -115,7 +111,6 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button>
             </div>
           )}
-
           {navState.level === "year-selection" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">Temporada</h2>
@@ -123,7 +118,6 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
             </div>
           )}
-
           {navState.level === "category-selection" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">{navState.type} {navState.year || ""}</h2>
@@ -140,7 +134,8 @@ export default function Home() {
               ))}
             </div>
           )}
-
+          
+          {/* Vistas de Torneos */}
           {navState.level === "tournament-selection" && (
             <div className="space-y-4 max-w-xl mx-auto">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">{navState.selectedCategory}</h2>
@@ -149,7 +144,6 @@ export default function Home() {
               ))}
             </div>
           )}
-
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 max-w-xl mx-auto">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800">{navState.tournament}</h2>
@@ -157,21 +151,19 @@ export default function Home() {
               <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
             </div>
           )}
-
           {navState.level === "group-phase" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
               {mockGroupData.map((group) => (
-                <div key={group.groupName} className="bg-card border-2 border-border rounded-2xl p-6 shadow-md">
-                  <h3 className="text-2xl font-black mb-4 text-primary text-center">{group.groupName}</h3>
+                <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md">
+                  <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
                   <table className="w-full text-left font-bold">
-                    <thead className="bg-muted text-muted-foreground"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
-                    <tbody>{group.players.map(p => (<tr key={p} className="border-b border-border hover:bg-muted/50"><td className="p-3 uppercase text-foreground">{p}</td><td className="p-3 text-center text-foreground">0</td></tr>))}</tbody>
+                    <thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
+                    <tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody>
                   </table>
                 </div>
               ))}
             </div>
           )}
-
           {navState.level === "bracket-phase" && (
             <div className="bg-white border-b-8 border-r-8 border-slate-200 rounded-[2.5rem] p-8 shadow-2xl text-center max-w-2xl mx-auto">
               <Trophy className="w-16 h-16 mx-auto text-orange-400 mb-4" />
@@ -180,32 +172,32 @@ export default function Home() {
             </div>
           )}
 
+          {/* VISTA DE RANKING DINÁMICA */}
           {navState.level === "ranking-view" && (
-            <div className="bg-card border-2 border-border rounded-2xl p-4 md:p-8 shadow-lg overflow-hidden animate-in zoom-in-95 duration-500">
-              <div className="bg-primary p-6 rounded-xl mb-6 text-center italic">
-                <h2 className="text-3xl md:text-5xl font-black text-primary-foreground">{navState.selectedCategory} {navState.year}</h2>
+            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic">
+                <h2 className="text-3xl md:text-5xl font-black text-white">{navState.selectedCategory} {navState.year}</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-lg font-bold">
                   <thead>
-                    <tr className="bg-secondary/20 text-secondary-foreground">
-                      <th className="p-4 text-left font-black">POS</th>
+                    <tr className="bg-[#b35a38] text-white">
+                      <th className="p-4 text-left font-black first:rounded-tl-xl">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
-                      {/* Cabecera dinámica según el año */}
                       {navState.year === "2025" 
                         ? ['AO','IW','MC','RG','W','US'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
-                        : ['S1','S8','AO','IW','MC','RG'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
+                        : ['S1','S2','S3','S4','S5','S6','S7','S8','S9'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
                       }
-                      <th className="p-4 text-right font-black bg-secondary/40">TOTAL</th>
+                      <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankingData.map((p, i) => (
-                      <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                        <td className="p-4 text-muted-foreground">{i + 1}</td>
-                        <td className="p-4 uppercase text-foreground">{p.name}</td>
-                        {[p.c1, p.c2, p.c3, p.c4, p.c5, p.c6].map((val, idx) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val}</td>))}
-                        <td className="p-4 text-right text-primary text-2xl font-black bg-primary/10">{p.total}</td>
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]">
+                        <td className="p-4 text-slate-400">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700">{p.name}</td>
+                        {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}
+                        <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td>
                       </tr>
                     ))}
                   </tbody>
