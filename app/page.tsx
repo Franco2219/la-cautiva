@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3 } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS (CONGELADA) ---
+// --- CONFIGURACIÓN DE DATOS (RANKING CONGELADO) ---
 const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
 const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 
@@ -14,8 +14,8 @@ const GID_MAP_2026: Record<string, string> = {
 };
 
 const tournaments = [
-  { id: "s8_500", name: "Super 8 / 500", type: "direct" },
-  { id: "s8_250", name: "Super 8 / 250", type: "direct" },
+  { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
+  { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", type: "full" },
   { id: "iw", name: "Indian Wells", type: "full" },
   { id: "mc", name: "Monte Carlo", type: "full" },
@@ -33,8 +33,39 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
+  const [bracketData, setBracketData] = useState<any>({ players: [], scores: [], semis: [], final: [], winner: "" });
   const [isLoading, setIsLoading] = useState(false)
 
+  // --- CARGAR DATOS DEL CUADRO (SUPER 8) ---
+  const fetchBracketData = async (category: string, tournamentShort: string) => {
+    setIsLoading(true);
+    const sheetName = `${category} ${tournamentShort}`;
+    const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+    try {
+      const response = await fetch(url);
+      const csvText = await response.text();
+      const rows = csvText.split('\n').map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim()));
+      
+      setBracketData({
+        players: rows.map(r => r[0]).slice(0, 8),   // Col A
+        scores: rows.map(r => r[1]).slice(0, 8),    // Col B
+        semis: rows.map(r => r[2]).slice(0, 8),     // Col C
+        final: rows.map(r => r[3]).slice(0, 8),     // Col D
+        winner: rows[0][4] || ""                    // Col E
+      });
+    } catch (error) {
+      if (category === "B1" && tournamentShort === "S8 250") {
+        setBracketData({
+          players: ["Romero", "Arevalo", "Lerro", "Giani", "Ruhl", "Lodico", "Guerra", "Milito"],
+          scores: ["", "", "", "", "", "", "", ""],
+          semis: Array(8).fill(""), final: Array(8).fill(""), winner: ""
+        });
+      }
+    } finally { setIsLoading(false); }
+  }
+
+  // --- LÓGICA DE RANKING (CONGELADA) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true);
     const sheetName = `${categoryShort} ${year}`;
@@ -67,8 +98,7 @@ export default function Home() {
       "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection",
       "direct-bracket": "tournament-selection"
     };
-    if (navState.level === "category-selection" && navState.type === "ranking") setNavState({ ...navState, level: "year-selection" });
-    else setNavState({ ...navState, level: levels[navState.level] || "home" });
+    setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl";
@@ -77,8 +107,14 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
+        {/* Header */}
         <div className="text-center mb-8">
-          <Image src="/logo.png" alt="Logo" width={180} height={180} className="mx-auto mb-4 unoptimized" priority />
+          <div className="flex justify-center mb-5">
+            <div className="relative group w-44 h-44">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Image src="/logo.png" alt="Logo" width={200} height={200} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
+            </div>
+          </div>
           <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic">La Cautiva</h1>
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center">Club de Tenis</p>
         </div>
@@ -88,7 +124,7 @@ export default function Home() {
         )}
 
         <div className={`space-y-4 ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'w-full' : 'max-w-xl mx-auto'}`}>
-          {/* LOGICA DE MENUS */}
+          {/* Menús e Ingreso */}
           {navState.level === "home" && (
             <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>
           )}
@@ -130,13 +166,13 @@ export default function Home() {
             <div className="space-y-4 max-w-xl mx-auto">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.selectedCategory}</h2>
               {tournaments.filter(t => {
-                // Filtros solicitados:
                 if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
                 if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
                 return true;
               }).map((t) => (
                 <Button key={t.id} onClick={() => {
                   if (t.type === "direct" && navState.gender === "caballeros") {
+                    fetchBracketData(navState.category, t.short || "");
                     setNavState({ ...navState, level: "direct-bracket", tournament: t.name });
                   } else {
                     setNavState({ ...navState, level: "tournament-phases", tournament: t.name });
@@ -146,78 +182,65 @@ export default function Home() {
             </div>
           )}
 
-          {/* CUADRO ATP CON CONEXIONES MEJORADAS */}
+          {/* CUADRO ATP (SUPER 8) */}
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
                 <h2 className="text-3xl md:text-5xl font-black text-white">{navState.tournament}</h2>
               </div>
-              
-              <div className="flex flex-row items-center min-w-[900px] max-w-6xl mx-auto py-10 relative">
-                
-                {/* CUARTOS */}
-                <div className="flex flex-col space-y-16 w-64 relative z-10">
-                  {[1, 2, 3, 4].map((pair) => (
-                    <div key={pair} className="relative">
+              <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
+                {/* Cuartos */}
+                <div className="flex flex-col space-y-16 w-72 relative z-10">
+                  {[0, 2, 4, 6].map((idx) => (
+                    <div key={idx} className="relative">
                       <div className="space-y-6">
                         <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end bg-white">
-                          <span className="text-slate-700 font-bold uppercase text-xs">Jugador {pair*2-1}</span>
-                          <span className="text-[#b35a38] font-black text-xs">6 6</span>
+                          <span className="text-slate-700 font-bold uppercase text-[10px] truncate max-w-[150px]">{bracketData.players[idx] || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.scores[idx]}</span>
                         </div>
                         <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end bg-white">
-                          <span className="text-slate-400 font-bold uppercase text-xs italic">Jugador {pair*2}</span>
-                          <span className="text-slate-300 font-black text-xs">4 2</span>
+                          <span className="text-slate-700 font-bold uppercase text-[10px] truncate max-w-[150px]">{bracketData.players[idx+1] || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.scores[idx+1]}</span>
                         </div>
                       </div>
-                      {/* Línea hacia Semis */}
                       <div className="absolute top-[18px] -right-12 w-12 h-[52px] border-r-2 border-t-2 border-b-2 border-slate-300 rounded-r-xl"></div>
                       <div className="absolute top-[44px] -right-20 w-8 h-[2px] bg-slate-300"></div>
                     </div>
                   ))}
                 </div>
-
-                {/* SEMIFINALES */}
+                {/* Semis */}
                 <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10">
-                  {[1, 2].map((pair) => (
-                    <div key={pair} className="relative">
+                  {[0, 2].map((idx) => (
+                    <div key={idx} className="relative">
                       <div className="space-y-10">
-                        <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end bg-white">
-                          <span className="text-slate-700 font-bold uppercase text-xs">Ganador Q{pair*2-1}</span>
-                          <span className="text-[#b35a38] font-black text-xs">7 6</span>
+                        <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end h-6 bg-white">
+                          <span className="text-slate-700 font-bold uppercase text-[10px]">{bracketData.semis[idx]}</span>
                         </div>
-                        <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end bg-white">
-                          <span className="text-slate-400 font-bold uppercase text-xs italic">Ganador Q{pair*2}</span>
-                          <span className="text-slate-300 font-black text-xs">5 3</span>
+                        <div className="border-b-2 border-slate-300 pb-1 flex justify-between items-end h-6 bg-white">
+                          <span className="text-slate-700 font-bold uppercase text-[10px]">{bracketData.semis[idx+1]}</span>
                         </div>
                       </div>
-                      {/* Línea hacia Final */}
                       <div className="absolute top-[18px] -right-12 w-12 h-[68px] border-r-2 border-t-2 border-b-2 border-slate-300 rounded-r-xl"></div>
                       <div className="absolute top-[52px] -right-20 w-8 h-[2px] bg-slate-300"></div>
                     </div>
                   ))}
                 </div>
-
-                {/* FINAL Y COPA */}
+                {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative z-10">
                   <div className="w-full space-y-12 mb-16">
-                    <div className="border-b-4 border-[#b35a38] pb-2 flex justify-between items-end bg-white">
-                      <span className="text-slate-800 font-black uppercase text-sm">Finalista A</span>
-                    </div>
-                    <div className="border-b-4 border-slate-200 pb-2 flex justify-between items-end bg-white">
-                      <span className="text-slate-400 font-bold uppercase text-sm">Finalista B</span>
-                    </div>
+                    <div className="border-b-4 border-[#b35a38] pb-2 h-8 bg-white"><span className="text-slate-800 font-black uppercase text-xs">{bracketData.final[0]}</span></div>
+                    <div className="border-b-4 border-slate-200 pb-2 h-8 bg-white"><span className="text-slate-800 font-black uppercase text-xs">{bracketData.final[1]}</span></div>
                   </div>
                   <div className="flex flex-col items-center animate-bounce duration-[3000ms]">
-                    <Trophy className="w-20 h-20 text-orange-400 drop-shadow-xl" />
-                    <span className="text-[#b35a38] font-black text-lg mt-2 uppercase italic tracking-tighter">Campeón</span>
+                    <Trophy className="w-20 h-20 text-orange-400" />
+                    <span className="text-[#b35a38] font-black text-sm mt-2 italic uppercase">{bracketData.winner || "Campeón"}</span>
                   </div>
                 </div>
-
               </div>
             </div>
           )}
 
-          {/* ... FASE DE GRUPOS, RANKING Y TORNEOS REGULARES IGUAL QUE ANTES ... */}
+          {/* VISTAS REGULARES */}
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 max-w-xl mx-auto text-center">
               <h2 className="text-2xl font-black mb-4 text-slate-800">{navState.tournament}</h2>
@@ -225,6 +248,7 @@ export default function Home() {
               <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
             </div>
           )}
+
           {navState.level === "group-phase" && (
             <div className="animate-in fade-in duration-500">
               {navState.gender === "caballeros" ? (
@@ -248,6 +272,7 @@ export default function Home() {
               )}
             </div>
           )}
+
           {navState.level === "ranking-view" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white">
@@ -278,6 +303,7 @@ export default function Home() {
             </div>
           )}
         </div>
+
         <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">
           Sistema de seguimiento de torneos en vivo
         </p>
