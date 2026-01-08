@@ -10,10 +10,10 @@ const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
 const ID_2026 = '2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg';
 
 const GID_MAP_2026: Record<string, string> = {
-  "A": "0",
-  "B1": "1445778263", 
-  "B2": "1657342654",
-  "C": "1894325671"
+  "A": "952153027",
+  "B1": "675525317", 
+  "B2": "1079671299",
+  "C": "498001194"
 };
 
 const tournaments = [
@@ -56,13 +56,14 @@ export default function Home() {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          c1: parseInt(cols[2]) || 0, // Super
-          c2: parseInt(cols[3]) || 0, // Super 8
-          c3: parseInt(cols[4]) || 0, // AO
-          c4: parseInt(cols[5]) || 0, // IW
-          c5: parseInt(cols[6]) || 0, // MC
-          c6: parseInt(cols[7]) || 0, // RG
-          total: parseInt(cols[11]) || 0 // COLUMNA L DEL EXCEL 2026
+          c1: parseInt(cols[2]) || 0,
+          c2: parseInt(cols[3]) || 0,
+          c3: parseInt(cols[4]) || 0,
+          c4: parseInt(cols[5]) || 0,
+          c5: parseInt(cols[6]) || 0,
+          c6: parseInt(cols[7]) || 0,
+          // Condicional: si es 2025 usa columna 8, si es 2026 usa columna 11 (L)
+          total: year === "2025" ? (parseInt(cols[8]) || 0) : (parseInt(cols[11]) || 0)
         };
       }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "")
       .sort((a, b) => b.total - a.total);
@@ -190,7 +191,11 @@ export default function Home() {
                     <tr className="bg-slate-100 text-slate-600">
                       <th className="p-4 text-left font-black">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
-                      {['S1','S8','AO','IW','MC','RG'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
+                      {/* Cabecera dinámica según el año */}
+                      {navState.year === "2025" 
+                        ? ['AO','IW','MC','RG','W','US'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
+                        : ['S1','S8','AO','IW','MC','RG'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
+                      }
                       <th className="p-4 text-right font-black bg-slate-200">TOTAL</th>
                     </tr>
                   </thead>
