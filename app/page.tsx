@@ -187,66 +187,67 @@ export default function Home() {
               </div>
               <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
                 {/* Cuartos */}
-                <div className="flex flex-col space-y-16 w-72 relative z-10">
+                <div className="flex flex-col space-y-12 w-72 relative z-10">
                   {[0, 2, 4, 6].map((idx) => (
-                    <div key={idx} className="relative">
-                      <div className="space-y-6">
+                    <div key={idx} className="relative h-16">
+                      <div className="space-y-2">
                         {[0, 1].map((offset) => {
                           const player = bracketData.players[idx + offset];
                           const isWinner = player && bracketData.semis.includes(player);
-                          return (
-                            <div key={offset} className={`border-b-2 ${isWinner ? 'border-[#b35a38]' : 'border-slate-300'} pb-1 flex justify-between items-end bg-white relative`}>
-                              <span className={`${isWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{player || "TBD"}</span>
-                              <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.scores[idx + offset]}</span>
+                                  return (
+                            <div key={offset} className={`border-b ${isWinner ? 'border-primary' : 'border-border'} pb-0.5 flex justify-between items-end bg-card relative h-7`}>
+                              <span className={`${isWinner ? 'text-primary font-black' : 'text-foreground font-bold'} uppercase text-xs truncate max-w-[150px]`}>{player || "TBD"}</span>
+                              <span className="text-muted-foreground font-bold text-xs ml-2">{bracketData.scores[idx + offset]}</span>
                             </div>
                           );
                         })}
-                      </div>
-                      <div className="absolute top-[18px] -right-[47px] w-12 h-[52px] border-r-2 border-t-2 border-b-2 border-slate-300 rounded-r-xl"></div>
-                      <div className="absolute top-[44px] -right-[78px] w-8 h-[2px] bg-slate-300"></div>
                     </div>
-                  ))}
-                </div>
+                      <div className="absolute top-1/2 -right-12 w-12 h-[calc(100%+12px)] -translate-y-1/2 border-r-2 border-y-2 border-border rounded-r-xl"></div>
+                      <div className="absolute top-1/2 -right-20 w-8 h-0.5 bg-border -translate-y-1/2"></div>
+                  </div>
+                ))}
+              </div>
                 {/* Semis */}
-                <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10">
+                <div className="flex flex-col space-y-[156px] w-64 ml-24 relative z-10">
                   {[0, 2].map((idx) => (
-                    <div key={idx} className="relative">
-                      <div className="space-y-10">
+                    <div key={idx} className="relative h-16">
+                      <div className="space-y-2">
                         {[0, 1].map((offset) => {
                           const player = bracketData.semis[idx + offset];
                           const isWinner = player && bracketData.final.includes(player);
                           return (
-                            <div key={offset} className={`border-b-2 ${isWinner ? 'border-[#b35a38]' : 'border-slate-300'} pb-1 flex justify-between items-end h-6 bg-white`}>
-                              <span className={`${isWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{player || ""}</span>
+                            <div key={offset} className={`border-b ${isWinner ? 'border-primary' : 'border-border'} pb-0.5 flex justify-between items-end h-7 bg-card`}>
+                              <span className={`${isWinner ? 'text-primary font-black' : 'text-foreground font-bold'} uppercase text-xs truncate max-w-[150px]`}>{player || ""}</span>
                             </div>
                           );
                         })}
                       </div>
-                      <div className="absolute top-[18px] -right-[47px] w-12 h-[68px] border-r-2 border-t-2 border-b-2 border-slate-300 rounded-r-xl"></div>
-                      <div className="absolute top-[52px] -right-[78px] w-8 h-[2px] bg-slate-300"></div>
+                      <div className="absolute top-1/2 -right-12 w-12 h-[calc(100%+28px)] -translate-y-1/2 border-r-2 border-y-2 border-border rounded-r-xl"></div>
+                      <div className="absolute top-1/2 -right-20 w-8 h-0.5 bg-border -translate-y-1/2"></div>
                     </div>
                   ))}
                 </div>
                 {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative z-10">
-                  <div className="w-full space-y-12 mb-16">
+                  <div className="w-full space-y-4 mb-8">
                     {[0, 1].map((idx) => {
                       const player = bracketData.final[idx];
                       const isWinner = player && player === bracketData.winner;
                       return (
-                        <div key={idx} className={`border-b-4 ${isWinner ? 'border-[#b35a38]' : 'border-slate-200'} pb-2 h-8 bg-white`}>
-                          <span className={`${isWinner ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs`}>{player || ""}</span>
+                        <div key={idx} className={`border-b-2 ${isWinner ? 'border-primary' : 'border-border'} pb-1 h-12 bg-card flex items-center justify-center`}>
+                          <span className={`${isWinner ? 'text-primary font-black' : 'text-foreground font-bold'} uppercase text-sm`}>{player || ""}</span>
                         </div>
                       );
                     })}
                   </div>
                   <div className="flex flex-col items-center animate-bounce duration-[3000ms]">
-                    <Trophy className="w-20 h-20 text-orange-400" />
-                    <span className="text-[#b35a38] font-black text-2xl mt-2 italic uppercase tracking-tighter">{bracketData.winner || "Campeón"}</span>
+                    <Trophy className="w-16 h-16 text-accent mb-2" />
+                    <span className="text-3xl font-black text-primary italic">CAMPEÓN</span>
+                    <span className="text-lg font-bold text-foreground">{bracketData.winner || "TBD"}</span>
                   </div>
                 </div>
-              </div>
-            </div>
+                          </div>
+                        </div>
           )}
 
           {/* ... Resto de vistas idénticas ... */}
@@ -255,7 +256,7 @@ export default function Home() {
               <h2 className="text-2xl font-black mb-4 text-slate-800">{navState.tournament}</h2>
               <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
               <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
-            </div>
+                          </div>
           )}
           {navState.level === "group-phase" && (
             <div className="animate-in fade-in duration-500">
@@ -268,9 +269,9 @@ export default function Home() {
                         <thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead>
                         <tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody>
                       </table>
-                    </div>
-                  ))}
-                </div>
+                      </div>
+                    ))}
+                  </div>
               ) : (
                 <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto">
                   <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
@@ -302,14 +303,14 @@ export default function Home() {
                         <td className="p-4 uppercase text-slate-700">{p.name}</td>
                         {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}
                         <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td>
-                      </tr>
+                        </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
-        </div>
+                        </div>
+                )}
+              </div>
         <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">
           Sistema de seguimiento de torneos en vivo
         </p>
