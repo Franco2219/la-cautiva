@@ -33,6 +33,7 @@ const mockGroupData = [
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
+  const [headers, setHeaders] = useState<string[]>([]) // NUEVO: Estado para nombres de torneos
   const [isLoading, setIsLoading] = useState(false)
 
   // --- LÓGICA DE DATOS ---
@@ -52,11 +53,20 @@ export default function Home() {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = csvText.split('\n');
-      const parsedData = rows.map(row => {
+      
+      // 1. Extraemos los nombres de los torneos de la primera fila
+      const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+      const dynamicHeaders = year === "2025" 
+        ? ['AO','IW','MC','RG','W','US'] 
+        : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]];
+      
+      setHeaders(dynamicHeaders);
+
+      // 2. Procesamos los jugadores (saltando la primera fila)
+      const parsedData = rows.slice(1).map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          // Mapeamos todas las columnas posibles (hasta 9 para 2026)
           points: year === "2025" 
             ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7]] 
             : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
@@ -64,6 +74,7 @@ export default function Home() {
         };
       }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "")
       .sort((a, b) => b.total - a.total);
+      
       setRankingData(parsedData);
     } catch (error) { console.error("Error:", error); } finally { setIsLoading(false); }
   }
@@ -84,6 +95,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
+        {/* HEADER CON GLOW */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-44 h-44">
@@ -100,10 +112,12 @@ export default function Home() {
         )}
 
         <div className={`space-y-4 ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'w-full' : 'max-w-xl mx-auto'}`}>
-          {/* Navegación (Home, Menú, Categorías) */}
+          
+          {/* ... Aquí siguen todas las secciones de navegación de botones (Home, Menú, Años, Categorías, Torneos, Fases, Grupos, Cuadros) que NO se tocan ... */}
           {navState.level === "home" && (
             <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>
           )}
+
           {navState.level === "main-menu" && (
             <div className="grid grid-cols-1 gap-4">
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
@@ -111,6 +125,7 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button>
             </div>
           )}
+
           {navState.level === "year-selection" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">Temporada</h2>
@@ -118,6 +133,7 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
             </div>
           )}
+
           {navState.level === "category-selection" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">{navState.type} {navState.year || ""}</h2>
@@ -134,8 +150,7 @@ export default function Home() {
               ))}
             </div>
           )}
-          
-          {/* Vistas de Torneos */}
+
           {navState.level === "tournament-selection" && (
             <div className="space-y-4 max-w-xl mx-auto">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">{navState.selectedCategory}</h2>
@@ -144,6 +159,7 @@ export default function Home() {
               ))}
             </div>
           )}
+
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 max-w-xl mx-auto">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800">{navState.tournament}</h2>
@@ -151,6 +167,7 @@ export default function Home() {
               <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
             </div>
           )}
+
           {navState.level === "group-phase" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
               {mockGroupData.map((group) => (
@@ -164,6 +181,7 @@ export default function Home() {
               ))}
             </div>
           )}
+
           {navState.level === "bracket-phase" && (
             <div className="bg-white border-b-8 border-r-8 border-slate-200 rounded-[2.5rem] p-8 shadow-2xl text-center max-w-2xl mx-auto">
               <Trophy className="w-16 h-16 mx-auto text-orange-400 mb-4" />
@@ -172,7 +190,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISTA DE RANKING DINÁMICA */}
           {navState.level === "ranking-view" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic">
@@ -184,10 +201,8 @@ export default function Home() {
                     <tr className="bg-[#b35a38] text-white">
                       <th className="p-4 text-left font-black first:rounded-tl-xl">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
-                      {navState.year === "2025" 
-                        ? ['AO','IW','MC','RG','W','US'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
-                        : ['S1','S2','S3','S4','S5','S6','S7','S8','S9'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))
-                      }
+                      {/* Cabecera dinámica que toma los nombres del Excel */}
+                      {headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
                       <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th>
                     </tr>
                   </thead>
