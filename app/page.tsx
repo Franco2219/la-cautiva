@@ -5,9 +5,9 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Trophy, Users, Grid3x3 } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS (NO BORRAR) ---
+// --- CONFIGURACIÓN DE DATOS (IDs ACTUALIZADOS) ---
 const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
-const ID_2026 = '2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg';
+const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Nuevo ID con Gviz activado
 
 const GID_MAP_2026: Record<string, string> = {
   "A": "952153027",
@@ -33,36 +33,33 @@ const mockGroupData = [
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
-  const [headers, setHeaders] = useState<string[]>([]) // NUEVO: Estado para nombres de torneos
+  const [headers, setHeaders] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // --- LÓGICA DE DATOS ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true);
     const sheetName = `${categoryShort} ${year}`;
     
-    let url = "";
-    if (year === "2025") {
-      url = `https://docs.google.com/spreadsheets/d/${ID_2025}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    } else {
-      const gid = GID_MAP_2026[categoryShort] || "0";
-      url = `https://docs.google.com/spreadsheets/d/e/${ID_2026}/pub?output=csv&gid=${gid}`;
-    }
+    // Ahora AMBOS años usan la tecnología gviz para actualización instantánea
+    const spreadsheetId = year === "2025" ? ID_2025 : ID_2026;
+    const gid = year === "2026" ? GID_MAP_2026[categoryShort] : null;
+    
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : `&sheet=${encodeURIComponent(sheetName)}`}`;
 
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = csvText.split('\n');
       
-      // 1. Extraemos los nombres de los torneos de la primera fila
       const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+      
+      // Definimos encabezados dinámicos según el año
       const dynamicHeaders = year === "2025" 
         ? ['AO','IW','MC','RG','W','US'] 
         : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]];
       
       setHeaders(dynamicHeaders);
 
-      // 2. Procesamos los jugadores (saltando la primera fila)
       const parsedData = rows.slice(1).map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
@@ -112,8 +109,7 @@ export default function Home() {
         )}
 
         <div className={`space-y-4 ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'w-full' : 'max-w-xl mx-auto'}`}>
-          
-          {/* ... Aquí siguen todas las secciones de navegación de botones (Home, Menú, Años, Categorías, Torneos, Fases, Grupos, Cuadros) que NO se tocan ... */}
+          {/* ... Se mantienen todas las secciones de navegación de botones intactas ... */}
           {navState.level === "home" && (
             <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>
           )}
@@ -201,7 +197,6 @@ export default function Home() {
                     <tr className="bg-[#b35a38] text-white">
                       <th className="p-4 text-left font-black first:rounded-tl-xl">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
-                      {/* Cabecera dinámica que toma los nombres del Excel */}
                       {headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
                       <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th>
                     </tr>
