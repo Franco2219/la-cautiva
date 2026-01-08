@@ -10,10 +10,10 @@ const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
 const ID_2026 = '2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg';
 
 const GID_MAP_2026: Record<string, string> = {
-  "A": "0",
-  "B1": "1445778263", 
-  "B2": "1657342654",
-  "C": "1894325671"
+  "A": "952153027",
+  "B1": "675525317", 
+  "B2": "1079671299",
+  "C": "498001194"
 };
 
 const tournaments = [
