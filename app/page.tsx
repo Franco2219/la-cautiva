@@ -53,140 +53,134 @@ export default function Home() {
     else if (navState.level === "ranking-view") setNavState({ level: "category-selection", type: "ranking", year: "2025" })
   }
 
-  // Estilo de botón original
-  const buttonStyle = "w-full text-lg h-20 border-2 border-orange-200 bg-white/80 backdrop-blur-sm hover:bg-orange-100 text-orange-900 transform hover:scale-105 transition-all duration-300 font-semibold shadow-md rounded-xl"
+  const buttonStyle = "w-full text-lg h-20 border-2 border-orange-200 bg-white/90 backdrop-blur-sm hover:bg-orange-600 hover:text-white text-orange-950 transform hover:scale-105 transition-all duration-300 font-bold shadow-md rounded-2xl"
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-[#fffaf5]">
-      {/* Fondo decorativo original con animaciones */}
+      {/* Elementos decorativos de fondo */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-20 left-10 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
-      <div className="w-full max-w-6xl mx-auto z-10">
-        {/* Header con Efecto de Logo Original */}
+      <div className={`w-full ${navState.level === 'ranking-view' ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10 transition-all duration-500`}>
+        {/* Header */}
         <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-1000">
           <div className="flex justify-center mb-5">
             <div className="relative group w-44 h-44">
-              {/* Resplandor al pasar el mouse */}
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-400/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#b35a38]/40 to-orange-400/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative z-10 w-full h-full flex items-center justify-center">
                 <Image
                   src="/logo.png"
-                  alt="La Cautiva Tennis Club"
-                  width={180}
-                  height={180}
-                  className="object-contain transition-transform duration-500 group-hover:scale-105 unoptimized"
+                  alt="La Cautiva"
+                  width={200}
+                  height={200}
+                  className="object-contain transition-transform duration-500 group-hover:scale-110 unoptimized"
                   priority
                 />
               </div>
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold mb-2 bg-gradient-to-r from-[#b35a38] via-[#d97706] to-[#b35a38] bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-7xl font-black mb-2 bg-gradient-to-b from-[#8c3d26] to-[#b35a38] bg-clip-text text-transparent tracking-tighter">
             La Cautiva
           </h1>
-          <p className="text-lg md:text-xl text-orange-800/60 font-medium">Club de Tenis</p>
+          <p className="text-xl text-orange-900/40 font-bold tracking-[0.2em] uppercase">Club de Tenis</p>
         </div>
 
         {navState.level !== "home" && (
           <div className="mb-6 animate-in fade-in slide-in-from-left-4 duration-500">
-            <Button onClick={goBack} variant="ghost" className="hover:bg-orange-100 text-orange-900">
-              ← Volver
+            <Button onClick={goBack} variant="ghost" className="hover:bg-orange-200 text-orange-950 font-bold">
+              ← VOLVER
             </Button>
           </div>
         )}
 
-        <div className="space-y-4 max-w-xl mx-auto">
+        <div className={`space-y-4 ${navState.level === 'ranking-view' ? 'w-full' : 'max-w-xl mx-auto'}`}>
           {navState.level === "home" && (
             <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
               <Button
                 size="lg"
                 onClick={() => setNavState({ level: "main-menu" })}
-                className="w-full max-w-md text-xl h-24 bg-[#b35a38] hover:bg-[#964a2e] text-white transform hover:scale-105 hover:shadow-2xl transition-all duration-300 font-bold rounded-2xl"
+                className="w-full max-w-md text-2xl h-28 bg-[#b35a38] hover:bg-[#8c3d26] text-white transform hover:scale-105 hover:shadow-[0_20px_50px_rgba(179,90,56,0.3)] transition-all duration-300 font-black rounded-3xl border-b-8 border-[#8c3d26]"
               >
-                <ChevronRight className="w-8 h-8 mr-3" />
-                Ingresar
+                INGRESAR
               </Button>
             </div>
           )}
 
           {navState.level === "main-menu" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-              <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>Caballeros</Button>
-              <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>Damas</Button>
+            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-right-4">
+              <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
+              <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}>
-                <Trophy className="w-6 h-6 mr-3 text-[#b35a38]" />
-                Ranking
+                <Trophy className="w-7 h-7 mr-3 text-[#b35a38]" /> RANKING
               </Button>
             </div>
           )}
 
           {navState.level === "year-selection" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-              <h2 className="text-2xl font-bold text-center mb-6 text-orange-900">Seleccionar Año</h2>
-              <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button>
-              <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+              <h2 className="text-3xl font-black text-center mb-6 text-orange-950">TEMPORADA</h2>
+              <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>RANKING 2025</Button>
+              <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>RANKING 2026</Button>
             </div>
           )}
 
           {navState.level === "category-selection" && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-              <h2 className="text-2xl font-bold text-center mb-6 text-orange-900 capitalize">
-                {navState.type} {navState.year}
-              </h2>
-              {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
-                <Button key={cat} onClick={() => {
-                  if (navState.year === "2026") {
-                    alert("El Ranking 2026 estará disponible al inicio de la temporada.");
-                    return;
-                  }
-                  const catShort = cat.replace("Categoría ", "");
-                  fetchRankingData(catShort);
-                  setNavState({ level: "ranking-view", selectedCategory: cat });
-                }} className={buttonStyle}>
-                  {cat}
-                </Button>
-              ))}
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+              <h2 className="text-3xl font-black text-center mb-6 text-orange-950 uppercase">{navState.type} {navState.year}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
+                  <Button key={cat} onClick={() => {
+                    if (navState.year === "2026") { alert("Ranking 2026 próximamente"); return; }
+                    const catShort = cat.replace("Categoría ", "");
+                    fetchRankingData(catShort);
+                    setNavState({ level: "ranking-view", selectedCategory: cat });
+                  }} className={buttonStyle}>{cat}</Button>
+                ))}
+              </div>
             </div>
           )}
 
           {navState.level === "ranking-view" && (
-            <div className="bg-white/90 backdrop-blur-md border-2 border-orange-100 rounded-3xl p-5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
-              <h2 className="text-2xl font-bold text-center mb-6 text-[#b35a38]">{navState.selectedCategory} 2025</h2>
+            <div className="bg-white border-b-8 border-r-8 border-[#b35a38]/20 rounded-[2.5rem] p-4 md:p-8 shadow-2xl animate-in zoom-in-95 duration-500">
+              <div className="bg-gradient-to-r from-[#b35a38] to-[#8c3d26] p-6 rounded-2xl mb-8 shadow-inner">
+                <h2 className="text-3xl md:text-5xl font-black text-center text-white italic tracking-tighter">
+                  {navState.selectedCategory} 2025
+                </h2>
+              </div>
+              
               {isLoading ? (
-                <div className="flex flex-col items-center py-10">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#b35a38] mb-4"></div>
-                  <p className="text-orange-800 font-medium">Actualizando ranking en vivo...</p>
+                <div className="flex flex-col items-center py-20">
+                  <div className="w-16 h-16 border-4 border-[#b35a38] border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-[#b35a38] font-black animate-pulse">SINCRONIZANDO CON EL CLUB...</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
+                <div className="overflow-x-auto rounded-xl">
+                  <table className="w-full text-base md:text-lg">
                     <thead>
-                      <tr className="bg-orange-50 text-orange-900">
-                        <th className="p-3 text-left rounded-tl-xl">Pos</th>
-                        <th className="p-3 text-left">Jugador</th>
-                        <th className="p-3 text-center">AO</th>
-                        <th className="p-3 text-center">IW</th>
-                        <th className="p-3 text-center">MC</th>
-                        <th className="p-3 text-center">RG</th>
-                        <th className="p-3 text-center">W</th>
-                        <th className="p-3 text-center">US</th>
-                        <th className="p-3 text-right bg-orange-100 font-bold rounded-tr-xl">Total</th>
+                      <tr className="bg-[#b35a38] text-white">
+                        <th className="p-4 text-left first:rounded-tl-xl font-black">POS</th>
+                        <th className="p-4 text-left font-black">JUGADOR</th>
+                        {['AO','IW','MC','RG','W','US'].map(h => (
+                          <th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>
+                        ))}
+                        <th className="p-4 text-right last:rounded-tr-xl font-black bg-orange-600">TOTAL</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="font-bold">
                       {rankingData.map((p, i) => (
-                        <tr key={i} className="border-b border-orange-50 hover:bg-orange-50/50 transition-colors">
-                          <td className="p-3 font-bold text-orange-700">{i + 1}</td>
-                          <td className="p-3 font-semibold text-slate-800">{p.name}</td>
-                          <td className="p-3 text-center text-slate-500">{p.ao}</td>
-                          <td className="p-3 text-center text-slate-500">{p.iw}</td>
-                          <td className="p-3 text-center text-slate-500">{p.mc}</td>
-                          <td className="p-3 text-center text-slate-500">{p.rg}</td>
-                          <td className="p-3 text-center text-slate-500">{p.w}</td>
-                          <td className="p-3 text-center text-slate-500">{p.us}</td>
-                          <td className="p-3 text-right font-bold text-[#b35a38] bg-orange-50/30">{p.total}</td>
+                        <tr key={i} className="border-b border-orange-100 hover:bg-orange-50 transition-all">
+                          <td className="p-4">
+                            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${i < 3 ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-800'}`}>
+                              {i + 1}
+                            </span>
+                          </td>
+                          <td className="p-4 text-orange-950 uppercase">{p.name}</td>
+                          {[p.ao, p.iw, p.mc, p.rg, p.w, p.us].map((val, idx) => (
+                            <td key={idx} className="p-4 text-center text-orange-900/40 hidden sm:table-cell">{val}</td>
+                          ))}
+                          <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-orange-50/50">{p.total}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -196,9 +190,6 @@ export default function Home() {
             </div>
           )}
         </div>
-        <p className="text-center text-orange-800/40 mt-10 text-sm font-medium">
-          Sistema de seguimiento de torneos en vivo
-        </p>
       </div>
     </div>
   )
