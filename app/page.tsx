@@ -3,17 +3,17 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Trophy, Users, Grid3x3 } from "lucide-react"
+import { ChevronRight, Trophy, Users, Grid3x3 } from "lucide-react"
 
 // --- CONFIGURACIÓN DE DATOS (NO BORRAR) ---
 const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
 const ID_2026 = '2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg';
 
 const GID_MAP_2026: Record<string, string> = {
-  "A": "952153027",
-  "B1": "675525317", 
-  "B2": "1079671299",
-  "C": "498001194"
+  "A": "0",
+  "B1": "1445778263", 
+  "B2": "1657342654",
+  "C": "1894325671"
 };
 
 const tournaments = [
@@ -56,11 +56,15 @@ export default function Home() {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          ao: parseInt(cols[2]) || 0, iw: parseInt(cols[3]) || 0, mc: parseInt(cols[4]) || 0,
-          rg: parseInt(cols[5]) || 0, w: parseInt(cols[6]) || 0, us: parseInt(cols[7]) || 0,
-          total: parseInt(cols[8]) || 0
+          c1: parseInt(cols[2]) || 0, // Super
+          c2: parseInt(cols[3]) || 0, // Super 8
+          c3: parseInt(cols[4]) || 0, // AO
+          c4: parseInt(cols[5]) || 0, // IW
+          c5: parseInt(cols[6]) || 0, // MC
+          c6: parseInt(cols[7]) || 0, // RG
+          total: parseInt(cols[11]) || 0 // COLUMNA L DEL EXCEL 2026
         };
-      }).filter(p => p.name && !["nombre completo", "jugador", "nombre"].includes(p.name.toLowerCase()) && p.name !== "")
+      }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "")
       .sort((a, b) => b.total - a.total);
       setRankingData(parsedData);
     } catch (error) { console.error("Error:", error); } finally { setIsLoading(false); }
@@ -82,7 +86,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${navState.level === 'ranking-view' || navState.level === 'group-phase' ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
-        {/* HEADER CON GLOW */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-44 h-44">
@@ -114,7 +117,7 @@ export default function Home() {
 
           {navState.level === "year-selection" && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800">TEMPORADA</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase">Temporada</h2>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
             </div>
@@ -154,7 +157,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* VISTAS RESTAURADAS */}
           {navState.level === "group-phase" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
               {mockGroupData.map((group) => (
@@ -188,7 +190,7 @@ export default function Home() {
                     <tr className="bg-slate-100 text-slate-600">
                       <th className="p-4 text-left font-black">POS</th>
                       <th className="p-4 text-left font-black">JUGADOR</th>
-                      {['AO','IW','MC','RG','W','US'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
+                      {['S1','S8','AO','IW','MC','RG'].map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
                       <th className="p-4 text-right font-black bg-slate-200">TOTAL</th>
                     </tr>
                   </thead>
@@ -197,7 +199,7 @@ export default function Home() {
                       <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
                         <td className="p-4 text-slate-400">{i + 1}</td>
                         <td className="p-4 uppercase text-slate-700">{p.name}</td>
-                        {[p.ao, p.iw, p.mc, p.rg, p.w, p.us].map((val, idx) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val}</td>))}
+                        {[p.c1, p.c2, p.c3, p.c4, p.c5, p.c6].map((val, idx) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val}</td>))}
                         <td className="p-4 text-right text-slate-900 text-2xl font-black bg-slate-50/50">{p.total}</td>
                       </tr>
                     ))}
