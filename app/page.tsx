@@ -38,13 +38,12 @@ export default function Home() {
     );
   };
 
-  // --- MOTOR DE SORTEO ATP (RESTAURADO Y FILTRADO) ---
+  // --- MOTOR DE SORTEO ATP (Validado) ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
-    if (!categoryShort || !tournamentShort) return;
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     try {
-      // 1. Obtener Ranking 2026 para puntos de semillas
+      // 1. Ranking
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl);
       const rankCsv = await rankRes.text();
@@ -53,72 +52,66 @@ export default function Home() {
         total: row[11] ? parseInt(row[11]) : 0
       })).filter(p => p.name !== "");
 
-      // 2. Obtener Inscriptos y filtrar por el Torneo y Categoría seleccionada
+      // 2. Inscriptos
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl);
       const inscCsv = await inscRes.text();
-      const allInscriptosRows = parseCSV(inscCsv).slice(1);
+      // Filtramos por Col A (Torneo) y Col B (Categoría)
+      const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
+        cols[0] === tournamentShort && cols[1] === categoryShort
+      ).map(cols => cols[2]);
 
-      // FILTRO CRÍTICO: Col A == Torneo, Col B == Categoría
-      const filteredInscriptosNames = allInscriptosRows
-        .filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort)
-        .map(cols => cols[2]);
-
-      if (filteredInscriptosNames.length === 0) {
-        alert(`No hay inscriptos para ${tournamentShort} en ${categoryShort} todavía.`);
+      if (filteredInscriptos.length === 0) {
+        alert(`No se encontraron inscriptos para ${tournamentShort} - ${categoryShort} en la pestaña 'Inscriptos'.`);
         setIsLoading(false);
         return;
       }
 
-      // 3. Cruzar nombres con puntos y ordenar de mayor a menor
-      const entryList = filteredInscriptosNames.map(name => {
-        const pRank = playersRanking.find(pr => pr.name.toLowerCase() === name.toLowerCase());
-        return { name, points: pRank ? pRank.total : 0 };
+      // 3. Cruzar datos
+      const entryList = filteredInscriptos.map(n => {
+        const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
+        return { name: n, points: p ? p.total : 0 };
       }).sort((a, b) => b.points - a.points);
 
-      // 4. Armar Grupos de 3
       const numGroups = Math.floor(entryList.length / 3);
-      if (numGroups === 0) { alert("Pocos inscriptos."); setIsLoading(false); return; }
+      if (numGroups === 0) { alert("Inscriptos insuficientes."); setIsLoading(false); return; }
 
       let groups = Array.from({ length: numGroups }, (_, i) => ({
         groupName: `Zona ${i + 1}`,
-        players: [entryList[i].name], // El top del ranking es cabeza de serie
+        players: [entryList[i].name],
         results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
       }));
 
-      // Sortear el resto al azar
-      const restPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
+      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       let curr = 0;
-      restPlayers.forEach(p => {
-        if (groups[curr]) {
-          groups[curr].players.push(p.name);
-          curr = (curr + 1) % numGroups;
-        }
+      rest.forEach(p => { 
+        if (groups[curr]) { groups[curr].players.push(p.name); curr = (curr + 1) % numGroups; }
       });
 
       setGroupData(groups);
       setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) {
-      console.error(e);
       alert("Error en el sorteo.");
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS (ADELAIDE/S8) ---
+  // --- LECTURA INTELIGENTE DE GRUPOS ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
+    setIsSorteoConfirmado(false);
     try {
       const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
       
-      if (res.ok && !csvText.includes("<!DOCTYPE html>") && csvText.length > 30) {
+      // VALIDACIÓN CRÍTICA: Si no dice "Zona" o "Grupo" al principio, asumimos que trajo basura (ranking)
+      if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
         for (let i = 0; i < rows.length; i += 4) {
-          if (rows[i] && rows[i][0]) {
+          if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             parsedGroups.push({
               groupName: rows[i][0],
               players: [rows[i+1]?.[0], rows[i+2]?.[0], rows[i+3]?.[0]].filter(n => n),
@@ -126,11 +119,17 @@ export default function Home() {
             });
           }
         }
-        setGroupData(parsedGroups);
-        setIsSorteoConfirmado(true);
-        setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
+        // Si logró parsear grupos válidos, los muestra
+        if (parsedGroups.length > 0) {
+          setGroupData(parsedGroups);
+          setIsSorteoConfirmado(true);
+          setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
+        } else {
+          // Si no parseó nada válido, va al menú de sorteo
+          setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
+        }
       } else {
-        // SI NO HAY PESTAÑA FIJA, IR AL MENU DE SORTEO ATP
+        // Si no existe la pestaña o trae basura, va al menú de sorteo
         setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
       }
     } catch (e) {
@@ -210,7 +209,7 @@ export default function Home() {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-selection", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
+    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-selection", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
     setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
@@ -223,7 +222,7 @@ export default function Home() {
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-100 transition-opacity duration-500" />
                 <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
                 </div>
             </div>
@@ -231,9 +230,9 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold text-center">← VOLVER</Button>}
+        {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold">← VOLVER</Button>}
 
-        {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center text-center text-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
+        {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto">
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
@@ -241,7 +240,7 @@ export default function Home() {
           {navState.level === "year-selection" && <div className="space-y-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button></div>}
           
           {navState.level === "category-selection" && (
-            <div className="space-y-4 text-center text-center">
+            <div className="space-y-4 text-center">
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
@@ -254,7 +253,7 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-selection" && (
-            <div className="space-y-4 text-center text-center">
+            <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
@@ -269,8 +268,8 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-phases" && (
-            <div className="space-y-4 text-center text-center text-center text-center">
-              <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.currentTour}</h2>
+            <div className="space-y-4 text-center text-center">
+              <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
               <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
               <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
             </div>
@@ -278,45 +277,45 @@ export default function Home() {
         </div>
 
         {navState.level === "damas-empty" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto text-center">
-            <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic text-center">{navState.selectedCategory}</h2>
-            <div className="p-10 border-4 border-dashed border-slate-100 rounded-3xl text-center text-center text-center">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
+            <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
+            <div className="p-10 border-4 border-dashed border-slate-100 rounded-3xl">
               <Users className="w-20 h-20 text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-400 font-bold text-xl uppercase tracking-widest text-center text-center">No hay torneos activos por el momento</p>
+              <p className="text-slate-400 font-bold text-xl uppercase tracking-widest text-center">No hay torneos activos por el momento</p>
             </div>
           </div>
         )}
 
         {navState.level === "group-phase" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center text-center text-center">
-            <div className="flex justify-between items-center mb-8 text-center text-center">
-              <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold text-center text-center"><ArrowLeft className="mr-2 text-center" /> ATRÁS</Button>
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
+            <div className="flex justify-between items-center mb-8">
+              <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && (
-                <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold text-center"><RefreshCw className="mr-2" /> REHACER</Button>
-                  <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8 text-center"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
-                  <Button onClick={() => setGroupData([])} size="sm" variant="destructive" className="font-bold text-center"><Trash2 className="mr-2" /> ELIMINAR</Button>
+                <div className="flex space-x-2 text-center">
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                  <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
               )}
             </div>
-            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic text-center">
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider text-center">{navState.currentTour} - Fase de Grupos</h2>
-              <p className="text-xs opacity-80 mt-1 font-bold uppercase text-center">{navState.currentCat}</p>
+            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
+              <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 text-center text-center text-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
           </div>
         )}
 
         {navState.level === "direct-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl overflow-hidden text-center text-center text-center">
-            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[800px] text-center text-center">
-              <h2 className="text-2xl font-black uppercase tracking-wider text-center">{navState.tournament} - {navState.selectedCategory}</h2>
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl overflow-hidden text-center">
+            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[800px]">
+              <h2 className="text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
-            <div className="flex flex-row items-center justify-between min-w-[1300px] py-2 relative text-center text-center text-center">
+            <div className="flex flex-row items-center justify-between min-w-[1300px] py-2 relative text-center">
               {bracketData.isLarge && (
-                <div className="flex flex-col justify-around h-[500px] w-80 relative text-left text-left">
+                <div className="flex flex-col justify-around h-[500px] w-80 relative text-left">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
                     const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                     const w1 = p1 && bracketData.r2.includes(p1);
@@ -331,7 +330,7 @@ export default function Home() {
                   })}
                 </div>
               )}
-              <div className={`flex flex-col justify-around h-[500px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left text-left text-left text-left`}>
+              <div className={`flex flex-col justify-around h-[500px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
                 {[0, 2, 4, 6].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                   const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
@@ -348,7 +347,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className="flex flex-col justify-around h-[500px] w-80 ml-32 relative text-left text-left text-left">
+              <div className="flex flex-col justify-around h-[500px] w-80 ml-32 relative text-left">
                 {[0, 2].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
                   const p2 = bracketData.isLarge ? bracketData.r3[idx+1] : bracketData.r2[idx+1];
@@ -364,7 +363,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className="flex flex-col justify-center h-[500px] items-center ml-32 w-96 relative text-center text-center text-center">
+              <div className="flex flex-col justify-center h-[500px] items-center ml-32 w-96 relative text-center">
                 <div className="w-full space-y-24 mb-10 text-center">
                   {[0, 1].map((idx) => {
                     const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
@@ -381,19 +380,19 @@ export default function Home() {
         )}
 
         {navState.level === "ranking-view" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center text-center">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
             <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wider text-center">{navState.selectedCategory} {navState.year}</h2>
             </div>
             {headers.length > 0 && rankingData.length > 0 ? (
-              <div className="overflow-x-auto text-center text-center text-center text-center">
-                <table className="w-full text-lg font-bold text-center text-center text-center">
+              <div className="overflow-x-auto text-center">
+                <table className="w-full text-lg font-bold text-center">
                   <thead>
                     <tr className="bg-[#b35a38] text-white">
                       <th className="p-4 text-center font-black first:rounded-tl-xl text-center">POS</th>
                       <th className="p-4 text-center font-black text-center text-center">JUGADOR</th>
                       {headers.map((h, i) => (<th key={i} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}
-                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th>
+                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -412,7 +411,7 @@ export default function Home() {
           </div>
         )}
       </div>
-      <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center text-center">Sistema de seguimiento de torneos en vivo</p>
+      <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
     </div>
   );
 }
