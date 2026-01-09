@@ -5,8 +5,8 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3 } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS (CONGELADA) ---
-const ID_2025 = '1lDm83_HR0Cp1wCJV_03qqvnZSfJFf-uU';
+// --- CONFIGURACIÓN DE DATOS ---
+const ID_2025 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
 const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 
 const GID_MAP_2026: Record<string, string> = {
@@ -64,20 +64,29 @@ export default function Home() {
     const spreadsheetId = year === "2025" ? ID_2025 : ID_2026;
     const gid = year === "2026" ? GID_MAP_2026[categoryShort] : null;
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : `&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`}`;
+    
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = csvText.split('\n');
       const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-      setHeaders(year === "2025" ? ['AO','IW','MC','RG','W','US'] : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]]);
+      
+      setHeaders(year === "2025" 
+        ? [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8]] 
+        : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]]);
+      
       const parsedData = rows.slice(1).map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return {
           name: cols[1],
-          points: year === "2025" ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7]] : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
-          total: year === "2025" ? (parseInt(cols[8]) || 0) : (parseInt(cols[11]) || 0)
+          points: year === "2025" 
+            ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8]] 
+            : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
+          // COLUMNA J es Index 9
+          total: year === "2025" ? (parseInt(cols[9]) || 0) : (parseInt(cols[11]) || 0)
         };
       }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "").sort((a, b) => b.total - a.total);
+      
       setRankingData(parsedData);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
@@ -100,8 +109,8 @@ export default function Home() {
               <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
             </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center text-center">La Cautiva</h1>
-          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic text-center">Club de Tenis</p>
+          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center">La Cautiva</h1>
+          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic">Club de Tenis</p>
         </div>
 
         {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold">← VOLVER</Button>}
@@ -112,7 +121,7 @@ export default function Home() {
           
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">Temporada</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">Temporada</h2>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
             </div>
@@ -120,7 +129,7 @@ export default function Home() {
 
           {navState.level === "category-selection" && (
             <div className="space-y-4 text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">{(navState.type || "").toString().toUpperCase()} {navState.year || ""}</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{(navState.type || "").toString().toUpperCase()} {navState.year || ""}</h2>
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
@@ -137,7 +146,7 @@ export default function Home() {
 
           {navState.level === "tournament-selection" && (
             <div className="space-y-4 max-w-xl mx-auto text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">{(navState.selectedCategory || "").toString()}</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.selectedCategory}</h2>
               {tournaments.filter(t => {
                 if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
                 if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
@@ -169,7 +178,6 @@ export default function Home() {
                 <h2 className="text-3xl md:text-5xl font-black text-white uppercase text-center">{navState.tournament}</h2>
               </div>
               <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
-                
                 {/* Cuartos */}
                 <div className="flex flex-col space-y-16 w-72 relative z-10 text-left">
                   {[0, 2, 4, 6].map((idx) => {
@@ -188,13 +196,11 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Línea horizontal central bajada a 50px */}
                         <div className="absolute top-[50px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
                 </div>
-
                 {/* Semis */}
                 <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10 text-left">
                   {[0, 2].map((idx) => {
@@ -213,13 +219,11 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Línea horizontal central semis bajada a 60px */}
                         <div className="absolute top-[60px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
                 </div>
-
                 {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center">
                   <div className="w-full space-y-12 mb-16">
@@ -241,11 +245,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Vistas de Grupos y Rankings */}
           {navState.level === "group-phase" && (
             <div className="animate-in fade-in duration-500 text-center">
               {navState.gender === "caballeros" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
                   {mockGroupDataCaballeros.map((group) => (
                     <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center">
                       <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
@@ -269,7 +272,7 @@ export default function Home() {
                 <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto">
                   <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
                   <h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3>
-                  <p className="text-slate-400 font-bold mt-2 text-center italic">No hay jugadoras inscriptas por el momento.</p>
+                  <p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p>
                 </div>
               )}
             </div>
@@ -277,13 +280,13 @@ export default function Home() {
 
           {navState.level === "ranking-view" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
-              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center">
-                <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{(navState.selectedCategory || "").toString()} {navState.year}</h2>
+              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white">
+                <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2>
               </div>
-              <div className="overflow-x-auto text-center">
+              <div className="overflow-x-auto">
                 <table className="w-full text-lg font-bold text-center">
                   <thead>
-                    <tr className="bg-[#b35a38] text-white text-center">
+                    <tr className="bg-[#b35a38] text-white">
                       <th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th>
                       <th className="p-4 text-left font-black text-center">JUGADOR</th>
                       {headers.map(h => (
