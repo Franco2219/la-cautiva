@@ -13,9 +13,9 @@ const GID_MAP_2026: Record<string, string> = {
   "A": "952153027", "B1": "675525317", "B2": "1079671299", "C": "498001194"
 };
 
-// Se agrega Adelaide a la lista de torneos
+// Adelaide se configura como "direct" igual que los Super 8
 const tournaments = [
-  { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "groups" },
+  { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", type: "full" },
@@ -42,7 +42,7 @@ export default function Home() {
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true);
-    // Para Adelaide y otros torneos, busca la pestaña con nombre "Categoría Torneo"
+    // El código buscará la pestaña: "A Adelaide", "B1 Adelaide", etc.
     const sheetName = `${category} ${tournamentShort}`;
     const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
     try {
@@ -111,8 +111,8 @@ export default function Home() {
               <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
             </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center text-center">La Cautiva</h1>
-          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic text-center text-center">Club de Tenis</p>
+          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center">La Cautiva</h1>
+          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic">Club de Tenis</p>
         </div>
 
         {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold">← VOLVER</Button>}
@@ -180,11 +180,12 @@ export default function Home() {
                 <h2 className="text-3xl md:text-5xl font-black text-white uppercase text-center">{navState.tournament}</h2>
               </div>
               <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
+                {/* Cuartos */}
                 <div className="flex flex-col space-y-16 w-72 relative z-10 text-left">
                   {[0, 2, 4, 6].map((idx) => {
                     const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                     const w1 = p1 && bracketData.r2.includes(p1);
-                    const w2 = p2 && bracketData.r2.includes(p2);
+                    const w2 = p2 && bracketData.r1[idx+1] && bracketData.r2.includes(p2);
                     return (
                       <div key={idx} className="relative flex flex-col space-y-6">
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
@@ -202,11 +203,12 @@ export default function Home() {
                     )
                   })}
                 </div>
+                {/* Semis */}
                 <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10 text-left">
                   {[0, 2].map((idx) => {
                     const p1 = bracketData.r2[idx]; const p2 = bracketData.r2[idx+1];
                     const w1 = p1 && bracketData.r3.includes(p1);
-                    const w2 = p2 && bracketData.r3.includes(p2);
+                    const w2 = p2 && bracketData.r2[idx+1] && bracketData.r3.includes(p2);
                     return (
                       <div key={idx} className="relative flex flex-col space-y-10">
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
@@ -224,77 +226,54 @@ export default function Home() {
                     )
                   })}
                 </div>
-                <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center text-center">
+                {/* Final */}
+                <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center">
                   <div className="w-full space-y-12 mb-16">
                     {[0, 1].map((idx) => {
                       const p = bracketData.r3[idx];
                       const win = p && p === bracketData.winner;
                       return (
-                        <div key={idx} className={`h-10 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center text-center`}>
-                          <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs text-center`}>{p || ""}</span>
+                        <div key={idx} className={`h-10 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}>
+                          <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs`}>{p || ""}</span>
                           <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s3[idx]}</span>
                         </div>
                       )
                     })}
                   </div>
                   <Trophy className="w-20 h-20 text-orange-400 mx-auto" />
-                  <span className="text-[#b35a38] font-black text-3xl mt-2 italic uppercase block w-full text-center text-center">{bracketData.winner || "Campeón"}</span>
+                  <span className="text-[#b35a38] font-black text-3xl mt-2 italic uppercase block w-full text-center">{bracketData.winner || "Campeón"}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {navState.level === "group-phase" && (
-            <div className="animate-in fade-in duration-500 text-center text-center">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center text-center">
-                {mockGroupDataCaballeros.map((group) => (
-                  <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center text-center">
-                    <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center text-center">{group.groupName}</h3>
-                    <table className="w-full text-left font-bold text-center text-center">
-                      <thead className="bg-[#fffaf5] text-slate-400 text-center text-center">
-                        <tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr>
-                      </thead>
-                      <tbody>
-                        {group.players.map(p => (
-                          <tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50 text-center text-center">
-                            <td className="p-3 uppercase text-slate-700 text-center text-center">{p}</td>
-                            <td className="p-3 text-center text-slate-700 text-center text-center">0</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* Ranking y Grupos (Igual que antes) */}
           {navState.level === "ranking-view" && (
-            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center text-center">
-              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center text-center">
-                <h2 className="text-3xl md:text-5xl font-black uppercase text-center text-center">{navState.selectedCategory} {navState.year}</h2>
+            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
+              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white">
+                <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2>
               </div>
-              <div className="overflow-x-auto text-center text-center">
-                <table className="w-full text-lg font-bold text-center text-center">
+              <div className="overflow-x-auto">
+                <table className="w-full text-lg font-bold text-center">
                   <thead>
-                    <tr className="bg-[#b35a38] text-white text-center text-center">
-                      <th className="p-4 text-left font-black first:rounded-tl-xl text-center text-center">POS</th>
-                      <th className="p-4 text-left font-black text-center text-center">JUGADOR</th>
+                    <tr className="bg-[#b35a38] text-white">
+                      <th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th>
+                      <th className="p-4 text-left font-black text-center">JUGADOR</th>
                       {headers.map(h => (
-                        <th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center text-center">{h}</th>
+                        <th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>
                       ))}
-                      <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center">TOTAL</th>
+                      <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankingData.map((p, i) => (
-                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center text-center">
-                        <td className="p-4 text-slate-400 text-center text-center">{i + 1}</td>
-                        <td className="p-4 uppercase text-slate-700 text-center text-center">{p.name}</td>
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
+                        <td className="p-4 text-slate-400 text-center">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
                         {p.points.map((val: any, idx: number) => (
-                          <td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center text-center">{val || 0}</td>
+                          <td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>
                         ))}
-                        <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center text-center">{p.total}</td>
+                        <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -303,7 +282,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center text-center">Sistema de seguimiento de torneos en vivo</p>
+        <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
       </div>
     </div>
   )
