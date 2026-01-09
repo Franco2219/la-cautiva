@@ -87,7 +87,7 @@ export default function Home() {
     setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
-  const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl text-center";
+  const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl text-center flex items-center justify-center";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
@@ -109,10 +109,17 @@ export default function Home() {
 
         <div className={`space-y-4 ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'w-full' : 'max-w-xl mx-auto'}`}>
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
-          {navState.level === "main-menu" && <div className="grid grid-cols-1 gap-4"><Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button><Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button><Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button></div>}
+          
+          {navState.level === "main-menu" && (
+            <div className="grid grid-cols-1 gap-4 text-center">
+              <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
+              <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
+              <Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button>
+            </div>
+          )}
           
           {navState.level === "year-selection" && (
-            <div className="space-y-4">
+            <div className="space-y-4 text-center">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">Temporada</h2>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
@@ -120,15 +127,11 @@ export default function Home() {
           )}
 
           {navState.level === "category-selection" && (
-            <div className="space-y-4">
+            <div className="space-y-4 text-center">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.type} {navState.year || ""}</h2>
-              {tournaments.filter(t => {
-                if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
-                if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
-                return true;
-              }).map((cat) => (
-                <Button key={cat.id || cat} onClick={() => {
-                  const catShort = cat.toString().replace("Categoría ", "");
+              {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
+                <Button key={cat} onClick={() => {
+                  const catShort = cat.replace("Categoría ", "");
                   if (navState.type === "ranking") {
                     fetchRankingData(catShort, navState.year);
                     setNavState({ ...navState, level: "ranking-view", selectedCategory: cat });
@@ -140,13 +143,32 @@ export default function Home() {
             </div>
           )}
 
+          {navState.level === "tournament-selection" && (
+            <div className="space-y-4 max-w-xl mx-auto text-center">
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.selectedCategory}</h2>
+              {tournaments.filter(t => {
+                if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
+                if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
+                return true;
+              }).map((t) => (
+                <Button key={t.id} onClick={() => {
+                  if (t.type === "direct" && navState.gender === "caballeros") {
+                    fetchBracketData(navState.category, t.short || "");
+                    setNavState({ ...navState, level: "direct-bracket", tournament: t.name });
+                  } else {
+                    setNavState({ ...navState, level: "tournament-phases", tournament: t.name });
+                  }
+                }} className={buttonStyle}>{t.name}</Button>
+              ))}
+            </div>
+          )}
+
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
                 <h2 className="text-3xl md:text-5xl font-black text-white uppercase text-center">{navState.tournament}</h2>
               </div>
               <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
-                {/* Cuartos */}
                 <div className="flex flex-col space-y-16 w-72 relative z-10">
                   {[0, 2, 4, 6].map((idx) => {
                     const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
@@ -168,14 +190,12 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        {/* Alineación corregida: +2px en top */}
                         <div className="absolute top-[26px] -right-[48px] w-[48px] h-[55px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[56.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[58.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
                 </div>
-                {/* Semis */}
                 <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10">
                   {[0, 2].map((idx) => {
                     const p1 = bracketData.r2[idx]; const p2 = bracketData.r2[idx+1];
@@ -197,14 +217,12 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        {/* Alineación corregida: +2px en top */}
                         <div className="absolute top-[26px] -right-[48px] w-[48px] h-[71px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[64.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[66.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
                 </div>
-                {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center text-center">
                   <div className="w-full space-y-12 mb-16">
                     {[0, 1].map((idx) => {
@@ -227,7 +245,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Torneos Regulares, Grupos y Ranking (Intactos) */}
           {navState.level === "tournament-phases" && <div className="space-y-4 max-w-xl mx-auto text-center"><h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.tournament}</h2><Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button><Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button></div>}
           {navState.level === "group-phase" && <div className="animate-in fade-in duration-500">{navState.gender === "caballeros" ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{mockGroupDataCaballeros.map((group) => (<div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md"><h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3><table className="w-full text-left font-bold text-center"><thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead><tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody></table></div>))}</div> : <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto"><Users className="w-16 h-16 mx-auto text-slate-300 mb-4" /><h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3><p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p></div>}</div>}
           {navState.level === "ranking-view" && <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500"><div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center"><h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2></div><div className="overflow-x-auto"><table className="w-full text-lg font-bold text-center"><thead><tr className="bg-[#b35a38] text-white text-center"><th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th><th className="p-4 text-left font-black text-center">JUGADOR</th>{headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}<th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th></tr></thead><tbody>{rankingData.map((p, i) => (<tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]"><td className="p-4 text-slate-400">{i + 1}</td><td className="p-4 uppercase text-slate-700">{p.name}</td>{p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}<td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td></tr>))}</tbody></table></div></div>}
