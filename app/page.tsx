@@ -31,12 +31,54 @@ export default function Home() {
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Función auxiliar para parsear CSV de Google Sheets correctamente
+  // Función para parsear CSV robusta
   const parseCSV = (text: string) => {
     return text.split('\n').map(row => 
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim())
     );
   };
+
+  // --- LOGICA CABALLEROS: SORTEO Y GRUPOS ---
+  const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
+    if (!categoryShort || !tournamentShort) return;
+    setIsLoading(true);
+    try {
+      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
+      const rankRes = await fetch(rankUrl);
+      const rankCsv = await rankRes.text();
+      const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
+        name: row[1], total: parseInt(row[11]) || 0
+      }));
+
+      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+      const inscRes = await fetch(inscUrl);
+      const inscCsv = await inscRes.text();
+      const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
+        cols[0] === tournamentShort && cols[1] === categoryShort
+      ).map(cols => cols[2]);
+
+      const entryList = filteredInscriptos.map(n => {
+        const p = playersRanking.find(pr => pr.name?.toLowerCase().includes(n?.toLowerCase()) || n?.toLowerCase().includes(pr.name?.toLowerCase()));
+        return { name: n, points: p ? p.total : 0 };
+      }).sort((a, b) => b.points - a.points);
+
+      const numGroups = Math.floor(entryList.length / 3);
+      if (numGroups === 0) { alert("Inscriptos insuficientes."); setIsLoading(false); return; }
+
+      let groups = Array.from({ length: numGroups }, (_, i) => ({
+        groupName: `Zona ${i + 1}`,
+        players: [entryList[i].name],
+        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
+      }));
+
+      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
+      let curr = 0;
+      rest.forEach(p => { if (groups[curr]) groups[curr].players.push(p.name); curr = (curr + 1) % numGroups; });
+
+      setGroupData(groups);
+      setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+  }
 
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
@@ -47,7 +89,6 @@ export default function Home() {
       const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
-      
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && csvText.length > 20) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
@@ -71,49 +112,6 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
-    setIsLoading(true);
-    try {
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      const rankRes = await fetch(rankUrl);
-      const rankCsv = await rankRes.text();
-      const rankRows = parseCSV(rankCsv).slice(1);
-      
-      const playersRanking = rankRows.map(row => ({
-        name: row[1],
-        total: parseInt(row[11]) || 0
-      }));
-
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      const inscRes = await fetch(inscUrl);
-      const inscCsv = await inscRes.text();
-      const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
-        cols[0] === tournamentShort && cols[1] === categoryShort
-      ).map(cols => cols[2]);
-
-      const entryList = filteredInscriptos.map(n => {
-        const p = playersRanking.find(pr => pr.name?.toLowerCase().includes(n?.toLowerCase()));
-        return { name: n, points: p ? p.total : 0 };
-      }).sort((a, b) => b.points - a.points);
-
-      const numGroups = Math.floor(entryList.length / 3);
-      if (numGroups === 0) { alert("Inscriptos insuficientes."); setIsLoading(false); return; }
-
-      let groups = Array.from({ length: numGroups }, (_, i) => ({
-        groupName: `Zona ${i + 1}`,
-        players: [entryList[i].name],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
-      }));
-
-      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
-      let curr = 0;
-      rest.forEach(p => { if (groups[curr]) groups[curr].players.push(p.name); curr = (curr + 1) % numGroups; });
-
-      setGroupData(groups);
-      setNavState({ ...navState, level: "group-phase" });
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
-  }
-
   const confirmarYEnviar = () => {
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
     groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n\n`; });
@@ -122,7 +120,7 @@ export default function Home() {
   };
 
   const GroupTable = ({ group }: { group: any }) => (
-    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4">
+    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <table className="w-full text-[11px] md:text-xs">
         <thead>
@@ -149,6 +147,7 @@ export default function Home() {
     </div>
   );
 
+  // --- LOGICA DE RANKING (BLINDADA) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_2026;
@@ -157,8 +156,7 @@ export default function Home() {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
-      const firstRow = rows[0];
-      setHeaders(year === "2025" ? firstRow.slice(2, 9) : firstRow.slice(2, 11));
+      setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
       setRankingData(rows.slice(1).map(row => ({
         name: row[1],
         points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
@@ -167,6 +165,7 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
+  // --- LOGICA DE CUADROS DIRECTOS (RESTAURADA Y ACHICADA) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false });
     const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
@@ -185,7 +184,7 @@ export default function Home() {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-selection", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
+    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-selection", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
     setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
@@ -196,7 +195,7 @@ export default function Home() {
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
         <div className="text-center mb-8">
-            <div className="flex justify-center mb-5">
+            <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
@@ -216,7 +215,7 @@ export default function Home() {
           {navState.level === "year-selection" && <div className="space-y-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button></div>}
           
           {navState.level === "category-selection" && (
-            <div className="space-y-4">
+            <div className="space-y-4 text-center text-center">
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
@@ -229,15 +228,14 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-selection" && (
-            <div className="space-y-4">
+            <div className="space-y-4 text-center text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
-                // FILTRO CATEGORIA A CABALLEROS: No Super 8
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A" && navState.gender === "caballeros") return false;
                 return true;
               }).map((t) => (
                 <Button key={t.id} onClick={() => {
-                  if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name }); }
+                  if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                   else { fetchGroupPhase(navState.category, t.short); }
                 }} className={buttonStyle}>{t.name}</Button>
               ))}
@@ -245,7 +243,7 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-phases" && (
-            <div className="space-y-4 text-center">
+            <div className="space-y-4 text-center text-center">
               <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
               <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
               <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
@@ -253,6 +251,7 @@ export default function Home() {
           )}
         </div>
 
+        {/* DAMAS BLINDADO */}
         {navState.level === "damas-empty" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
             <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
@@ -264,7 +263,7 @@ export default function Home() {
         )}
 
         {navState.level === "group-phase" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[700px]">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-6 shadow-2xl min-h-[600px] text-center">
             <div className="flex justify-between items-center mb-8">
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && (
@@ -274,37 +273,40 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className="bg-[#b35a38] p-6 rounded-3xl mb-12 text-center text-white italic">
-              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
+            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
+              <h2 className="text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
               <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
           </div>
         )}
 
+        {/* BRACKET ACHICADO PARA SUPER 8 */}
         {navState.level === "direct-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl overflow-x-auto min-h-[900px]">
-            <div className="bg-[#b35a38] p-8 rounded-3xl mb-16 text-center text-white italic min-w-[800px]">
-              <h2 className="text-4xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-6 shadow-2xl overflow-x-auto min-h-[600px] text-center">
+            <div className="bg-[#b35a38] p-4 rounded-3xl mb-8 text-center text-white italic min-w-[800px]">
+              <h2 className="text-3xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
-            <div className="flex flex-row items-center justify-between min-w-[1300px] py-10 relative">
+            <div className="flex flex-row items-center justify-between min-w-[1300px] py-4 relative">
               {bracketData.isLarge && (
-                <div className="flex flex-col justify-around h-[800px] w-80 relative text-left">
+                <div className="flex flex-col justify-around h-[600px] w-80 relative text-left">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
                     const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                     const w1 = p1 && bracketData.r2.includes(p1);
                     const w2 = p2 && bracketData.r2.includes(p2);
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-8">
+                      <div key={idx} className="relative flex flex-col space-y-4">
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-xs ml-2">{bracketData.s1[idx]}</span>
+                          <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-xs ml-2">{bracketData.s1[idx+1]}</span>
+                          <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
                         </div>
                         <div className="absolute top-[50%] translate-y-[-50%] -right-[100px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
@@ -312,74 +314,75 @@ export default function Home() {
                   })}
                 </div>
               )}
-              <div className={`flex flex-col justify-around h-[800px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
+              <div className={`flex flex-col justify-around h-[600px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
                 {[0, 2, 4, 6].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                   const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
-                  const s1 = bracketData.isLarge ? bracketData.s2[idx] : bracketData.s1[idx];
-                  const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s1[idx+1];
                   const w1 = p1 && (bracketData.isLarge ? bracketData.r3.includes(p1) : bracketData.r2.includes(p1));
                   const w2 = p2 && (bracketData.isLarge ? bracketData.r3.includes(p2) : bracketData.r2.includes(p2));
+                  const s1 = bracketData.isLarge ? bracketData.s2[idx] : bracketData.s1[idx];
+                  const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s1[idx+1];
                   return (
-                    <div key={idx} className="relative flex flex-col space-y-24 mb-6">
+                    <div key={idx} className="relative flex flex-col space-y-12 mb-4">
                       <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                         <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                         <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
+                        <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                       </div>
                       <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                         <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                         <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
+                        <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                       </div>
                       <div className="absolute top-[50%] translate-y-[-50%] -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
                   );
                 })}
               </div>
-              <div className="flex flex-col justify-around h-[800px] w-80 ml-32 relative text-left">
+              <div className="flex flex-col justify-around h-[600px] w-80 ml-32 relative text-left text-center">
                 {[0, 2].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
                   const p2 = bracketData.isLarge ? bracketData.r3[idx+1] : bracketData.r2[idx+1];
-                  const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
-                  const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
                   const w1 = p1 && (bracketData.isLarge ? bracketData.r4.includes(p1) : bracketData.r3.includes(p1));
                   const w2 = p2 && (bracketData.isLarge ? bracketData.r4.includes(p2) : bracketData.r3.includes(p2));
+                  const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
+                  const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
                   return (
-                    <div key={idx} className="relative flex flex-col space-y-48">
-                      <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                    <div key={idx} className="relative flex flex-col space-y-32">
+                      <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                         <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                         <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                        <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                      <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                         <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                         <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                        <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                       </div>
+                      <div className="absolute top-[50%] translate-y-[-50%] -right-[140px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
                   );
                 })}
               </div>
-              <div className="flex flex-col justify-center h-[800px] items-center ml-32 w-96 relative text-center">
-                <div className="w-full space-y-40 mb-20">
+              <div className="flex flex-col justify-center h-[600px] items-center ml-32 w-96 relative text-center text-center">
+                <div className="w-full space-y-32 mb-12">
                   {[0, 1].map((idx) => {
                     const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
                     const s = bracketData.isLarge ? bracketData.s4[idx] : bracketData.s3[idx];
                     const win = p && p === bracketData.winner;
-                    return (
-                      <div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}>
-                        <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg`}>{p || ""}</span>
-                        <span className="text-[#b35a38] font-black text-lg ml-4">{s}</span>
-                      </div>
-                    );
+                    return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                   })}
                 </div>
-                <Trophy className="w-32 h-32 text-orange-400 mb-4 mx-auto" />
-                <span className="text-[#b35a38] font-black text-5xl italic uppercase text-center w-full block">{bracketData.winner || "Campeón"}</span>
+                <Trophy className="w-24 h-24 text-orange-400 mb-4 mx-auto" />
+                <span className="text-[#b35a38] font-black text-4xl italic uppercase text-center w-full block">{bracketData.winner || "Campeón"}</span>
               </div>
             </div>
           </div>
         )}
 
+        {/* RANKING BLINDADO */}
         {navState.level === "ranking-view" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
             <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
               <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wider">{navState.selectedCategory} {navState.year}</h2>
             </div>
@@ -389,18 +392,18 @@ export default function Home() {
                   <thead>
                     <tr className="bg-[#b35a38] text-white">
                       <th className="p-4 text-center font-black first:rounded-tl-xl text-center">POS</th>
-                      <th className="p-4 text-center font-black">JUGADOR</th>
+                      <th className="p-4 text-center font-black text-center text-center">JUGADOR</th>
                       {headers.map((h, i) => (<th key={i} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}
-                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th>
+                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center">TOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankingData.map((p, i) => (
-                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
-                        <td className="p-4 text-slate-400">{i + 1}</td>
-                        <td className="p-4 uppercase text-slate-700">{p.name}</td>
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center text-center">
+                        <td className="p-4 text-slate-400 text-center">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
                         {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>))}
-                        <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td>
+                        <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td>
                       </tr>
                     ))}
                   </tbody>
