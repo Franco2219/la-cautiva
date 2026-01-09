@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3 } from "lucide-react"
 
 // --- CONFIGURACIÓN DE DATOS ---
-const ID_2025 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
+const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; // ID CORREGIDO POR FRAN
 const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 
 const GID_MAP_2026: Record<string, string> = {
@@ -71,6 +71,7 @@ export default function Home() {
       const rows = csvText.split('\n');
       const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
       
+      // Headers según el año
       setHeaders(year === "2025" 
         ? [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8]] 
         : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]]);
@@ -82,13 +83,13 @@ export default function Home() {
           points: year === "2025" 
             ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8]] 
             : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]],
-          // COLUMNA J es Index 9
+          // Columna J para 2025 (índice 9)
           total: year === "2025" ? (parseInt(cols[9]) || 0) : (parseInt(cols[11]) || 0)
         };
       }).filter(p => p.name && !["nombre completo", "jugador", "nombre", "NOMBRE"].includes(p.name.toLowerCase()) && p.name !== "").sort((a, b) => b.total - a.total);
       
       setRankingData(parsedData);
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { console.error("Error cargando ranking:", error); } finally { setIsLoading(false); }
   }
 
   const goBack = () => {
@@ -206,7 +207,7 @@ export default function Home() {
                   {[0, 2].map((idx) => {
                     const p1 = bracketData.r2[idx]; const p2 = bracketData.r2[idx+1];
                     const w1 = p1 && bracketData.r3.includes(p1);
-                    const w2 = p2 && bracketData.r3.includes(p2);
+                    const w2 = p2 && bracketData.r2.includes(p2);
                     return (
                       <div key={idx} className="relative flex flex-col space-y-10">
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
@@ -247,46 +248,38 @@ export default function Home() {
 
           {navState.level === "group-phase" && (
             <div className="animate-in fade-in duration-500 text-center">
-              {navState.gender === "caballeros" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
-                  {mockGroupDataCaballeros.map((group) => (
-                    <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center">
-                      <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
-                      <table className="w-full text-left font-bold text-center">
-                        <thead className="bg-[#fffaf5] text-slate-400 text-center">
-                          <tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr>
-                        </thead>
-                        <tbody>
-                          {group.players.map(p => (
-                            <tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50 text-center">
-                              <td className="p-3 uppercase text-slate-700 text-center">{p}</td>
-                              <td className="p-3 text-center text-slate-700 text-center">0</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto">
-                  <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3>
-                  <p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p>
-                </div>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {mockGroupDataCaballeros.map((group) => (
+                  <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center">
+                    <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
+                    <table className="w-full text-left font-bold text-center">
+                      <thead className="bg-[#fffaf5] text-slate-400 text-center">
+                        <tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr>
+                      </thead>
+                      <tbody>
+                        {group.players.map(p => (
+                          <tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50 text-center">
+                            <td className="p-3 uppercase text-slate-700 text-center">{p}</td>
+                            <td className="p-3 text-center text-slate-700 text-center">0</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {navState.level === "ranking-view" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
-              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white">
+              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center">
                 <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto text-center">
                 <table className="w-full text-lg font-bold text-center">
                   <thead>
-                    <tr className="bg-[#b35a38] text-white">
+                    <tr className="bg-[#b35a38] text-white text-center">
                       <th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th>
                       <th className="p-4 text-left font-black text-center">JUGADOR</th>
                       {headers.map(h => (
