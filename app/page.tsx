@@ -100,8 +100,8 @@ export default function Home() {
               <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
             </div>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center">La Cautiva</h1>
-          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic">Club de Tenis</p>
+          <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center text-center">La Cautiva</h1>
+          <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic text-center">Club de Tenis</p>
         </div>
 
         {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold">← VOLVER</Button>}
@@ -112,7 +112,7 @@ export default function Home() {
           
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">Temporada</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">Temporada</h2>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button>
             </div>
@@ -120,7 +120,7 @@ export default function Home() {
 
           {navState.level === "category-selection" && (
             <div className="space-y-4 text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{(navState.type || "").toString().toUpperCase()} {navState.year || ""}</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">{(navState.type || "").toString().toUpperCase()} {navState.year || ""}</h2>
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
@@ -137,7 +137,7 @@ export default function Home() {
 
           {navState.level === "tournament-selection" && (
             <div className="space-y-4 max-w-xl mx-auto text-center">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{(navState.selectedCategory || "").toString()}</h2>
+              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center text-center">{(navState.selectedCategory || "").toString()}</h2>
               {tournaments.filter(t => {
                 if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
                 if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
@@ -188,7 +188,8 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className="absolute top-[46px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        {/* Línea horizontal central bajada a 50px */}
+                        <div className="absolute top-[50px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -212,7 +213,8 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className="absolute top-[56px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        {/* Línea horizontal central semis bajada a 60px */}
+                        <div className="absolute top-[60px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -239,7 +241,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Vistas de Grupos y Rankings (Restauradas) */}
+          {/* Vistas de Grupos y Rankings */}
           {navState.level === "group-phase" && (
             <div className="animate-in fade-in duration-500 text-center">
               {navState.gender === "caballeros" ? (
