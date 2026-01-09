@@ -25,11 +25,6 @@ const tournaments = [
   { id: "us", name: "US Open", type: "full" },
 ]
 
-const mockGroupDataCaballeros = [
-  { groupName: "Grupo 1", players: ["Martín Rodríguez", "Santiago Fernández", "Luciano González"] },
-  { groupName: "Grupo 2", players: ["Tomás Martínez", "Franco López", "Nicolás Díaz"] },
-]
-
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
@@ -50,8 +45,7 @@ export default function Home() {
         row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim())
       );
 
-      // Inteligencia: Si hay datos en la fila 9 de la columna A, es un cuadro de 16
-      const isLarge = rows.length > 8 && rows[8][0] !== "";
+      const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
 
       if (isLarge) {
         setBracketData({
@@ -109,12 +103,12 @@ export default function Home() {
       <div className={`w-full ${['ranking-view', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-5">
-            <div className="relative group w-64 h-64">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
+            <div className="flex justify-center mb-5">
+                <div className="relative group w-64 h-64">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
+                </div>
             </div>
-          </div>
           <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center">La Cautiva</h1>
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest text-center italic">Club de Tenis</p>
         </div>
@@ -168,45 +162,39 @@ export default function Home() {
             </div>
           )}
 
-          {navState.level === "tournament-phases" && (
-            <div className="space-y-4 text-center">
-              <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase">{navState.tournament}</h2>
-              <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
-              <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
-            </div>
-          )}
-
+          {/* CUADRO DINÁMICO OPTIMIZADO */}
           {navState.level === "direct-bracket" && (
-            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto">
+            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto min-h-[800px]">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center text-white italic min-w-[800px]">
                 <h2 className="text-3xl font-black uppercase">{navState.tournament} - {navState.selectedCategory}</h2>
               </div>
-              <div className="flex flex-row items-center min-w-[1000px] py-10 relative">
+              <div className="flex flex-row items-center min-w-[1100px] py-10 relative">
                 
-                {/* R1 - Solo para cuadros de 16 */}
+                {/* R1 (Octavos) - Espaciado amplio para claridad */}
                 {bracketData.isLarge && (
-                  <div className="flex flex-col space-y-4 w-64 mr-12 relative">
+                  <div className="flex flex-col space-y-6 w-64 mr-16 relative">
                     {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => (
-                      <div key={idx} className="relative flex flex-col space-y-4 mb-4">
-                        <div className="h-6 border-b-2 border-slate-300 flex justify-between items-end relative bg-white">
-                          <span className="text-[9px] font-bold uppercase truncate">{bracketData.r1[idx] || "TBD"}</span>
-                          <span className="text-[#b35a38] font-black text-[8px] ml-1">{bracketData.s1[idx]}</span>
-                          <div className="absolute -right-[20px] bottom-[-2px] w-[20px] h-[2px] bg-slate-300" />
+                      <div key={idx} className="relative flex flex-col space-y-4 mb-2">
+                        <div className="h-7 border-b-2 border-slate-300 flex justify-between items-end relative bg-white">
+                          <span className="text-[10px] font-bold uppercase truncate max-w-[140px]">{bracketData.r1[idx] || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-1">{bracketData.s1[idx]}</span>
+                          <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className="h-6 border-b-2 border-slate-300 flex justify-between items-end relative bg-white">
-                          <span className="text-[9px] font-bold uppercase truncate">{bracketData.r1[idx+1] || "TBD"}</span>
-                          <span className="text-[#b35a38] font-black text-[8px] ml-1">{bracketData.s1[idx+1]}</span>
-                          <div className="absolute -right-[20px] bottom-[-2px] w-[20px] h-[2px] bg-slate-300" />
+                        <div className="h-7 border-b-2 border-slate-300 flex justify-between items-end relative bg-white">
+                          <span className="text-[10px] font-bold uppercase truncate max-w-[140px]">{bracketData.r1[idx+1] || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-1">{bracketData.s1[idx+1]}</span>
+                          <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className="absolute top-[22px] bottom-[22px] -right-[20px] w-[2px] bg-slate-300" />
-                        <div className="absolute top-[32px] -right-[40px] w-5 h-[2px] bg-slate-300" />
+                        {/* Conector a Cuartos */}
+                        <div className="absolute top-[25px] bottom-[25px] -right-[40px] w-[2px] bg-slate-300" />
+                        <div className="absolute top-[41px] -right-[75px] w-9 h-[2px] bg-slate-300" />
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Cuartos (o R2) */}
-                <div className="flex flex-col space-y-12 w-72 relative text-left">
+                {/* Cuartos */}
+                <div className={`flex flex-col ${bracketData.isLarge ? 'space-y-[110px]' : 'space-y-16'} w-72 relative text-left`}>
                   {[0, 2, 4, 6].map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                     const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
@@ -230,8 +218,8 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* Semis (o R3) */}
-                <div className="flex flex-col space-y-[158px] w-64 ml-24 relative text-left">
+                {/* Semis */}
+                <div className={`flex flex-col ${bracketData.isLarge ? 'space-y-[265px]' : 'space-y-[158px]'} w-64 ml-24 relative text-left`}>
                   {[0, 2].map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
                     const p2 = bracketData.isLarge ? bracketData.r3[idx+1] : bracketData.r2[idx+1];
@@ -240,13 +228,13 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-10">
                         <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end bg-white relative">
-                          <span className="text-[10px] font-bold uppercase">{p1 || ""}</span>
-                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{s1}</span>
+                          <span className="text-[11px] font-bold uppercase">{p1 || ""}</span>
+                          <span className="text-[#b35a38] font-black text-[10px] ml-2">{s1}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
                         <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end bg-white relative">
-                          <span className="text-[10px] font-bold uppercase">{p2 || ""}</span>
-                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{s2}</span>
+                          <span className="text-[11px] font-bold uppercase">{p2 || ""}</span>
+                          <span className="text-[#b35a38] font-black text-[10px] ml-2">{s2}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
                         <div className="absolute top-[60px] -right-[78px] w-8 h-[2px] bg-slate-300" />
@@ -255,9 +243,9 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* Final (o R4) */}
+                {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative text-center">
-                  <div className="w-full space-y-12 mb-16">
+                  <div className={`w-full ${bracketData.isLarge ? 'space-y-[52px]' : 'space-y-12'} mb-16`}>
                     {[0, 1].map((idx) => {
                       const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
                       const s = bracketData.isLarge ? bracketData.s4[idx] : bracketData.s3[idx];
@@ -265,42 +253,19 @@ export default function Home() {
                       return (
                         <div key={idx} className={`h-10 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}>
                           <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs`}>{p || ""}</span>
-                          <span className="text-[#b35a38] font-black text-[10px] ml-2">{s}</span>
+                          <span className="text-[#b35a38] font-black text-[11px] ml-2">{s}</span>
                         </div>
                       )
                     })}
                   </div>
-                  <Trophy className="w-20 h-20 text-orange-400 mx-auto" />
-                  <span className="text-[#b35a38] font-black text-3xl mt-2 italic uppercase block w-full text-center">{bracketData.winner || "Campeón"}</span>
+                  <Trophy className="w-24 h-24 text-orange-400 mx-auto" />
+                  <span className="text-[#b35a38] font-black text-4xl mt-2 italic uppercase block w-full text-center">{bracketData.winner || "Campeón"}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Vistas de Grupos y Rankings (Intactas) */}
-          {navState.level === "group-phase" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockGroupDataCaballeros.map((group) => (
-                <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center">
-                  <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
-                  <table className="w-full text-left font-bold text-center">
-                    <thead className="bg-[#fffaf5] text-slate-400 text-center">
-                      <tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr>
-                    </thead>
-                    <tbody>
-                      {group.players.map(p => (
-                        <tr key={p} className="border-b border-[#fffaf5] text-center">
-                          <td className="p-3 uppercase text-slate-700">{p}</td>
-                          <td className="p-3 text-center text-slate-700">0</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
-            </div>
-          )}
-
+          {/* Rankings (Restaurado completo) */}
           {navState.level === "ranking-view" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center">
