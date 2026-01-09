@@ -92,7 +92,6 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
-        
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-44 h-44">
@@ -183,8 +182,9 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                        {/* Ajuste milimétrico top y height */}
                         <div className="absolute top-[26px] -right-[48px] w-[48px] h-[55px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[53.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[54.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -211,8 +211,8 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        <div className="absolute top-[26px] -right-[48px] w-[48px] h-[71px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[61.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[26px] -right-[48px] w-[48px] h-[72px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
+                        <div className="absolute top-[62.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
