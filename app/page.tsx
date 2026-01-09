@@ -92,11 +92,13 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
+        
+        {/* Header con Logo Agrandado */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
-            <div className="relative group w-44 h-44">
+            <div className="relative group w-64 h-64">
               <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <Image src="/logo.png" alt="Logo" width={200} height={200} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
+              <Image src="/logo.png" alt="Logo" width={280} height={280} className="relative z-10 object-contain transition-transform duration-500 group-hover:scale-110 unoptimized" priority />
             </div>
           </div>
           <h1 className="text-5xl md:text-7xl font-black mb-2 text-[#b35a38] italic text-center">La Cautiva</h1>
@@ -120,9 +122,13 @@ export default function Home() {
           {navState.level === "category-selection" && (
             <div className="space-y-4">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.type} {navState.year || ""}</h2>
-              {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
-                <Button key={cat} onClick={() => {
-                  const catShort = cat.replace("Categoría ", "");
+              {tournaments.filter(t => {
+                if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
+                if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
+                return true;
+              }).map((cat) => (
+                <Button key={cat.id || cat} onClick={() => {
+                  const catShort = cat.toString().replace("Categoría ", "");
                   if (navState.type === "ranking") {
                     fetchRankingData(catShort, navState.year);
                     setNavState({ ...navState, level: "ranking-view", selectedCategory: cat });
@@ -130,26 +136,6 @@ export default function Home() {
                     setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type });
                   }
                 }} className={buttonStyle}>{cat}</Button>
-              ))}
-            </div>
-          )}
-
-          {navState.level === "tournament-selection" && (
-            <div className="space-y-4 max-w-xl mx-auto">
-              <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">{navState.selectedCategory}</h2>
-              {tournaments.filter(t => {
-                if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
-                if (t.id === "s8_250") return ["B1", "B2"].includes(navState.category);
-                return true;
-              }).map((t) => (
-                <Button key={t.id} onClick={() => {
-                  if (t.type === "direct" && navState.gender === "caballeros") {
-                    fetchBracketData(navState.category, t.short || "");
-                    setNavState({ ...navState, level: "direct-bracket", tournament: t.name });
-                  } else {
-                    setNavState({ ...navState, level: "tournament-phases", tournament: t.name });
-                  }
-                }} className={buttonStyle}>{t.name}</Button>
               ))}
             </div>
           )}
@@ -182,9 +168,9 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        {/* Ajuste milimétrico top y height */}
+                        {/* Alineación corregida: +2px en top */}
                         <div className="absolute top-[26px] -right-[48px] w-[48px] h-[55px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[54.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[56.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -211,21 +197,22 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        <div className="absolute top-[26px] -right-[48px] w-[48px] h-[72px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
-                        <div className="absolute top-[62.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        {/* Alineación corregida: +2px en top */}
+                        <div className="absolute top-[26px] -right-[48px] w-[48px] h-[71px] border-r-2 border-t-2 border-b-2 border-slate-300 z-0" />
+                        <div className="absolute top-[64.5px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
                 </div>
                 {/* Final */}
-                <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center">
+                <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center text-center">
                   <div className="w-full space-y-12 mb-16">
                     {[0, 1].map((idx) => {
                       const p = bracketData.r3[idx];
                       const win = p && p === bracketData.winner;
                       return (
                         <div key={idx} className="relative h-10 flex items-end">
-                          <div className={`w-full border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} pb-2 flex justify-between items-end bg-white z-10`}>
+                          <div className={`w-full border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} pb-2 flex justify-between items-end bg-white z-10 text-center`}>
                             <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs text-left`}>{p || ""}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s3[idx]}</span>
                           </div>
@@ -240,10 +227,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Secciones intactas */}
+          {/* Torneos Regulares, Grupos y Ranking (Intactos) */}
           {navState.level === "tournament-phases" && <div className="space-y-4 max-w-xl mx-auto text-center"><h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.tournament}</h2><Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button><Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button></div>}
-          {navState.level === "group-phase" && <div className="animate-in fade-in duration-500">{navState.gender === "caballeros" ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{mockGroupDataCaballeros.map((group) => (<div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md"><h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3><table className="w-full text-left font-bold"><thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead><tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody></table></div>))}</div> : <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto"><Users className="w-16 h-16 mx-auto text-slate-300 mb-4" /><h3 className="text-2xl font-black text-slate-400 uppercase">Sin jugadoras</h3><p className="text-slate-400 font-bold mt-2 text-center italic">No hay jugadoras inscriptas por el momento.</p></div>}</div>}
-          {navState.level === "ranking-view" && <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500"><div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white"><h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2></div><div className="overflow-x-auto"><table className="w-full text-lg font-bold"><thead><tr className="bg-[#b35a38] text-white"><th className="p-4 text-left font-black first:rounded-tl-xl">POS</th><th className="p-4 text-left font-black">JUGADOR</th>{headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}<th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th></tr></thead><tbody>{rankingData.map((p, i) => (<tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]"><td className="p-4 text-slate-400">{i + 1}</td><td className="p-4 uppercase text-slate-700">{p.name}</td>{p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}<td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td></tr>))}</tbody></table></div></div>}
+          {navState.level === "group-phase" && <div className="animate-in fade-in duration-500">{navState.gender === "caballeros" ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{mockGroupDataCaballeros.map((group) => (<div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md"><h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3><table className="w-full text-left font-bold text-center"><thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead><tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody></table></div>))}</div> : <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto"><Users className="w-16 h-16 mx-auto text-slate-300 mb-4" /><h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3><p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p></div>}</div>}
+          {navState.level === "ranking-view" && <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500"><div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center"><h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2></div><div className="overflow-x-auto"><table className="w-full text-lg font-bold text-center"><thead><tr className="bg-[#b35a38] text-white text-center"><th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th><th className="p-4 text-left font-black text-center">JUGADOR</th>{headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}<th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th></tr></thead><tbody>{rankingData.map((p, i) => (<tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]"><td className="p-4 text-slate-400">{i + 1}</td><td className="p-4 uppercase text-slate-700">{p.name}</td>{p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}<td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td></tr>))}</tbody></table></div></div>}
         </div>
         <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
       </div>
