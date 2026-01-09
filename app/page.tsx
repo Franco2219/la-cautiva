@@ -30,6 +30,7 @@ export default function Home() {
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  // --- MOTOR DE SORTEO ATP CORREGIDO ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
@@ -39,6 +40,7 @@ export default function Home() {
       const rankRes = await fetch(rankUrl);
       const rankCsv = await rankRes.text();
       const rankRows = rankCsv.split('\n').slice(1);
+      
       const playersRanking = rankRows.map(row => {
         const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
         return { name: cols[1], total: parseInt(cols[11]) || 0 };
@@ -57,41 +59,73 @@ export default function Home() {
 
       if (filteredInscriptos.length === 0) {
         alert("No se encontraron inscriptos para este torneo y categoría.");
-        setIsLoading(false);
         return;
       }
 
-      // CORRECCIÓN PRIORIDAD: Mapeamos inscriptos a sus puntos y ORDENAMOS ESTRICTAMENTE
+      // 1. ASIGNACIÓN ESTRICTA POR RANKING
       const entryList = filteredInscriptos.map(nombre => {
         const p = playersRanking.find(pr => pr.name?.toLowerCase() === nombre?.toLowerCase());
         return { name: nombre, points: p ? p.total : 0 };
-      }).sort((a, b) => b.points - a.points); // Mayor puntaje arriba
+      }).sort((a, b) => b.points - a.points); // Los más altos arriba
 
       const numGroups = Math.floor(entryList.length / 3);
-      if (numGroups === 0) {
-        alert("No hay suficientes jugadores.");
-        setIsLoading(false);
-        return;
-      }
+      if (numGroups === 0) return;
 
-      // Los primeros "numGroups" de la lista ordenada son los cabezas de serie
+      // 2. Los cabezas de serie son los primeros "numGroups" en orden de ranking
       let groups = Array.from({ length: numGroups }, (_, i) => ({
         groupName: `Zona ${i + 1}`,
         players: [entryList[i].name],
         seeds: [entryList[i].name]
       }));
 
-      // El resto entra al bolillero azaroso
-      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
+      // 3. El resto de los jugadores se sortean al azar
+      const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
+      
       let curr = 0;
-      rest.forEach(p => { 
-        if (groups[curr]) groups[curr].players.push(p.name); 
-        curr = (curr + 1) % numGroups; 
+      restOfPlayers.forEach(p => {
+        if (groups[curr]) groups[curr].players.push(p.name);
+        curr = (curr + 1) % numGroups;
       });
 
       setGroupData(groups);
       setNavState({ ...navState, level: "group-phase" });
     } catch (e) { console.error(e); } finally { setIsLoading(false); }
+  }
+
+  // --- FETCH DE RANKING CORREGIDO PARA EVITAR DESFASAJE ---
+  const fetchRankingData = async (categoryShort: string, year: string) => {
+    setIsLoading(true);
+    // LIMPIEZA TOTAL: Borramos datos y encabezados viejos para que no haya desfasaje visual
+    setRankingData([]);
+    setHeaders([]); 
+    
+    const sheetId = year === "2025" ? ID_2025 : ID_2026;
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
+    
+    try {
+      const response = await fetch(url);
+      const csvText = await response.text();
+      const rows = csvText.split('\n');
+      const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+      
+      // Establecemos headers nuevos ANTES de los datos
+      const newHeaders = year === "2025" 
+        ? [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8]] 
+        : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]];
+      
+      setHeaders(newHeaders);
+      
+      const parsedData = rows.slice(1).map(row => {
+        const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
+        return { 
+          name: cols[1], 
+          points: year === "2025" ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8]] : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]], 
+          total: year === "2025" ? (parseInt(cols[9]) || 0) : (parseInt(cols[11]) || 0) 
+        };
+      }).filter(p => p.name && p.name !== "").sort((a, b) => b.total - a.total);
+      
+      setRankingData(parsedData);
+    } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
@@ -109,25 +143,6 @@ export default function Home() {
       } else {
         setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false });
       }
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
-  }
-
-  const fetchRankingData = async (categoryShort: string, year: string) => {
-    setIsLoading(true);
-    setRankingData([]);
-    const sheetId = year === "2025" ? ID_2025 : ID_2026;
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
-    try {
-      const response = await fetch(url);
-      const csvText = await response.text();
-      const rows = csvText.split('\n');
-      const firstRow = rows[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-      setHeaders(year === "2025" ? [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8]] : [firstRow[2], firstRow[3], firstRow[4], firstRow[5], firstRow[6], firstRow[7], firstRow[8], firstRow[9], firstRow[10]]);
-      const parsedData = rows.slice(1).map(row => {
-        const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g, '').trim());
-        return { name: cols[1], points: year === "2025" ? [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8]] : [cols[2], cols[3], cols[4], cols[5], cols[6], cols[7], cols[8], cols[9], cols[10]], total: year === "2025" ? (parseInt(cols[9]) || 0) : (parseInt(cols[11]) || 0) };
-      }).filter(p => p.name && p.name !== "").sort((a, b) => b.total - a.total);
-      setRankingData(parsedData);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
@@ -220,13 +235,13 @@ export default function Home() {
 
         {navState.level === "group-phase" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2rem] p-6 md:p-10 shadow-2xl min-h-[600px]">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-8 text-center">
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2 w-4 h-4" /> ATRÁS</Button>
               {!isSorteoConfirmado && (
                 <div className="flex space-x-2">
                   <Button onClick={() => runATPDraw(navState.category, navState.tournamentShort)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2 w-4 h-4" /> REHACER</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" className="bg-red-500 text-white font-bold"><Trash2 className="mr-2 w-4 h-4" /> ELIMINAR</Button>
-                  <Button onClick={() => setIsSorteoConfirmado(true)} size="sm" className="bg-green-600 text-white font-bold"><CheckCircle className="mr-2 w-4 h-4" /> CONFIRMAR</Button>
+                  <Button onClick={() => setIsSorteoConfirmado(true)} size="sm" className="bg-green-600 text-white font-bold px-8"><CheckCircle className="mr-2 w-4 h-4" /> CONFIRMAR</Button>
                 </div>
               )}
             </div>
@@ -236,14 +251,13 @@ export default function Home() {
               <p className="text-xs opacity-80 mt-1 font-bold uppercase">Categoría {navState.category} - {groupData.length} Zonas</p>
             </div>
 
-            {/* Visual Compacta: 3 columnas y tarjetas más pequeñas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {groupData.map((group, idx) => (
-                <div key={idx} className="bg-white border-2 border-[#b35a38]/20 rounded-2xl p-5 shadow-lg hover:border-[#b35a38]/40 transition-all">
-                  <h3 className="text-xl font-black mb-4 text-[#b35a38] italic underline decoration-orange-300 text-center">{group.groupName}</h3>
+                <div key={idx} className="bg-white border-2 border-[#b35a38]/20 rounded-2xl p-5 shadow-lg hover:border-[#b35a38]/40 transition-all text-center">
+                  <h3 className="text-xl font-black mb-4 text-[#b35a38] italic underline decoration-orange-300">{group.groupName}</h3>
                   <div className="space-y-2">
                     {group.players.map((p: string, pIdx: number) => (
-                      <div key={pIdx} className={`p-3 rounded-xl flex justify-between items-center ${pIdx === 0 ? 'bg-orange-50 border border-orange-200' : 'bg-slate-50 border border-slate-100'}`}>
+                      <div key={pIdx} className={`p-3 rounded-xl flex justify-between items-center ${pIdx === 0 ? 'bg-orange-50 border border-orange-200 shadow-md' : 'bg-slate-50 border border-slate-100'}`}>
                         <span className={`text-sm uppercase font-black ${pIdx === 0 ? 'text-[#b35a38]' : 'text-slate-600'}`}>{p}</span>
                         {pIdx === 0 && <Trophy className="w-4 h-4 text-orange-400" />}
                       </div>
@@ -260,7 +274,7 @@ export default function Home() {
             <div className="bg-[#b35a38] p-8 rounded-3xl mb-16 text-center text-white italic min-w-[800px]">
               <h2 className="text-4xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
-            <div className="flex flex-row items-center justify-between min-w-[1300px] py-10 relative">
+            <div className="flex flex-row items-center justify-between min-w-[1300px] py-10 relative text-center">
               {bracketData.isLarge && (
                 <div className="flex flex-col justify-around h-[800px] w-80 relative text-left">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
@@ -350,43 +364,50 @@ export default function Home() {
                   })}
                 </div>
                 <Trophy className="w-32 h-32 text-orange-400 mb-4 mx-auto" />
-                <span className="text-[#b35a38] font-black text-5xl italic uppercase text-center w-full block">{bracketData.winner || "Campeón"}</span>
+                <span className="text-[#b35a38] font-black text-5xl italic uppercase text-center w-full block text-center">{bracketData.winner || "Campeón"}</span>
               </div>
             </div>
           </div>
         )}
 
         {navState.level === "ranking-view" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center">
             <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
               <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{navState.selectedCategory} {navState.year}</h2>
             </div>
-            <div className="overflow-x-auto text-center">
-              <table className="w-full text-lg font-bold text-center">
-                <thead>
-                  <tr className="bg-[#b35a38] text-white">
-                    <th className="p-4 text-center font-black first:rounded-tl-xl text-center">POS</th>
-                    <th className="p-4 text-center font-black text-center text-center">JUGADOR</th>
-                    {headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}
-                    <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankingData.map((p, i) => (
-                    <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
-                      <td className="p-4 text-slate-400 text-center">{i + 1}</td>
-                      <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
-                      {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>))}
-                      <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td>
+            {/* Solo mostramos la tabla si hay headers y datos cargados */}
+            {headers.length > 0 && rankingData.length > 0 ? (
+              <div className="overflow-x-auto text-center">
+                <table className="w-full text-lg font-bold">
+                  <thead>
+                    <tr className="bg-[#b35a38] text-white">
+                      <th className="p-4 text-center font-black first:rounded-tl-xl">POS</th>
+                      <th className="p-4 text-center font-black">JUGADOR</th>
+                      {headers.map((h, i) => (<th key={i} className="p-4 text-center font-black hidden sm:table-cell">{h}</th>))}
+                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl">TOTAL</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {rankingData.map((p, i) => (
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
+                        <td className="p-4 text-slate-400">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700">{p.name}</td>
+                        {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}
+                        <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-slate-300 uppercase font-black tracking-widest animate-pulse text-center">
+                Cargando datos...
+              </div>
+            )}
           </div>
         )}
       </div>
-      <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse">Sistema de seguimiento de torneos en vivo</p>
+      <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
     </div>
   );
 }
