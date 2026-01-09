@@ -143,7 +143,7 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-selection" && (
-            <div className="space-y-4 text-center">
+            <div className="space-y-4 text-center text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
                 if (t.id === "s8_500") return ["B1", "B2", "C"].includes(navState.category);
@@ -170,6 +170,8 @@ export default function Home() {
             </div>
             
             <div className="flex flex-row items-center justify-between min-w-[1300px] py-10 relative">
+              
+              {/* R1 (Octavos) */}
               {bracketData.isLarge && (
                 <div className="flex flex-col justify-around h-[800px] w-80 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => (
@@ -184,13 +186,14 @@ export default function Home() {
                         <span className="text-[#b35a38] font-black text-xs ml-2">{bracketData.s1[idx+1]}</span>
                         <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className="absolute top-[32px] bottom-[32px] -right-[60px] w-[2px] bg-slate-300" />
+                      {/* Línea horizontal central bajada */}
                       <div className="absolute top-[50%] translate-y-[-50%] -right-[100px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
                   ))}
                 </div>
               )}
 
+              {/* Cuartos */}
               <div className={`flex flex-col justify-around h-[800px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''}`}>
                 {[0, 2, 4, 6].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
@@ -198,7 +201,7 @@ export default function Home() {
                   const s1 = bracketData.isLarge ? bracketData.s2[idx] : bracketData.s1[idx];
                   const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s1[idx+1];
                   return (
-                    <div key={idx} className="relative flex flex-col space-y-12">
+                    <div key={idx} className="relative flex flex-col space-y-12 text-center text-center text-center">
                       <div className="h-10 border-b-2 border-slate-300 flex justify-between items-end bg-white relative">
                         <span className="text-sm font-bold uppercase truncate">{p1 || "TBD"}</span>
                         <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
@@ -209,13 +212,14 @@ export default function Home() {
                         <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className="absolute top-[40px] bottom-[40px] -right-[80px] w-[2px] bg-slate-300" />
+                      {/* Línea horizontal central bajada */}
                       <div className="absolute top-[50%] translate-y-[-50%] -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
                   );
                 })}
               </div>
 
+              {/* Semis */}
               <div className="flex flex-col justify-around h-[800px] w-80 ml-32 relative">
                 {[0, 2].map((idx) => {
                   const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
@@ -229,19 +233,20 @@ export default function Home() {
                         <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className="h-12 border-b-2 border-slate-300 flex justify-between items-end bg-white relative">
+                      <div className="h-12 border-b-2 border-slate-300 flex justify-between items-end bg-white relative text-center">
                         <span className="text-base font-black uppercase">{p2 || ""}</span>
                         <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
                         <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className="absolute top-[48px] bottom-[48px] -right-[100px] w-[2px] bg-slate-300" />
+                      {/* Línea horizontal central bajada */}
                       <div className="absolute top-[50%] translate-y-[-50%] -right-[140px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
                   );
                 })}
               </div>
 
-              <div className="flex flex-col justify-center h-[800px] items-center ml-32 w-96 relative text-center text-center">
+              {/* Final */}
+              <div className="flex flex-col justify-center h-[800px] items-center ml-32 w-96 relative">
                 <div className="w-full space-y-20 mb-20 text-center">
                   {[0, 1].map((idx) => {
                     const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
@@ -250,12 +255,12 @@ export default function Home() {
                     return (
                       <div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}>
                         <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span>
-                        <span className="text-[#b35a38] font-black text-lg ml-4">{s}</span>
+                        <span className="text-[#b35a38] font-black text-lg ml-4 text-center">{s}</span>
                       </div>
                     );
                   })}
                 </div>
-                <Trophy className="w-32 h-32 text-orange-400 mb-4 mx-auto" />
+                <Trophy className="w-32 h-32 text-orange-400 mb-4 mx-auto text-center" />
                 <span className="text-[#b35a38] font-black text-5xl italic uppercase text-center w-full block text-center">{bracketData.winner || "Campeón"}</span>
               </div>
             </div>
@@ -264,26 +269,26 @@ export default function Home() {
 
         {navState.level === "ranking-view" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
-            <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center text-center">
+            <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center">
               <h2 className="text-3xl md:text-5xl font-black uppercase text-center text-center">{navState.selectedCategory} {navState.year}</h2>
             </div>
-            <div className="overflow-x-auto text-center text-center">
-              <table className="w-full text-lg font-bold text-center text-center text-center">
+            <div className="overflow-x-auto text-center text-center text-center text-center text-center text-center">
+              <table className="w-full text-lg font-bold text-center text-center text-center text-center text-center text-center">
                 <thead>
-                  <tr className="bg-[#b35a38] text-white text-center text-center">
-                    <th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th>
-                    <th className="p-4 text-left font-black text-center text-center">JUGADOR</th>
-                    {headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}
-                    <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center">TOTAL</th>
+                  <tr className="bg-[#b35a38] text-white text-center text-center text-center text-center">
+                    <th className="p-4 text-left font-black first:rounded-tl-xl text-center text-center">POS</th>
+                    <th className="p-4 text-left font-black text-center text-center text-center">JUGADOR</th>
+                    {headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center text-center text-center text-center">{h}</th>))}
+                    <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center text-center text-center">TOTAL</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rankingData.map((p, i) => (
-                    <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center text-center text-center">
-                      <td className="p-4 text-slate-400 text-center text-center">{i + 1}</td>
-                      <td className="p-4 uppercase text-slate-700 text-center text-center">{p.name}</td>
-                      {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center text-center">{val || 0}</td>))}
-                      <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center text-center">{p.total}</td>
+                    <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center text-center text-center text-center text-center text-center">
+                      <td className="p-4 text-slate-400 text-center text-center text-center text-center">{i + 1}</td>
+                      <td className="p-4 uppercase text-slate-700 text-center text-center text-center text-center">{p.name}</td>
+                      {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center text-center text-center text-center">{val || 0}</td>))}
+                      <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center text-center text-center text-center">{p.total}</td>
                     </tr>
                   ))}
                 </tbody>
