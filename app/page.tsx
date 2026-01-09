@@ -93,7 +93,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
-        {/* Logo Grande */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-64 h-64">
@@ -156,7 +155,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* CUADRO - SOLUCIÓN DE UNIÓN BLINDADA */}
+          {/* CUADRO - SOLUCIÓN DE SOLAPAMIENTO EXAGERADO */}
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
@@ -175,19 +174,19 @@ export default function Home() {
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p1 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
-                          {/* Línea que sale del jugador: se extiende 1px más para asegurar unión */}
-                          <div className="absolute -right-[49px] bottom-[-2px] w-[49px] h-[2px] bg-slate-300" />
+                          {/* Línea extendida 10px más para atravesar la vertical */}
+                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p2 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
-                          {/* Línea que sale del jugador: se extiende 1px más para asegurar unión */}
-                          <div className="absolute -right-[49px] bottom-[-2px] w-[49px] h-[2px] bg-slate-300" />
+                          {/* Línea extendida 10px más para atravesar la vertical */}
+                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Conector Vertical: movido 1px a la izquierda para solapar puntas */}
-                        <div className="absolute top-[32px] bottom-[32px] -right-[49px] w-[2px] bg-slate-300" />
-                        {/* Salida horizontal: nace desde adentro de la vertical */}
-                        <div className="absolute top-[42.5px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
+                        {/* Conector Vertical */}
+                        <div className="absolute top-[32px] bottom-[32px] -right-[48px] w-[2px] bg-slate-300" />
+                        {/* Salida horizontal centrada respecto a la vertical */}
+                        <div className="absolute top-[43px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -198,23 +197,21 @@ export default function Home() {
                   {[0, 2].map((idx) => {
                     const p1 = bracketData.r2[idx]; const p2 = bracketData.r2[idx+1];
                     const w1 = p1 && bracketData.r3.includes(p1);
-                    const w2 = p2 && bracketData.r3.includes(p2);
+                    const w2 = p2 && bracketData.r2.includes(p2);
                     return (
                       <div key={idx} className="relative flex flex-col space-y-10">
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p1 || ""}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx]}</span>
-                          <div className="absolute -right-[49px] bottom-[-2px] w-[49px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p2 || ""}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
-                          <div className="absolute -right-[49px] bottom-[-2px] w-[49px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Conector Vertical: movido 1px a la izquierda para solapar puntas */}
-                        <div className="absolute top-[32px] bottom-[32px] -right-[49px] w-[2px] bg-slate-300" />
-                        {/* Salida horizontal: nace desde adentro de la vertical */}
-                        <div className="absolute top-[51.5px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-[32px] bottom-[32px] -right-[48px] w-[2px] bg-slate-300" />
+                        <div className="absolute top-[52px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
