@@ -93,7 +93,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
-        {/* Logo Agrandado */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-64 h-64">
@@ -163,7 +162,7 @@ export default function Home() {
               </div>
               <div className="flex flex-row items-center min-w-[950px] max-w-6xl mx-auto py-10 relative">
                 
-                {/* Ronda Inicial */}
+                {/* Cuartos */}
                 <div className="flex flex-col space-y-16 w-72 relative z-10">
                   {[0, 2, 4, 6].map((idx) => {
                     const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
@@ -171,7 +170,7 @@ export default function Home() {
                     const w2 = p2 && bracketData.r2.includes(p2);
                     return (
                       <div key={idx} className="relative flex flex-col space-y-6">
-                        <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                        <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p1 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
@@ -181,9 +180,9 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Conector Vertical Absoluto */}
+                        {/* Conector Vertical y Salida Centrada */}
                         <div className="absolute bottom-[0px] -right-[48px] w-[2px] h-[58px] bg-slate-300" />
-                        <div className="absolute top-[28px] -right-[78px] w-8 h-[2px] bg-slate-300" />
+                        <div className="absolute top-[29px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -207,7 +206,7 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Conector Vertical Absoluto */}
+                        {/* Conector Vertical y Salida Centrada */}
                         <div className="absolute bottom-[0px] -right-[48px] w-[2px] h-[74px] bg-slate-300" />
                         <div className="absolute top-[37px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
