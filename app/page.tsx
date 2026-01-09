@@ -93,7 +93,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
-        {/* Logo Agrandado */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-64 h-64">
@@ -156,7 +155,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* CUADRO SIMPLIFICADO: SOLO LÍNEAS HORIZONTALES */}
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
@@ -177,11 +175,13 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                        <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p2 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
+                        {/* Línea Vertical Uniendo las puntas de las horizontales */}
+                        <div className="absolute top-[32px] bottom-[0px] -right-[48px] w-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -205,6 +205,8 @@ export default function Home() {
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
                           <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
+                        {/* Línea Vertical Uniendo las puntas de las horizontales */}
+                        <div className="absolute top-[32px] bottom-[0px] -right-[48px] w-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
