@@ -110,7 +110,6 @@ export default function Home() {
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           {navState.level === "main-menu" && <div className="grid grid-cols-1 gap-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button><Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button><Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button></div>}
           
-          {/* Navegación y Ranking (Sin cambios) */}
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">
               <h2 className="text-2xl font-black text-center mb-4 text-slate-800 uppercase text-center">Temporada</h2>
@@ -156,7 +155,14 @@ export default function Home() {
             </div>
           )}
 
-          {/* CUADRO - DISEÑO PUNTERO (SIN VERTICALES) */}
+          {navState.level === "tournament-phases" && (
+            <div className="space-y-4 max-w-xl mx-auto text-center">
+              <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.tournament}</h2>
+              <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
+              <Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
+            </div>
+          )}
+
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
@@ -166,53 +172,65 @@ export default function Home() {
                 
                 {/* Cuartos */}
                 <div className="flex flex-col space-y-16 w-72 relative z-10 text-left">
-                  {[0, 2, 4, 6].map((idx) => (
-                    <div key={idx} className="relative flex flex-col space-y-6">
-                      <div className={`h-8 border-b-2 border-slate-300 flex justify-between items-end bg-white relative`}>
-                        <span className="text-slate-700 font-bold uppercase text-[10px] truncate max-w-[150px]">{bracketData.r1[idx] || "TBD"}</span>
-                        <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
-                        <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                  {[0, 2, 4, 6].map((idx) => {
+                    const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
+                    const w1 = p1 && bracketData.r2.includes(p1);
+                    const w2 = p2 && bracketData.r2.includes(p2);
+                    return (
+                      <div key={idx} className="relative flex flex-col space-y-6">
+                        <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                          <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p1 || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                        </div>
+                        <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                          <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p2 || "TBD"}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                        </div>
+                        <div className="absolute top-[46px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
-                      <div className={`h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white`}>
-                        <span className="text-slate-700 font-bold uppercase text-[10px] truncate max-w-[150px]">{bracketData.r1[idx+1] || "TBD"}</span>
-                        <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
-                        <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
-                      </div>
-                      {/* Línea horizontal de salida desde la punta derecha del hueco central */}
-                      <div className="absolute top-[43px] -right-[78px] w-8 h-[2px] bg-slate-300" />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {/* Semis */}
                 <div className="flex flex-col space-y-[158px] w-64 ml-24 relative z-10 text-left">
-                  {[0, 2].map((idx) => (
-                    <div key={idx} className="relative flex flex-col space-y-10">
-                      <div className={`h-8 border-b-2 border-slate-300 flex justify-between items-end bg-white relative`}>
-                        <span className="text-slate-700 font-bold uppercase text-[10px]">{bracketData.r2[idx] || ""}</span>
-                        <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx]}</span>
-                        <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                  {[0, 2].map((idx) => {
+                    const p1 = bracketData.r2[idx]; const p2 = bracketData.r2[idx+1];
+                    const w1 = p1 && bracketData.r3.includes(p1);
+                    const w2 = p2 && bracketData.r3.includes(p2);
+                    return (
+                      <div key={idx} className="relative flex flex-col space-y-10">
+                        <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                          <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p1 || ""}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx]}</span>
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                        </div>
+                        <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                          <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p2 || ""}</span>
+                          <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
+                        </div>
+                        <div className="absolute top-[56px] -right-[78px] w-8 h-[2px] bg-slate-300" />
                       </div>
-                      <div className={`h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white`}>
-                        <span className="text-slate-700 font-bold uppercase text-[10px]">{bracketData.r2[idx+1] || ""}</span>
-                        <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
-                        <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
-                      </div>
-                      {/* Línea horizontal de salida semis */}
-                      <div className="absolute top-[52px] -right-[78px] w-8 h-[2px] bg-slate-300" />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {/* Final */}
                 <div className="flex flex-col items-center ml-24 w-80 relative z-10 text-center">
                   <div className="w-full space-y-12 mb-16">
-                    {[0, 1].map((idx) => (
-                      <div key={idx} className={`h-10 border-b-4 border-slate-200 flex justify-between items-end bg-white`}>
-                        <span className="text-slate-800 font-bold uppercase text-xs text-left">{bracketData.r3[idx] || ""}</span>
-                        <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s3[idx]}</span>
-                      </div>
-                    ))}
+                    {[0, 1].map((idx) => {
+                      const p = bracketData.r3[idx];
+                      const win = p && p === bracketData.winner;
+                      return (
+                        <div key={idx} className={`h-10 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}>
+                          <span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xs`}>{p || ""}</span>
+                          <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s3[idx]}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                   <Trophy className="w-20 h-20 text-orange-400 mx-auto" />
                   <span className="text-[#b35a38] font-black text-3xl mt-2 italic uppercase block w-full text-center">{bracketData.winner || "Campeón"}</span>
@@ -221,10 +239,73 @@ export default function Home() {
             </div>
           )}
 
-          {/* Vistas regulares intactas */}
-          {navState.level === "tournament-phases" && <div className="space-y-4 max-w-xl mx-auto text-center"><h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.tournament}</h2><Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button><Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button></div>}
-          {navState.level === "group-phase" && <div className="animate-in fade-in duration-500">{navState.gender === "caballeros" ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{mockGroupDataCaballeros.map((group) => (<div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center"><h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3><table className="w-full text-left font-bold text-center"><thead className="bg-[#fffaf5] text-slate-400"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead><tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50"><td className="p-3 uppercase text-slate-700">{p}</td><td className="p-3 text-center text-slate-700">0</td></tr>))}</tbody></table></div>))}</div> : <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto"><Users className="w-16 h-16 mx-auto text-slate-300 mb-4" /><h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3><p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p></div>}</div>}
-          {navState.level === "ranking-view" && <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500"><div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center"><h2 className="text-3xl md:text-5xl font-black uppercase text-center">{(navState.selectedCategory || "").toString()} {navState.year}</h2></div><div className="overflow-x-auto text-center"><table className="w-full text-lg font-bold text-center"><thead><tr className="bg-[#b35a38] text-white"><th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th><th className="p-4 text-left font-black text-center">JUGADOR</th>{headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}<th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th></tr></thead><tbody>{rankingData.map((p, i) => (<tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]"><td className="p-4 text-slate-400 text-center">{i + 1}</td><td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>{p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>))}<td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td></tr>))}</tbody></table></div></div>}
+          {/* Vistas de Grupos y Rankings (Restauradas) */}
+          {navState.level === "group-phase" && (
+            <div className="animate-in fade-in duration-500 text-center">
+              {navState.gender === "caballeros" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mockGroupDataCaballeros.map((group) => (
+                    <div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center">
+                      <h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3>
+                      <table className="w-full text-left font-bold text-center">
+                        <thead className="bg-[#fffaf5] text-slate-400 text-center">
+                          <tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr>
+                        </thead>
+                        <tbody>
+                          {group.players.map(p => (
+                            <tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50 text-center">
+                              <td className="p-3 uppercase text-slate-700 text-center">{p}</td>
+                              <td className="p-3 text-center text-slate-700 text-center">0</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto">
+                  <Users className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3>
+                  <p className="text-slate-400 font-bold mt-2 text-center italic">No hay jugadoras inscriptas por el momento.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {navState.level === "ranking-view" && (
+            <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center">
+              <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center">
+                <h2 className="text-3xl md:text-5xl font-black uppercase text-center">{(navState.selectedCategory || "").toString()} {navState.year}</h2>
+              </div>
+              <div className="overflow-x-auto text-center">
+                <table className="w-full text-lg font-bold text-center">
+                  <thead>
+                    <tr className="bg-[#b35a38] text-white text-center">
+                      <th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th>
+                      <th className="p-4 text-left font-black text-center">JUGADOR</th>
+                      {headers.map(h => (
+                        <th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>
+                      ))}
+                      <th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rankingData.map((p, i) => (
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
+                        <td className="p-4 text-slate-400 text-center">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
+                        {p.points.map((val: any, idx: number) => (
+                          <td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>
+                        ))}
+                        <td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
         <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
       </div>
