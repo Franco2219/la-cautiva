@@ -38,67 +38,7 @@ export default function Home() {
     );
   };
 
-  const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
-    if (!categoryShort || !tournamentShort) return;
-    setIsLoading(true);
-    try {
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      const rankRes = await fetch(rankUrl);
-      const rankCsv = await rankRes.text();
-      const rankRows = parseCSV(rankCsv).slice(1);
-      
-      const playersRanking = rankRows.map(row => ({
-        name: row[1] || "",
-        total: row[11] ? parseInt(row[11]) : 0
-      })).filter(p => p.name !== "");
-
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      const inscRes = await fetch(inscUrl);
-      const inscCsv = await inscRes.text();
-      const inscRows = parseCSV(inscCsv).slice(1);
-
-      // Filtro de seguridad para evitar filas indefinidas
-      const filteredInscriptos = inscRows.filter(cols => 
-        cols.length >= 3 && cols[0] === tournamentShort && cols[1] === categoryShort
-      ).map(cols => cols[2]);
-
-      if (filteredInscriptos.length === 0) {
-        alert("No se encontraron inscriptos válidos en el Excel.");
-        setIsLoading(false);
-        return;
-      }
-
-      const entryList = filteredInscriptos.map(n => {
-        const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
-        return { name: n, points: p ? p.total : 0 };
-      }).sort((a, b) => b.points - a.points);
-
-      const numGroups = Math.floor(entryList.length / 3);
-      if (numGroups === 0) { alert("Inscriptos insuficientes para armar grupos."); setIsLoading(false); return; }
-
-      let groups = Array.from({ length: numGroups }, (_, i) => ({
-        groupName: `Zona ${i + 1}`,
-        players: [entryList[i].name],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
-      }));
-
-      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
-      let curr = 0;
-      rest.forEach(p => { 
-        if (groups[curr]) {
-          groups[curr].players.push(p.name);
-          curr = (curr + 1) % numGroups; 
-        }
-      });
-
-      setGroupData(groups);
-      setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
-    } catch (e) { 
-      console.error("Error en sorteo:", e);
-      alert("Error al procesar el sorteo. Verifique el formato del Excel.");
-    } finally { setIsLoading(false); }
-  }
-
+  // --- MOTOR DE GRUPOS Y SORTEO ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
@@ -108,6 +48,7 @@ export default function Home() {
       const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
+      
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && csvText.length > 20) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
@@ -129,6 +70,47 @@ export default function Home() {
     } catch (e) {
       setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
     } finally { setIsLoading(false); }
+  }
+
+  const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
+    if (!categoryShort || !tournamentShort) return;
+    setIsLoading(true);
+    try {
+      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
+      const rankRes = await fetch(rankUrl);
+      const rankCsv = await rankRes.text();
+      const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
+        name: row[1], total: parseInt(row[11]) || 0
+      }));
+
+      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+      const inscRes = await fetch(inscUrl);
+      const inscCsv = await inscRes.text();
+      const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
+        cols[0] === tournamentShort && cols[1] === categoryShort
+      ).map(cols => cols[2]);
+
+      const entryList = filteredInscriptos.map(n => {
+        const p = playersRanking.find(pr => pr.name?.toLowerCase().includes(n?.toLowerCase()) || n?.toLowerCase().includes(pr.name?.toLowerCase()));
+        return { name: n, points: p ? p.total : 0 };
+      }).sort((a, b) => b.points - a.points);
+
+      const numGroups = Math.floor(entryList.length / 3);
+      if (numGroups === 0) { alert("Inscriptos insuficientes."); setIsLoading(false); return; }
+
+      let groups = Array.from({ length: numGroups }, (_, i) => ({
+        groupName: `Zona ${i + 1}`,
+        players: [entryList[i].name],
+        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
+      }));
+
+      const rest = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
+      let curr = 0;
+      rest.forEach(p => { if (groups[curr]) groups[curr].players.push(p.name); curr = (curr + 1) % numGroups; });
+
+      setGroupData(groups);
+      setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
   }
 
   const confirmarYEnviar = () => {
@@ -174,14 +156,12 @@ export default function Home() {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
-      if (rows.length > 0) {
-        setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
-        setRankingData(rows.slice(1).map(row => ({
-          name: row[1],
-          points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
-          total: year === "2025" ? (parseInt(row[9]) || 0) : (parseInt(row[11]) || 0)
-        })).filter(p => p.name).sort((a, b) => b.total - a.total));
-      }
+      setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
+      setRankingData(rows.slice(1).map(row => ({
+        name: row[1],
+        points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
+        total: year === "2025" ? (parseInt(row[9]) || 0) : (parseInt(row[11]) || 0)
+      })).filter(p => p.name).sort((a, b) => b.total - a.total));
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
@@ -288,6 +268,7 @@ export default function Home() {
                 <div className="flex space-x-2">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                  <Button onClick={() => setGroupData([])} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
               )}
             </div>
@@ -339,13 +320,15 @@ export default function Home() {
                   const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s1[idx+1];
                   return (
                     <div key={idx} className="relative flex flex-col space-y-8 mb-4">
-                      <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                      <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                         <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate`}>{p1 || "TBD"}</span>
                         <span className="text-[#b35a38] font-black text-xs ml-3">{s1}</span>
+                        <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                       </div>
-                      <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                      <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                         <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate`}>{p2 || "TBD"}</span>
                         <span className="text-[#b35a38] font-black text-xs ml-3">{s2}</span>
+                        <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                       </div>
                       <div className="absolute top-[50%] translate-y-[-50%] -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                     </div>
@@ -368,7 +351,7 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className="flex flex-col justify-center h-[500px] items-center ml-32 w-96 relative text-center text-center">
+              <div className="flex flex-col justify-center h-[500px] items-center ml-32 w-96 relative text-center text-center text-center">
                 <div className="w-full space-y-24 mb-10 text-center">
                   {[0, 1].map((idx) => {
                     const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
