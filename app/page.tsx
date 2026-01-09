@@ -93,6 +93,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['ranking-view', 'group-phase', 'direct-bracket'].includes(navState.level) ? 'max-w-7xl' : 'max-w-6xl'} mx-auto z-10`}>
         
+        {/* Logo Agrandado */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-5">
             <div className="relative group w-64 h-64">
@@ -155,7 +156,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* CUADRO - SOLUCIÓN DE SOLAPAMIENTO EXAGERADO */}
+          {/* CUADRO SIMPLIFICADO: SOLO LÍNEAS HORIZONTALES */}
           {navState.level === "direct-bracket" && (
             <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-x-auto animate-in fade-in duration-500">
               <div className="bg-[#b35a38] p-6 rounded-2xl mb-12 text-center italic min-w-[800px]">
@@ -174,19 +175,13 @@ export default function Home() {
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p1 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx]}</span>
-                          {/* Línea extendida 10px más para atravesar la vertical */}
-                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px] truncate max-w-[150px]`}>{p2 || "TBD"}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s1[idx+1]}</span>
-                          {/* Línea extendida 10px más para atravesar la vertical */}
-                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Conector Vertical */}
-                        <div className="absolute top-[32px] bottom-[32px] -right-[48px] w-[2px] bg-slate-300" />
-                        {/* Salida horizontal centrada respecto a la vertical */}
-                        <div className="absolute top-[43px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -203,15 +198,13 @@ export default function Home() {
                         <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p1 || ""}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx]}</span>
-                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                           <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} uppercase text-[10px]`}>{p2 || ""}</span>
                           <span className="text-[#b35a38] font-black text-[9px] ml-2">{bracketData.s2[idx+1]}</span>
-                          <div className="absolute -right-[58px] bottom-[-2px] w-[58px] h-[2px] bg-slate-300" />
+                          <div className="absolute -right-[48px] bottom-[-2px] w-[48px] h-[2px] bg-slate-300" />
                         </div>
-                        <div className="absolute top-[32px] bottom-[32px] -right-[48px] w-[2px] bg-slate-300" />
-                        <div className="absolute top-[52px] -right-[78px] w-[31px] h-[2px] bg-slate-300" />
                       </div>
                     )
                   })}
@@ -239,7 +232,7 @@ export default function Home() {
           )}
 
           {/* Vistas regulares (Intactas) */}
-          {navState.level === "tournament-phases" && <div className="space-y-4 max-w-xl mx-auto text-center"><h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{(navState.tournament || "").toString()}</h2><Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button><Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button></div>}
+          {navState.level === "tournament-phases" && <div className="space-y-4 max-w-xl mx-auto text-center"><h2 className="text-2xl font-black mb-4 text-slate-800 uppercase text-center">{navState.tournament}</h2><Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button><Button onClick={() => setNavState({ ...navState, level: "bracket-phase" })} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button></div>}
           {navState.level === "group-phase" && <div className="animate-in fade-in duration-500 text-center">{navState.gender === "caballeros" ? <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{mockGroupDataCaballeros.map((group) => (<div key={group.groupName} className="bg-white border-2 border-[#b35a38]/10 rounded-2xl p-6 shadow-md text-center"><h3 className="text-2xl font-black mb-4 text-[#b35a38] text-center">{group.groupName}</h3><table className="w-full text-left font-bold text-center"><thead className="bg-[#fffaf5] text-slate-400 text-center"><tr><th className="p-3">Jugador</th><th className="p-3 text-center">PTS</th></tr></thead><tbody>{group.players.map(p => (<tr key={p} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]/50 text-center"><td className="p-3 uppercase text-slate-700 text-center">{p}</td><td className="p-3 text-center text-slate-700 text-center">0</td></tr>))}</tbody></table></div>))}</div> : <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center max-w-2xl mx-auto"><Users className="w-16 h-16 mx-auto text-slate-300 mb-4" /><h3 className="text-2xl font-black text-slate-400 uppercase text-center">Sin jugadoras</h3><p className="text-slate-400 font-bold mt-2 text-center italic text-center">No hay jugadoras inscriptas por el momento.</p></div>}</div>}
           {navState.level === "ranking-view" && <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 text-center"><div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-center italic text-white text-center"><h2 className="text-3xl md:text-5xl font-black uppercase text-center">{(navState.selectedCategory || "").toString()} {navState.year}</h2></div><div className="overflow-x-auto text-center"><table className="w-full text-lg font-bold text-center"><thead><tr className="bg-[#b35a38] text-white text-center"><th className="p-4 text-left font-black first:rounded-tl-xl text-center">POS</th><th className="p-4 text-left font-black text-center">JUGADOR</th>{headers.map(h => (<th key={h} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}<th className="p-4 text-right font-black bg-[#8c3d26] last:rounded-tr-xl text-center">TOTAL</th></tr></thead><tbody>{rankingData.map((p, i) => (<tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5]"><td className="p-4 text-slate-400">{i + 1}</td><td className="p-4 uppercase text-slate-700">{p.name}</td>{p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">{val || 0}</td>))}<td className="p-4 text-right text-[#b35a38] text-2xl font-black bg-[#fffaf5]">{p.total}</td></tr>))}</tbody></table></div></div>}
         </div>
