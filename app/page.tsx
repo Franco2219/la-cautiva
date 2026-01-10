@@ -5,17 +5,18 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS (IDs SEPARADOS) ---
+// --- CONFIGURACIÓN DE DATOS ---
 const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
-const ID_RANKING_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Ranking 2026 + Inscriptos
-const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; // Cuadros y Grupos fijos
+const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Ranking e Inscriptos (Excel Viejo)
+const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; // Grupos y Cuadros Fijos (Excel Nuevo)
 const MI_TELEFONO = "5491150568353"; 
 
+// UBICACIÓN DE LA LISTA DE TORNEOS (Aprox Línea 14)
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
-  { id: "ao", name: "Australian Open", short: "AO", type: "full" },
+  { id: "ao", name: "Australian Open", short: "AO", type: "full" }, // "full" = Tiene fase de grupos
   { id: "iw", name: "Indian Wells", short: "IW", type: "full" },
   { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
@@ -39,13 +40,13 @@ export default function Home() {
     );
   };
 
-  // --- MOTOR DE SORTEO ATP (Usa ID_RANKING_2026 para Inscriptos y Puntos) ---
+  // --- MOTOR DE SORTEO ATP (Usa ID_DATOS_GENERALES para Ranking/Inscriptos) ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     try {
-      // 1. Ranking (ID Viejo)
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_RANKING_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
+      // 1. Ranking (Excel Viejo)
+      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl);
       const rankCsv = await rankRes.text();
       const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
@@ -53,8 +54,8 @@ export default function Home() {
         total: row[11] ? parseInt(row[11]) : 0
       })).filter(p => p.name !== "");
 
-      // 2. Inscriptos (ID Viejo)
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_RANKING_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+      // 2. Inscriptos (Excel Viejo)
+      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl);
       const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
@@ -126,18 +127,18 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS (Usa ID_TORNEOS) ---
+  // --- LECTURA DE GRUPOS FIJOS (Usa ID_TORNEOS - Excel Nuevo) ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
     setIsSorteoConfirmado(false);
     try {
-      // Busca pestaña en el Excel NUEVO: "C AO", "B1 Adelaide"
-      const sheetName = `${categoryShort} ${tournamentShort}`;
+      const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
       
+      // Validación estricta: debe contener "Zona" o "Grupo"
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
@@ -200,10 +201,10 @@ export default function Home() {
     </div>
   );
 
-  // --- RANKING (Usa ID_2025 o ID_RANKING_2026) ---
+  // --- RANKING (Usa ID_DATOS_GENERALES) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
-    const sheetId = year === "2025" ? ID_2025 : ID_RANKING_2026;
+    const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
     try {
       const response = await fetch(url);
