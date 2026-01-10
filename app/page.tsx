@@ -5,9 +5,10 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS ---
+// --- CONFIGURACIÓN DE DATOS (IDs SEPARADOS) ---
 const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
-const ID_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
+const ID_RANKING_2026 = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Ranking 2026 + Inscriptos
+const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; // Cuadros y Grupos fijos
 const MI_TELEFONO = "5491150568353"; 
 
 const tournaments = [
@@ -38,13 +39,13 @@ export default function Home() {
     );
   };
 
-  // --- MOTOR DE SORTEO ATP (LÓGICA DE GRUPOS DE 2 ALEATORIOS) ---
+  // --- MOTOR DE SORTEO ATP (Usa ID_RANKING_2026 para Inscriptos y Puntos) ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     try {
-      // 1. Ranking para semillas
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
+      // 1. Ranking (ID Viejo)
+      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_RANKING_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl);
       const rankCsv = await rankRes.text();
       const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
@@ -52,8 +53,8 @@ export default function Home() {
         total: row[11] ? parseInt(row[11]) : 0
       })).filter(p => p.name !== "");
 
-      // 2. Inscriptos
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+      // 2. Inscriptos (ID Viejo)
+      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_RANKING_2026}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl);
       const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
@@ -61,12 +62,12 @@ export default function Home() {
       ).map(cols => cols[2]);
 
       if (filteredInscriptos.length === 0) {
-        alert("No se encontraron inscriptos para este torneo y categoría.");
+        alert(`No hay inscriptos para ${tournamentShort} (${categoryShort}) en la pestaña Inscriptos.`);
         setIsLoading(false);
         return;
       }
 
-      // 3. Entry List
+      // 3. Cruzar datos
       const entryList = filteredInscriptos.map(n => {
         const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
         return { name: n, points: p ? p.total : 0 };
@@ -83,26 +84,20 @@ export default function Home() {
       if (remainder === 0) {
         groupsOf3 = totalPlayers / 3;
       } else if (remainder === 1) {
-        // Sobra 1: Sacamos 4 jugadores para hacer 2 grupos de 2. El resto (total-4) es divisible por 3.
         groupsOf2 = 2;
         groupsOf3 = (totalPlayers - 4) / 3;
       } else if (remainder === 2) {
-        // Sobran 2: Hacemos 1 grupo de 2. El resto (total-2) es divisible por 3.
         groupsOf2 = 1;
         groupsOf3 = (totalPlayers - 2) / 3;
       }
 
-      // Generar array de capacidades y MEZCLARLO para que los de 2 no queden al final
       let capacities = [];
       for(let i=0; i<groupsOf3; i++) capacities.push(3);
       for(let i=0; i<groupsOf2; i++) capacities.push(2);
       
-      // Shuffle de zonas
       capacities = capacities.sort(() => Math.random() - 0.5);
 
       const numGroups = capacities.length;
-
-      // Crear estructura de grupos vacía
       let groups = capacities.map((cap, i) => ({
         groupName: `Zona ${i + 1}`,
         capacity: cap,
@@ -110,16 +105,13 @@ export default function Home() {
         results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
       }));
 
-      // 1. Asignar Semillas (1 por grupo, orden ranking)
       for (let i = 0; i < numGroups; i++) {
         if (entryList[i]) groups[i].players.push(entryList[i].name);
       }
 
-      // 2. Sortear el resto (Bolillero)
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       
       let pIdx = 0;
-      // Llenar huecos respetando la capacidad de cada zona (que ahora es aleatoria)
       for (let g = 0; g < numGroups; g++) {
         while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) {
           groups[g].players.push(restOfPlayers[pIdx].name);
@@ -130,23 +122,22 @@ export default function Home() {
       setGroupData(groups);
       setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) {
-      alert("Error al realizar el sorteo.");
+      alert("Error al procesar el sorteo.");
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS (PESTAÑA POR CATEGORÍA) ---
+  // --- LECTURA DE GRUPOS FIJOS (Usa ID_TORNEOS) ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
     setIsSorteoConfirmado(false);
     try {
-      // BUSCA EN LA PESTAÑA ESPECÍFICA: "C AO", "B1 Adelaide", etc.
+      // Busca pestaña en el Excel NUEVO: "C AO", "B1 Adelaide"
       const sheetName = `${categoryShort} ${tournamentShort}`;
-      const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
       
-      // Validación: Que no sea HTML error y que tenga contenido de "Zona" o "Grupo"
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
@@ -159,7 +150,6 @@ export default function Home() {
             });
           }
         }
-        
         if (parsedGroups.length > 0) {
           setGroupData(parsedGroups);
           setIsSorteoConfirmado(true);
@@ -210,9 +200,10 @@ export default function Home() {
     </div>
   );
 
+  // --- RANKING (Usa ID_2025 o ID_RANKING_2026) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
-    const sheetId = year === "2025" ? ID_2025 : ID_2026;
+    const sheetId = year === "2025" ? ID_2025 : ID_RANKING_2026;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
     try {
       const response = await fetch(url);
@@ -229,10 +220,11 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
+  // --- BRACKETS (Usa ID_TORNEOS) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false });
-    // Busca en la pestaña específica "C AO", "A Adelaide", etc.
-    const url = `https://docs.google.com/spreadsheets/d/${ID_2026}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+    // Busca en Excel Nuevo: "C Adelaide"
+    const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     try {
       const response = await fetch(url);
       const csvText = await response.text();
