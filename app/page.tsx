@@ -11,7 +11,6 @@ const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; // Ranking e Ins
 const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; // Grupos y Cuadros Fijos (Excel Nuevo)
 const MI_TELEFONO = "5491150568353"; 
 
-// UBICACIÓN DE LA LISTA DE TORNEOS (Aprox Línea 14)
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
@@ -40,12 +39,12 @@ export default function Home() {
     );
   };
 
-  // --- MOTOR DE SORTEO ATP (Usa ID_DATOS_GENERALES para Ranking/Inscriptos) ---
+  // --- MOTOR DE SORTEO ATP ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     try {
-      // 1. Ranking (Excel Viejo)
+      // 1. Ranking
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl);
       const rankCsv = await rankRes.text();
@@ -54,7 +53,7 @@ export default function Home() {
         total: row[11] ? parseInt(row[11]) : 0
       })).filter(p => p.name !== "");
 
-      // 2. Inscriptos (Excel Viejo)
+      // 2. Inscriptos
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl);
       const inscCsv = await inscRes.text();
@@ -77,7 +76,7 @@ export default function Home() {
       const totalPlayers = entryList.length;
       if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
 
-      // --- MATEMÁTICA DE GRUPOS (2 y 3) ---
+      // --- MATEMÁTICA DE GRUPOS ---
       let groupsOf3 = 0;
       let groupsOf2 = 0;
       const remainder = totalPlayers % 3;
@@ -121,13 +120,15 @@ export default function Home() {
       }
 
       setGroupData(groups);
+      // Cuando se hace el sorteo fresco, sí vamos directo a la fase de grupos para ver el resultado
       setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) {
       alert("Error al procesar el sorteo.");
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS (Usa ID_TORNEOS - Excel Nuevo) ---
+  // --- LECTURA DE GRUPOS FIJOS ---
+  // MODIFICADO: Ya no redirige automáticamente si encuentra grupos.
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
@@ -138,7 +139,8 @@ export default function Home() {
       const res = await fetch(url);
       const csvText = await res.text();
       
-      // Validación estricta: debe contener "Zona" o "Grupo"
+      let foundGroups = false;
+
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
@@ -151,18 +153,41 @@ export default function Home() {
             });
           }
         }
+        
         if (parsedGroups.length > 0) {
           setGroupData(parsedGroups);
           setIsSorteoConfirmado(true);
-          setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
-        } else {
-          setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
+          foundGroups = true;
+          // MODIFICACIÓN AQUI: Si encuentra grupos, NO va directo. Se queda en el menú intermedio y avisa que hay grupos.
+          setNavState({ 
+            ...navState, 
+            level: "tournament-phases", 
+            currentCat: categoryShort, 
+            currentTour: tournamentShort,
+            hasGroups: true // Flag importante
+          });
         }
-      } else {
-        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
+      } 
+      
+      if (!foundGroups) {
+        // Si no encuentra grupos, vamos al menú intermedio sin el flag
+        setNavState({ 
+            ...navState, 
+            level: "tournament-phases", 
+            currentCat: categoryShort, 
+            currentTour: tournamentShort,
+            hasGroups: false 
+        });
       }
+
     } catch (e) {
-      setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort });
+        setNavState({ 
+            ...navState, 
+            level: "tournament-phases", 
+            currentCat: categoryShort, 
+            currentTour: tournamentShort,
+            hasGroups: false
+        });
     } finally { setIsLoading(false); }
   }
 
@@ -201,7 +226,7 @@ export default function Home() {
     </div>
   );
 
-  // --- RANKING (Usa ID_DATOS_GENERALES) ---
+  // --- RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
@@ -221,10 +246,9 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS (Usa ID_TORNEOS) ---
+  // --- BRACKETS ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false });
-    // Busca en Excel Nuevo: "C Adelaide"
     const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     try {
       const response = await fetch(url);
@@ -241,7 +265,9 @@ export default function Home() {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-selection", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
+    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection" };
+    // Al volver, si estábamos en el cuadro y volvemos a las fases, mantenemos el estado de hasGroups si es necesario, 
+    // pero para simplificar, el flujo normal resetearía a tournament-selection.
     setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
@@ -299,11 +325,38 @@ export default function Home() {
             </div>
           )}
 
+          {/* MODIFICACIÓN: Lógica condicional para mostrar botones según si existen grupos o no */}
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 text-center text-center">
               <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
-              <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
-              <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
+              
+              {navState.hasGroups ? (
+                // OPCIÓN A: GRUPOS EXISTEN -> MOSTRAR "FASE DE GRUPOS" Y "CUADRO FINAL"
+                <>
+                  <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}>
+                    <Users className="mr-2" /> Fase de Grupos
+                  </Button>
+                  <Button onClick={() => { 
+                      fetchBracketData(navState.currentCat, navState.currentTour); 
+                      setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); 
+                  }} className={buttonStyle}>
+                    <Grid3x3 className="mr-2" /> Cuadro Final
+                  </Button>
+                </>
+              ) : (
+                // OPCIÓN B: GRUPOS NO EXISTEN -> MOSTRAR "SORTEO ATP" Y "CUADRO"
+                <>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}>
+                    <RefreshCw className="mr-2" /> Realizar Sorteo ATP
+                  </Button>
+                  <Button onClick={() => { 
+                      fetchBracketData(navState.currentCat, navState.currentTour); 
+                      setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); 
+                  }} className={buttonStyle}>
+                    <Grid3x3 className="mr-2" /> Cuadro de Eliminación
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
