@@ -27,7 +27,6 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  // MODIFICACIÓN: Agregamos 'hasData' al estado inicial
   const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
@@ -239,10 +238,9 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS ---
+  // --- BRACKETS (CORREGIDO PARA EVITAR DATOS DE FORMATOS) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    // Reset state
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
     
     const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
@@ -251,11 +249,17 @@ export default function Home() {
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       
-      // MODIFICACIÓN: Verificar si hay datos reales en la primera celda
-      // Si rows[0][0] está vacío o es "-", asumimos que no hay cuadro definido
-      const hasRealData = rows.length > 0 && rows[0][0] && rows[0][0] !== "" && rows[0][0] !== "-";
+      // ANÁLISIS DE SEGURIDAD:
+      // 1. Verificamos que tenga filas.
+      // 2. Verificamos que no sean datos de la hoja "Formatos Grupos" (que empieza con "Cant", "Zonas", "Parejas").
+      // 3. Verificamos que la primera celda no esté vacía ni sea un guión.
+      
+      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
+      
+      const isFormatSheet = firstCell.includes("cant") || firstCell.includes("pareja") || firstCell.includes("zona") || firstCell.includes("clasifican");
+      const isValidCell = firstCell !== "" && firstCell !== "-";
 
-      if (hasRealData) {
+      if (rows.length > 0 && !isFormatSheet && isValidCell) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
           if (isLarge) {
             setBracketData({ 
@@ -285,7 +289,7 @@ export default function Home() {
             });
           }
       } else {
-          // Si no hay datos, dejamos hasData en false
+          // Si detectamos que es la hoja de formatos o está vacía, marcamos hasData false
           setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
       }
 
@@ -403,13 +407,11 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-          // MODIFICACIÓN: cambiamos 'overflow-hidden' por 'overflow-x-auto' para scroll en celular
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl overflow-x-auto text-center">
             <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0">
               <h2 className="text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
             
-            {/* MODIFICACIÓN: Verificamos hasData. Si es false, mostramos mensaje de error */}
             {bracketData.hasData ? (
               <div className="flex flex-row items-center justify-between min-w-[1300px] py-2 relative text-center">
                 {bracketData.isLarge && (
@@ -476,7 +478,6 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              // MODIFICACIÓN: Mensaje visual cuando no hay cuadro definido
               <div className="py-20 flex flex-col items-center justify-center text-slate-400">
                 <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
                 <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
