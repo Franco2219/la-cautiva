@@ -219,108 +219,90 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL (Lógica BYE Dinámica) ---
+  // --- SORTEO CUADRO FINAL (Lógica Dinámica Completa) ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
-    // 1. Determinar Tamaño del Cuadro (8 o 16)
-    let bracketSize = 8;
-    if (totalPlayers > 8) bracketSize = 16;
-    
-    // 2. Calcular Cantidad de BYES
+    // 1. Determinar Tamaño del Cuadro Dinámico
+    let bracketSize = 8; // Default Cuartos
+    if (totalPlayers > 16) bracketSize = 32; // 16avos
+    else if (totalPlayers > 8) bracketSize = 16; // Octavos
+    else if (totalPlayers > 4) bracketSize = 8; // Cuartos
+    else bracketSize = 4; // Semis
+
+    // 2. Calcular BYES
     const byeCount = bracketSize - totalPlayers;
     
-    // 3. Separar Primeros y Segundos
-    // Ordenar ganadores por índice de zona (0=Z1, 1=Z2...) para prioridad de BYE
+    // 3. Ordenar para Prioridad de BYE (1ros de zona)
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); // 2dos mezclados
+    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); // 2dos random
 
-    // 4. Asignar BYES a los 1ros por prioridad
-    // Creamos un Set de IDs (o nombres) que tienen BYE
     const playersWithBye = new Set();
+    // Asignar BYEs a los mejores ganadores de zona
     for(let i=0; i < byeCount; i++) {
-        if(winners[i]) {
-            playersWithBye.add(winners[i].name);
-        } else {
-            // Si hay más BYEs que 1ros (raro pero posible), se asignan a 2dos (no debería pasar con este formato de grupos)
-        }
+        if(winners[i]) playersWithBye.add(winners[i].name);
+        else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name); // Si sobran byes van a 2dos
     }
 
-    // 5. Inicializar Partidos (Array vacío del tamaño bracketSize / 2)
-    // Para 16 -> 8 partidos. Para 8 -> 4 partidos.
+    // 4. Mapas de Sembrados (Seed Maps) según tamaño
+    // Posiciones estratégicas para que los mejores no se crucen
+    const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
+    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
+    const seedMap8 = [0, 3, 1, 2];
+    const seedMap4 = [0, 1];
+
+    let currentMap = seedMap8;
+    if (bracketSize === 32) currentMap = seedMap32;
+    if (bracketSize === 16) currentMap = seedMap16;
+    if (bracketSize === 4) currentMap = seedMap4;
+
     const numMatches = bracketSize / 2;
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    // 6. Colocar Cabezas de Serie (Winners) en posiciones fijas
-    // Estructura visual deseada: 
-    // Match 0: Top Seed (Z1)
-    // Match N-1: 2nd Seed (Z2)
-    // Resto distribuidos
-    
-    // Función auxiliar para obtener el índice del partido según el "Seed Rank"
-    // Para cuadro de 16 (8 partidos): 
-    // Seed 1 -> Match 0
-    // Seed 2 -> Match 7
-    // Seed 3 -> Match 4
-    // Seed 4 -> Match 3
-    // Seed 5 -> Match 2
-    // Seed 6 -> Match 5
-    // Seed 7 -> Match 6
-    // Seed 8 -> Match 1
-    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
-    const seedMap8 = [0, 3, 1, 2];
-
-    const currentMap = bracketSize === 16 ? seedMap16 : seedMap8;
-
-    // Colocamos a los 1ros en sus llaves
+    // 5. Colocar 1ros (Winners) en sus slots fijos
     winners.forEach((winner, index) => {
         if (index < currentMap.length) {
             const matchIndex = currentMap[index];
             matches[matchIndex].p1 = winner;
         } else {
-            // Si hay más ganadores que espacios de cabezas de serie (raro), van al pool de sorteo
-            runners.push(winner); 
+            runners.push(winner); // Si sobran 1ros, pasan al pool de sorteo
         }
     });
 
-    // 7. Llenar los oponentes (p2)
-    // Si p1 tiene BYE -> p2 es "BYE"
-    // Si no -> p2 es un Runner-up sorteado
-    
+    // 6. Llenar Rivales (p2)
     matches.forEach(match => {
         if (match.p1) {
             if (playersWithBye.has(match.p1.name)) {
-                match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; // BYE Object
+                match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                // Sacar un 2do del pool
-                // Intentar buscar uno de zona distinta si es posible
+                // Buscar rival (preferiblemente de otra zona)
                 const p1Zone = match.p1.groupIndex;
                 let opponentIndex = runners.findIndex(r => r.groupIndex !== p1Zone);
                 
-                if (opponentIndex === -1) {
-                    // Si no queda otra, juega con uno de su zona (no debería pasar si hay suficientes zonas)
-                    opponentIndex = 0; 
-                }
+                // Si no hay de otra zona, agarra el primero que encuentre
+                if (opponentIndex === -1) opponentIndex = 0; 
                 
                 if (runners.length > 0) {
                     match.p2 = runners[opponentIndex];
-                    runners.splice(opponentIndex, 1); // Remover del pool
+                    runners.splice(opponentIndex, 1);
                 } else {
-                    match.p2 = { name: "TBD", rank: 0 }; // No debería pasar si la mate es correcta
+                    match.p2 = { name: "TBD", rank: 0 };
                 }
             }
         } else {
-            // Partidos sin cabeza de serie (solo pasa si hay pocos 1ros)
-            // Llenar con lo que quede en runners
+            // Partidos vacíos (sin cabeza de serie), se llenan con el resto
             if (runners.length >= 2) {
                 match.p1 = runners.pop();
                 match.p2 = runners.pop();
+            } else if (runners.length === 1) {
+                match.p1 = runners.pop();
+                match.p2 = { name: "BYE", rank: 0 };
             }
         }
     });
 
-    return { matches, bracketSize, totalPlayers };
+    return { matches, bracketSize };
   }
 
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
@@ -337,30 +319,32 @@ export default function Home() {
           
           let qualifiers = [];
           
-          // Escanear hasta 16 filas en busca de clasificados
-          for(let i = 0; i < 16; i++) { 
-              if (rows[i]) {
-                  const winnerName = rows[i][5]; // F
-                  const runnerName = rows[i][6]; // G
+          // ESCANER ROBUSTO: Mira las primeras 50 filas
+          // Columna F es índice 5, Columna G es índice 6
+          for(let i = 0; i < 50; i++) { 
+              if (rows[i] && rows[i].length > 5) {
+                  const winnerName = rows[i][5]; 
+                  const runnerName = rows[i].length > 6 ? rows[i][6] : null; 
                   
-                  if (winnerName && winnerName !== "-" && winnerName !== "") {
-                      qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
+                  // Validamos que no sean encabezados ("1ro", "2do") ni vacíos
+                  if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
+                      qualifiers.push({ name: winnerName, rank: 1, groupIndex: i }); // Usamos i como 'ID de zona' temporal
                   }
-                  if (runnerName && runnerName !== "-" && runnerName !== "") {
+                  if (runnerName && runnerName !== "-" && runnerName !== "" && !runnerName.toLowerCase().includes("2do")) {
                       qualifiers.push({ name: runnerName, rank: 2, groupIndex: i });
                   }
               }
           }
 
-          if (qualifiers.length > 3) { // Mínimo 4 para semifinales
+          // Ajustamos validación: Mínimo 3 jugadores para armar una semi con BYE
+          if (qualifiers.length >= 3) { 
              const result = generatePlayoffBracket(qualifiers);
              if (result) {
                  setGeneratedBracket(result.matches);
-                 // Guardamos info extra en el estado si hace falta (ej: tamaño del cuadro)
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
           } else {
-             alert("No hay suficientes clasificados (Mínimo 4) en la pestaña de Grupos.");
+             alert(`Solo se encontraron ${qualifiers.length} clasificados en las columnas F y G de la pestaña ${sheetName}. Verifica los datos.`);
           }
 
       } catch (e) {
@@ -374,15 +358,17 @@ export default function Home() {
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
     
-    // Determinar nombre de la ronda inicial
-    const rondaNombre = generatedBracket.length === 8 ? "OCTAVOS DE FINAL" : "CUARTOS DE FINAL";
+    let rondaNombre = "CUADRO FINAL";
+    if (navState.bracketSize === 32) rondaNombre = "16AVOS DE FINAL";
+    else if (navState.bracketSize === 16) rondaNombre = "OCTAVOS DE FINAL";
+    else if (navState.bracketSize === 8) rondaNombre = "CUARTOS DE FINAL";
+    else if (navState.bracketSize === 4) rondaNombre = "SEMIFINALES";
     
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n*${rondaNombre}:*\n`;
     
     generatedBracket.forEach((match, i) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
         const p2Name = match.p2 ? (match.p2.name === "BYE" ? "_BYE (Pasa)_" : match.p2.name) : "TBD";
-        
         mensaje += `Partido ${i+1}: ${p1Name} vs ${p2Name}\n`;
     });
     mensaje += `\n_Validar orden para carga en Excel_`;
@@ -432,7 +418,7 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Check for Qualifiers in Group Sheet
+          // Check Grupos
           const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
           const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
           
@@ -442,8 +428,9 @@ export default function Home() {
              const rowsGroups = parseCSV(txtGroups);
              
              let foundQualifiers = false;
-             for(let i=0; i<Math.min(rowsGroups.length, 16); i++) {
-                 if (rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
+             // Escanear 50 filas para ser seguros
+             for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
+                 if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
                      foundQualifiers = true;
                      break;
                  }
@@ -544,7 +531,9 @@ export default function Home() {
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center max-w-4xl mx-auto">
              <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
-                   {navState.bracketSize === 16 ? "Sorteo Octavos de Final" : "Sorteo Cuartos de Final"}
+                   {navState.bracketSize === 32 ? "Sorteo 16avos" : 
+                    navState.bracketSize === 16 ? "Sorteo Octavos" : 
+                    navState.bracketSize === 8 ? "Sorteo Cuartos" : "Sorteo Semis"}
                </h2>
              </div>
              
