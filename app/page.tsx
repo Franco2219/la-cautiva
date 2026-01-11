@@ -27,12 +27,10 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  
-  // Nuevo estado para el sorteo del cuadro final
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
 
   const parseCSV = (text: string) => {
@@ -186,14 +184,47 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  // --- SORTEO CUADRO FINAL (Lógica "Hasta la Final") ---
-  
+  const confirmarYEnviar = () => {
+    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
+    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n\n`; });
+    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    setIsSorteoConfirmado(true);
+  };
+
+  // Renderizado Seguro de Tabla (Corrige el Application Error)
+  const GroupTable = ({ group }: { group: any }) => (
+    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
+      <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
+      <table className="w-full text-[11px] md:text-xs">
+        <thead>
+          <tr className="bg-slate-50 border-b">
+            <th className="p-3 border-r w-32 text-left font-bold text-[#b35a38]">JUGADOR</th>
+            {group.players && group.players.map((p: string, i: number) => (
+              <th key={i} className="p-3 border-r text-center font-bold text-slate-400">{p ? p.split(' ')[0] : ""}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {group.players && group.players.map((p1: string, i: number) => (
+            <tr key={i} className="border-b">
+              <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left">{p1}</td>
+              {group.players.map((p2: string, j: number) => (
+                <td key={j} className={`p-3 border-r text-center font-black text-lg ${i === j ? 'bg-slate-100 text-slate-300' : 'text-slate-700'}`}>
+                  {i === j ? "/" : (group.results?.[i]?.[j] || "-")}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // --- SORTEO CUADRO FINAL (Lógica Top/Bottom) ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
-    // 1. Separar Primeros y Segundos
     const winners = qualifiers.filter(q => q.rank === 1); 
     const runners = qualifiers.filter(q => q.rank === 2); 
     
-    // Identificar específicamente por Zona (0=Z1, 1=Z2, 2=Z3, 3=Z4)
     const wZ1 = winners.find(p => p.groupIndex === 0);
     const wZ2 = winners.find(p => p.groupIndex === 1);
     const wZ3 = winners.find(p => p.groupIndex === 2);
@@ -204,69 +235,49 @@ export default function Home() {
     const rZ3 = runners.find(p => p.groupIndex === 2);
     const rZ4 = runners.find(p => p.groupIndex === 3);
 
+    // Validación básica: necesitamos al menos las 4 zonas para armar cuartos bien
     if (!wZ1 || !wZ2 || !wZ3 || !wZ4 || !rZ1 || !rZ2 || !rZ3 || !rZ4) {
-        alert("Faltan datos de alguna Zona (1 a 4) para armar el cuadro completo.");
+        alert("Faltan datos en las columnas F/G. Asegúrate de tener los clasificados de las 4 zonas.");
         return null;
     }
 
-    // Inicializar los 4 partidos
-    // [0, 1] = Mitad de Arriba (Top Half)
-    // [2, 3] = Mitad de Abajo (Bottom Half)
     let matches: any[] = [{p1: null, p2: null}, {p1: null, p2: null}, {p1: null, p2: null}, {p1: null, p2: null}];
 
-    // 2. Colocar 1ros (Winners)
-    
-    // REGLA: 1º Zona 1 arriba de todo (Partido 0)
+    // 1. Cabezas de Serie (Primeros)
+    // 1º Zona 1 -> Arriba (Top)
     matches[0].p1 = wZ1;
     
-    // REGLA: 1º Zona 2 abajo de todo (Partido 3)
+    // 1º Zona 2 -> Abajo (Bottom)
     matches[3].p1 = wZ2;
 
-    // Sorteamos 1º Zona 3 y 4 para el medio (Partido 1 y 2)
+    // Sorteo de 1º Zona 3 y 4
     const midWinners = [wZ3, wZ4].sort(() => Math.random() - 0.5);
-    matches[1].p1 = midWinners[0]; // Va al Top Half
-    matches[2].p1 = midWinners[1]; // Va al Bottom Half
+    matches[1].p1 = midWinners[0]; // Top Half
+    matches[2].p1 = midWinners[1]; // Bottom Half
 
-    // 3. Colocar 2dos (Runners) con Regla de "No cruzar hasta la final"
-    // Si el 1ro está en Top Half, el 2do DEBE ir a Bottom Half.
-    // Si el 1ro está en Bottom Half, el 2do DEBE ir a Top Half.
-
+    // 2. Segundos (Runners) - Regla: Mitad Opuesta
     const topRunnersPool = [];
     const bottomRunnersPool = [];
 
-    // Zona 1: wZ1 está en Top (matches[0]) -> rZ1 va a Bottom
+    // rZ1 va a Bottom (porque wZ1 está en Top)
     bottomRunnersPool.push(rZ1);
-
-    // Zona 2: wZ2 está en Bottom (matches[3]) -> rZ2 va a Top
+    // rZ2 va a Top (porque wZ2 está en Bottom)
     topRunnersPool.push(rZ2);
 
-    // Zona 3:
-    // Si wZ3 está en matches[1] (Top) -> rZ3 va a Bottom
-    // Si wZ3 está en matches[2] (Bottom) -> rZ3 va a Top
-    if (matches[1].p1?.groupIndex === 2) { // wZ3 está en Top
-        bottomRunnersPool.push(rZ3);
-    } else { // wZ3 está en Bottom
-        topRunnersPool.push(rZ3);
-    }
+    // rZ3: Si wZ3 está en Top (matches[1]), rZ3 va a Bottom. Sino a Top.
+    if (matches[1].p1?.groupIndex === 2) bottomRunnersPool.push(rZ3);
+    else topRunnersPool.push(rZ3);
 
-    // Zona 4:
-    // Si wZ4 está en matches[1] (Top) -> rZ4 va a Bottom
-    // Si wZ4 está en matches[2] (Bottom) -> rZ4 va a Top
-    if (matches[1].p1?.groupIndex === 3) { // wZ4 está en Top
-        bottomRunnersPool.push(rZ4);
-    } else { // wZ4 está en Bottom
-        topRunnersPool.push(rZ4);
-    }
+    // rZ4: Si wZ4 está en Top (matches[1]), rZ4 va a Bottom. Sino a Top.
+    if (matches[1].p1?.groupIndex === 3) bottomRunnersPool.push(rZ4);
+    else topRunnersPool.push(rZ4);
 
-    // 4. Asignar aleatoriamente dentro de sus mitades
+    // 3. Asignar aleatoriamente dentro de las mitades correspondientes
     const shuffledTopRunners = topRunnersPool.sort(() => Math.random() - 0.5);
     const shuffledBottomRunners = bottomRunnersPool.sort(() => Math.random() - 0.5);
 
-    // Llenar Top Half
     matches[0].p2 = shuffledTopRunners[0];
     matches[1].p2 = shuffledTopRunners[1];
-
-    // Llenar Bottom Half
     matches[2].p2 = shuffledBottomRunners[0];
     matches[3].p2 = shuffledBottomRunners[1];
 
@@ -286,11 +297,11 @@ export default function Home() {
           
           let qualifiers = [];
           
-          // Asumimos 4 zonas. Leemos las primeras 4 filas de F y G.
-          for(let i = 0; i < 4; i++) { 
+          // Leemos las primeras 8 filas (por si acaso) de las columnas F (idx 5) y G (idx 6)
+          for(let i = 0; i < 8; i++) { 
               if (rows[i]) {
-                  const winnerName = rows[i][5]; // Columna F
-                  const runnerName = rows[i][6]; // Columna G
+                  const winnerName = rows[i][5]; 
+                  const runnerName = rows[i][6]; 
                   
                   if (winnerName && winnerName !== "-" && winnerName !== "") {
                       qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
@@ -308,7 +319,7 @@ export default function Home() {
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort });
              }
           } else {
-             alert("No se encontraron suficientes clasificados en las columnas F (1ros) y G (2dos). Asegúrate de tener las 4 zonas completas.");
+             alert("No se encontraron suficientes clasificados.");
           }
 
       } catch (e) {
@@ -321,18 +332,14 @@ export default function Home() {
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n*CUARTOS DE FINAL:*\n`;
     generatedBracket.forEach((match, i) => {
-        // Formato visual para que se entienda el orden
         const ubicacion = i < 2 ? "(Parte Alta)" : "(Parte Baja)";
         mensaje += `Partido ${i+1} ${ubicacion}: ${match.p1.name} (1º) vs ${match.p2.name} (2º)\n`;
     });
     mensaje += `\n_Validar orden para carga en Excel_`;
-    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
-
 
   // --- RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -357,7 +364,7 @@ export default function Home() {
   // --- BRACKETS ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
     
     const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
@@ -372,18 +379,21 @@ export default function Home() {
       if (hasContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
           if (isLarge) {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true });
+            setBracketData({ r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false });
           } else {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true });
+            setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Si no hay datos visuales de cuadro, intentamos ver si hay clasificados para sortear
-          // Check Col F (index 5) row 0
-          if (rows.length > 0 && rows[0][5] && rows[0][5] !== "") {
-              setBracketData({ hasData: false, canGenerate: true }); 
-          } else {
-              setBracketData({ hasData: false, canGenerate: false });
+          // Escanear las primeras 10 filas en busca de datos en Columna F (Indice 5)
+          let foundQualifiers = false;
+          for(let i=0; i<Math.min(rows.length, 10); i++) {
+             if (rows[i][5] && rows[i][5] !== "" && rows[i][5] !== "-") {
+                 foundQualifiers = true;
+                 break;
+             }
           }
+          
+          setBracketData({ hasData: false, canGenerate: foundQualifiers });
       }
 
     } catch (error) { 
@@ -611,7 +621,6 @@ export default function Home() {
                 <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
                 <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
                 
-                {/* MODIFICACIÓN: Mostrar opción de generar si hay datos en F/G pero no cuadro */}
                 {bracketData.canGenerate ? (
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
