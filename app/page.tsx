@@ -238,32 +238,26 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS (LÓGICA MEJORADA DE FILTRADO) ---
+  // --- BRACKETS (MODIFICADO: LECTURA DIRECTA DE HOJA) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
     
+    // Buscamos la hoja exacta, ejemplo: "A AO"
     const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+    
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       
-      // ANÁLISIS ESTRICTO PARA DESCARTAR "FORMATOS GRUPOS"
-      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
+      // CRITERIO DE VERIFICACIÓN:
+      // Si el usuario crea la hoja pero la deja vacía, rows.length será 0 o 1 con celdas vacías.
+      // Verificamos si hay contenido real en la primera celda (nombre de un jugador).
       
-      // Lista expandida de palabras clave que indican que NO es un cuadro de torneo
-      const invalidKeywords = [
-          "formato", "cant", "zona", "pareja", "inscripto", "clasifica", 
-          "ranking", "puntos", "total", "grupo"
-      ];
-      
-      const isInvalidSheet = invalidKeywords.some(keyword => firstCell.includes(keyword));
-      
-      // Validar si realmente parece un cuadro (la celda 0,0 no debe estar vacía ni ser un guión)
-      const isValidContent = firstCell !== "" && firstCell !== "-";
+      const hasContent = rows.length > 0 && rows[0][0] && rows[0][0].trim() !== "" && rows[0][0] !== "-";
 
-      if (rows.length > 0 && !isInvalidSheet && isValidContent) {
+      if (hasContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
           if (isLarge) {
             setBracketData({ 
@@ -293,11 +287,16 @@ export default function Home() {
             });
           }
       } else {
-          // Si cae aquí, es porque detectó "Formatos" o data inválida
+          // Si la hoja existe pero está vacía, mostramos el mensaje de "Cuadro no definido"
           setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
       }
 
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { 
+        // Si la hoja no existe (error 400), también mostramos mensaje de no definido
+        setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
+    } finally { 
+        setIsLoading(false); 
+    }
   }
 
   const goBack = () => {
