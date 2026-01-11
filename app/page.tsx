@@ -179,7 +179,7 @@ export default function Home() {
             level: "tournament-phases", 
             currentCat: categoryShort, 
             currentTour: tournamentShort,
-            hasGroups: false
+            hasGroups: false 
         });
     } finally { setIsLoading(false); }
   }
@@ -446,7 +446,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
+  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -467,7 +467,6 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
-        {/* ... (Header y Navigation sin cambios) ... */}
         
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
@@ -571,6 +570,38 @@ export default function Home() {
           </div>
         )}
 
+        {navState.level === "damas-empty" && (
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
+            <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
+            <div className="p-10 border-4 border-dashed border-slate-100 rounded-3xl">
+              <Users className="w-20 h-20 text-slate-200 mx-auto mb-4" />
+              <p className="text-slate-400 font-bold text-xl uppercase tracking-widest text-center">No hay torneos activos por el momento</p>
+            </div>
+          </div>
+        )}
+
+        {navState.level === "group-phase" && (
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
+            <div className="flex justify-between items-center mb-8">
+              <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
+              {!isSorteoConfirmado && (
+                <div className="flex space-x-2 text-center text-center">
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                  <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
+                </div>
+              )}
+            </div>
+            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
+              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
+              <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
+            </div>
+          </div>
+        )}
+
         {navState.level === "direct-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl overflow-x-auto text-center">
             <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0">
@@ -591,17 +622,17 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           {/* Vertical Connector 16avos */}
-                          <div className="absolute right-[-60px] top-8 h-12 w-[2px] bg-slate-300" />
+                          <div className="absolute right-[-60px] top-8 bottom-0 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2rem)' }} />
                           {/* Middle Line to Next Round */}
-                          <div className="absolute top-[56px] -right-[100px] w-[40px] h-[2px] bg-slate-300" />
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
                       )
                     })}
@@ -621,17 +652,17 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Vertical Connector Octavos */}
-                        <div className="absolute right-[-80px] top-10 h-[88px] w-[2px] bg-slate-300" />
+                        <div className="absolute right-[-80px] top-10 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2.5rem)' }} />
                         {/* Middle Line */}
-                        <div className="absolute top-[84px] -right-[120px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
@@ -650,17 +681,17 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Vertical Connector Cuartos */}
-                        <div className="absolute right-[-100px] top-12 h-[176px] w-[2px] bg-slate-300" />
+                        <div className="absolute right-[-100px] top-12 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 3rem)' }} />
                         {/* Middle Line */}
-                        <div className="absolute top-[136px] -right-[140px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
@@ -696,39 +727,6 @@ export default function Home() {
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* ... (Resto de componentes: damas-empty, group-phase, ranking-view sin cambios) ... */}
-        {navState.level === "damas-empty" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
-            <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
-            <div className="p-10 border-4 border-dashed border-slate-100 rounded-3xl">
-              <Users className="w-20 h-20 text-slate-200 mx-auto mb-4" />
-              <p className="text-slate-400 font-bold text-xl uppercase tracking-widest text-center">No hay torneos activos por el momento</p>
-            </div>
-          </div>
-        )}
-
-        {navState.level === "group-phase" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
-            <div className="flex justify-between items-center mb-8">
-              <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
-              {!isSorteoConfirmado && (
-                <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
-                  <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
-                  <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
-                </div>
-              )}
-            </div>
-            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
-              <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
-            </div>
           </div>
         )}
 
