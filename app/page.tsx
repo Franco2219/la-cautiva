@@ -238,7 +238,7 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS (CORREGIDO PARA EVITAR DATOS DE FORMATOS) ---
+  // --- BRACKETS (LÓGICA MEJORADA DE FILTRADO) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
@@ -249,17 +249,21 @@ export default function Home() {
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       
-      // ANÁLISIS DE SEGURIDAD:
-      // 1. Verificamos que tenga filas.
-      // 2. Verificamos que no sean datos de la hoja "Formatos Grupos" (que empieza con "Cant", "Zonas", "Parejas").
-      // 3. Verificamos que la primera celda no esté vacía ni sea un guión.
-      
+      // ANÁLISIS ESTRICTO PARA DESCARTAR "FORMATOS GRUPOS"
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       
-      const isFormatSheet = firstCell.includes("cant") || firstCell.includes("pareja") || firstCell.includes("zona") || firstCell.includes("clasifican");
-      const isValidCell = firstCell !== "" && firstCell !== "-";
+      // Lista expandida de palabras clave que indican que NO es un cuadro de torneo
+      const invalidKeywords = [
+          "formato", "cant", "zona", "pareja", "inscripto", "clasifica", 
+          "ranking", "puntos", "total", "grupo"
+      ];
+      
+      const isInvalidSheet = invalidKeywords.some(keyword => firstCell.includes(keyword));
+      
+      // Validar si realmente parece un cuadro (la celda 0,0 no debe estar vacía ni ser un guión)
+      const isValidContent = firstCell !== "" && firstCell !== "-";
 
-      if (rows.length > 0 && !isFormatSheet && isValidCell) {
+      if (rows.length > 0 && !isInvalidSheet && isValidContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
           if (isLarge) {
             setBracketData({ 
@@ -289,7 +293,7 @@ export default function Home() {
             });
           }
       } else {
-          // Si detectamos que es la hoja de formatos o está vacía, marcamos hasData false
+          // Si cae aquí, es porque detectó "Formatos" o data inválida
           setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false });
       }
 
