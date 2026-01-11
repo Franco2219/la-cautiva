@@ -219,33 +219,28 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL (Lógica Dinámica) ---
+  // --- SORTEO CUADRO FINAL ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
-    // 1. Determinar Tamaño del Cuadro
     let bracketSize = 8;
-    if (totalPlayers > 16) bracketSize = 32; // 16avos
-    else if (totalPlayers > 8) bracketSize = 16; // Octavos
-    else if (totalPlayers > 4) bracketSize = 8; // Cuartos
-    else bracketSize = 4; // Semis
+    if (totalPlayers > 16) bracketSize = 32; 
+    else if (totalPlayers > 8) bracketSize = 16; 
+    else if (totalPlayers > 4) bracketSize = 8; 
+    else bracketSize = 4; 
 
-    // 2. Calcular BYES
     const byeCount = bracketSize - totalPlayers;
     
-    // 3. Ordenar para Prioridad de BYE
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
     const playersWithBye = new Set();
-    // Asignar BYEs
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    // 4. Mapas de Sembrados
     const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
     const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
     const seedMap8 = [0, 3, 1, 2];
@@ -259,7 +254,6 @@ export default function Home() {
     const numMatches = bracketSize / 2;
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    // 5. Colocar 1ros
     winners.forEach((winner, index) => {
         if (index < currentMap.length) {
             const matchIndex = currentMap[index];
@@ -269,16 +263,13 @@ export default function Home() {
         }
     });
 
-    // 6. Llenar Rivales
     matches.forEach(match => {
         if (match.p1) {
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                // Buscar rival de otra zona
                 const p1Zone = match.p1.groupIndex;
                 let opponentIndex = runners.findIndex(r => r.groupIndex !== p1Zone);
-                
                 if (opponentIndex === -1) opponentIndex = 0; 
                 
                 if (runners.length > 0) {
@@ -289,7 +280,6 @@ export default function Home() {
                 }
             }
         } else {
-            // Partidos vacíos
             if (runners.length >= 2) {
                 match.p1 = runners.pop();
                 match.p2 = runners.pop();
@@ -317,7 +307,6 @@ export default function Home() {
           
           let qualifiers = [];
           
-          // Escanear hasta 50 filas
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
                   const winnerName = rows[i][5]; 
@@ -413,7 +402,6 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Check Grupos using the passed params (tournamentShort and category)
           const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
           const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
           
@@ -450,9 +438,36 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL PARA PARTIDOS DEL SORTEO
+  const GeneratedMatch = ({ match }: { match: any }) => (
+      <div className="relative flex flex-col space-y-4 mb-4">
+          {/* Jugador 1 */}
+          <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white pr-2">
+              <span className={`font-black text-[10px] uppercase truncate max-w-[150px] ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
+                  {match.p1 ? match.p1.name : "TBD"}
+              </span>
+              {match.p1 && <span className="text-[9px] text-[#b35a38] font-bold ml-1">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
+              <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
+          </div>
+          
+          {/* Jugador 2 */}
+          <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white pr-2">
+              <span className={`font-black text-[10px] uppercase truncate max-w-[150px] ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
+                  {match.p2 ? match.p2.name : "TBD"}
+              </span>
+              {match.p2 && match.p2.name !== 'BYE' && <span className="text-[9px] text-[#b35a38] font-bold ml-1">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
+              <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
+          </div>
+          
+          {/* Conector Vertical */}
+          <div className="absolute top-[50%] translate-y-[-50%] -right-[40px] w-[2px] h-[34px] bg-slate-300" />
+          <div className="absolute top-[50%] translate-y-[-50%] -right-[60px] w-[20px] h-[2px] bg-slate-300" />
+      </div>
+  );
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
-      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
+      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
@@ -520,10 +535,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- PANTALLA DE SORTEO GENERADO --- */}
+        {/* --- PANTALLA DE SORTEO GENERADO (VISUAL TIPO LLAVE) --- */}
         {navState.level === "generate-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center max-w-4xl mx-auto">
-             <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center overflow-x-auto">
+             <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0">
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
                    {navState.bracketSize === 32 ? "Sorteo 16avos" : 
                     navState.bracketSize === 16 ? "Sorteo Octavos" : 
@@ -531,33 +546,32 @@ export default function Home() {
                </h2>
              </div>
              
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                {generatedBracket.map((match, i) => (
-                    <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
-                        <div className="flex flex-col text-left w-1/3">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Cabeza</span>
-                            <span className="font-black text-[#b35a38] truncate">{match.p1 ? match.p1.name : "TBD"}</span>
-                            {match.p1 && <span className="text-[10px] text-slate-400">1º Zona {match.p1.groupIndex + 1}</span>}
-                        </div>
-                        <span className="font-black text-slate-300 text-xl">VS</span>
-                        <div className="flex flex-col text-right w-1/3">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Rival</span>
-                            <span className={`font-bold ${match.p2?.name === 'BYE' ? 'text-green-600' : 'text-slate-700'} truncate`}>
-                                {match.p2 ? match.p2.name : "TBD"}
-                            </span>
-                            {match.p2 && match.p2.name !== 'BYE' && <span className="text-[10px] text-slate-400">2º Zona {match.p2.groupIndex + 1}</span>}
-                        </div>
-                    </div>
-                ))}
+             {/* Contenedor Visual de Llaves */}
+             <div className="flex flex-row justify-center gap-16 min-w-[600px] mb-8">
+                {/* Columna Izquierda (Mitad de Arriba) */}
+                <div className="flex flex-col justify-around w-64">
+                    {generatedBracket.slice(0, generatedBracket.length / 2).map((match, i) => (
+                        <GeneratedMatch key={i} match={match} />
+                    ))}
+                </div>
+
+                {/* Columna Derecha (Mitad de Abajo) */}
+                <div className="flex flex-col justify-around w-64">
+                    {generatedBracket.slice(generatedBracket.length / 2, generatedBracket.length).map((match, i) => (
+                        <GeneratedMatch key={i} match={match} />
+                    ))}
+                </div>
              </div>
 
-             <div className="flex flex-col md:flex-row gap-4 justify-center">
-                <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer Sorteo</Button>
-                <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> Validar por WhatsApp</Button>
+             <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky left-0">
+                <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
+                <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
              </div>
           </div>
         )}
 
+        {/* ... (Resto de componentes: damas-empty, group-phase, direct-bracket, ranking-view sin cambios) ... */}
         {navState.level === "damas-empty" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
             <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
