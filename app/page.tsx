@@ -438,30 +438,27 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL PARA PARTIDOS DEL SORTEO
+  // COMPONENTE VISUAL MEJORADO
   const GeneratedMatch = ({ match }: { match: any }) => (
-      <div className="relative flex flex-col space-y-4 mb-4">
+      <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           {/* Jugador 1 */}
-          <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white pr-2">
-              <span className={`font-black text-[10px] uppercase truncate max-w-[150px] ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
+          <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
+              {match.p1 && <span className="text-[#b35a38] font-black text-sm w-12 text-right">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
+              <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
                   {match.p1 ? match.p1.name : "TBD"}
               </span>
-              {match.p1 && <span className="text-[9px] text-[#b35a38] font-bold ml-1">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
-              <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
           </div>
           
           {/* Jugador 2 */}
-          <div className="h-8 border-b-2 border-slate-300 flex justify-between items-end relative bg-white pr-2">
-              <span className={`font-black text-[10px] uppercase truncate max-w-[150px] ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
+          <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
+              {match.p2 && match.p2.name !== 'BYE' && <span className="text-[#b35a38] font-black text-sm w-12 text-right">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
+              <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
                   {match.p2 ? match.p2.name : "TBD"}
               </span>
-              {match.p2 && match.p2.name !== 'BYE' && <span className="text-[9px] text-[#b35a38] font-bold ml-1">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
-              <div className="absolute -right-[40px] bottom-[-2px] w-[40px] h-[2px] bg-slate-300" />
           </div>
           
-          {/* Conector Vertical */}
-          <div className="absolute top-[50%] translate-y-[-50%] -right-[40px] w-[2px] h-[34px] bg-slate-300" />
-          <div className="absolute top-[50%] translate-y-[-50%] -right-[60px] w-[20px] h-[2px] bg-slate-300" />
+          {/* Línea conectora tipo llave (solo visual) */}
+          <div className="absolute -right-6 top-[25%] bottom-[25%] w-6 border-r-2 border-y-2 border-slate-300 rounded-r-xl opacity-60"></div>
       </div>
   );
 
@@ -535,9 +532,9 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- PANTALLA DE SORTEO GENERADO (VISUAL TIPO LLAVE) --- */}
+        {/* --- PANTALLA DE SORTEO GENERADO (VISUAL LISTA UNICA) --- */}
         {navState.level === "generate-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center overflow-x-auto">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center">
              <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0">
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
                    {navState.bracketSize === 32 ? "Sorteo 16avos" : 
@@ -546,24 +543,14 @@ export default function Home() {
                </h2>
              </div>
              
-             {/* Contenedor Visual de Llaves */}
-             <div className="flex flex-row justify-center gap-16 min-w-[600px] mb-8">
-                {/* Columna Izquierda (Mitad de Arriba) */}
-                <div className="flex flex-col justify-around w-64">
-                    {generatedBracket.slice(0, generatedBracket.length / 2).map((match, i) => (
-                        <GeneratedMatch key={i} match={match} />
-                    ))}
-                </div>
-
-                {/* Columna Derecha (Mitad de Abajo) */}
-                <div className="flex flex-col justify-around w-64">
-                    {generatedBracket.slice(generatedBracket.length / 2, generatedBracket.length).map((match, i) => (
-                        <GeneratedMatch key={i} match={match} />
-                    ))}
-                </div>
+             {/* Contenedor Visual de Lista Vertical */}
+             <div className="flex flex-col items-center gap-2 mb-8">
+                {generatedBracket.map((match, i) => (
+                    <GeneratedMatch key={i} match={match} />
+                ))}
              </div>
 
-             <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky left-0">
+             <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
                 <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
                 <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                 <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
@@ -571,7 +558,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ... (Resto de componentes: damas-empty, group-phase, direct-bracket, ranking-view sin cambios) ... */}
         {navState.level === "damas-empty" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
             <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
