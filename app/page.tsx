@@ -219,13 +219,13 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL (Lógica Dinámica Completa) ---
+  // --- SORTEO CUADRO FINAL (Lógica Dinámica) ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
-    // 1. Determinar Tamaño del Cuadro Dinámico
-    let bracketSize = 8; // Default Cuartos
+    // 1. Determinar Tamaño del Cuadro
+    let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; // 16avos
     else if (totalPlayers > 8) bracketSize = 16; // Octavos
     else if (totalPlayers > 4) bracketSize = 8; // Cuartos
@@ -234,19 +234,18 @@ export default function Home() {
     // 2. Calcular BYES
     const byeCount = bracketSize - totalPlayers;
     
-    // 3. Ordenar para Prioridad de BYE (1ros de zona)
+    // 3. Ordenar para Prioridad de BYE
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); // 2dos random
+    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
     const playersWithBye = new Set();
-    // Asignar BYEs a los mejores ganadores de zona
+    // Asignar BYEs
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
-        else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name); // Si sobran byes van a 2dos
+        else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    // 4. Mapas de Sembrados (Seed Maps) según tamaño
-    // Posiciones estratégicas para que los mejores no se crucen
+    // 4. Mapas de Sembrados
     const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
     const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
     const seedMap8 = [0, 3, 1, 2];
@@ -260,27 +259,26 @@ export default function Home() {
     const numMatches = bracketSize / 2;
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    // 5. Colocar 1ros (Winners) en sus slots fijos
+    // 5. Colocar 1ros
     winners.forEach((winner, index) => {
         if (index < currentMap.length) {
             const matchIndex = currentMap[index];
             matches[matchIndex].p1 = winner;
         } else {
-            runners.push(winner); // Si sobran 1ros, pasan al pool de sorteo
+            runners.push(winner); 
         }
     });
 
-    // 6. Llenar Rivales (p2)
+    // 6. Llenar Rivales
     matches.forEach(match => {
         if (match.p1) {
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                // Buscar rival (preferiblemente de otra zona)
+                // Buscar rival de otra zona
                 const p1Zone = match.p1.groupIndex;
                 let opponentIndex = runners.findIndex(r => r.groupIndex !== p1Zone);
                 
-                // Si no hay de otra zona, agarra el primero que encuentre
                 if (opponentIndex === -1) opponentIndex = 0; 
                 
                 if (runners.length > 0) {
@@ -291,7 +289,7 @@ export default function Home() {
                 }
             }
         } else {
-            // Partidos vacíos (sin cabeza de serie), se llenan con el resto
+            // Partidos vacíos
             if (runners.length >= 2) {
                 match.p1 = runners.pop();
                 match.p2 = runners.pop();
@@ -319,16 +317,14 @@ export default function Home() {
           
           let qualifiers = [];
           
-          // ESCANER ROBUSTO: Mira las primeras 50 filas
-          // Columna F es índice 5, Columna G es índice 6
+          // Escanear hasta 50 filas
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
                   const winnerName = rows[i][5]; 
                   const runnerName = rows[i].length > 6 ? rows[i][6] : null; 
                   
-                  // Validamos que no sean encabezados ("1ro", "2do") ni vacíos
                   if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
-                      qualifiers.push({ name: winnerName, rank: 1, groupIndex: i }); // Usamos i como 'ID de zona' temporal
+                      qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
                   }
                   if (runnerName && runnerName !== "-" && runnerName !== "" && !runnerName.toLowerCase().includes("2do")) {
                       qualifiers.push({ name: runnerName, rank: 2, groupIndex: i });
@@ -336,7 +332,6 @@ export default function Home() {
               }
           }
 
-          // Ajustamos validación: Mínimo 3 jugadores para armar una semi con BYE
           if (qualifiers.length >= 3) { 
              const result = generatePlayoffBracket(qualifiers);
              if (result) {
@@ -418,7 +413,7 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Check Grupos
+          // Check Grupos using the passed params (tournamentShort and category)
           const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
           const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
           
@@ -428,7 +423,6 @@ export default function Home() {
              const rowsGroups = parseCSV(txtGroups);
              
              let foundQualifiers = false;
-             // Escanear 50 filas para ser seguros
              for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
                  if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
                      foundQualifiers = true;
@@ -514,12 +508,12 @@ export default function Home() {
               {navState.hasGroups ? (
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
-                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
+                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour, tournamentShort: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
                 </>
               ) : (
                 <>
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
-                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
+                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour, tournamentShort: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
                 </>
               )}
             </div>
