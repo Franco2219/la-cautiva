@@ -446,7 +446,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS)
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -622,15 +622,13 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
-                            <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
-                            <div className="absolute -right-[60px] bottom-[-2px] w-[60px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
-                          {/* Vertical Connector 16avos */}
-                          <div className="absolute right-[-60px] top-8 bottom-0 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2rem)' }} />
                           {/* Middle Line to Next Round */}
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
@@ -652,15 +650,13 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
-                            <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
-                            <div className="absolute -right-[80px] bottom-[-2px] w-[80px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Vertical Connector Octavos */}
-                        <div className="absolute right-[-80px] top-10 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2.5rem)' }} />
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
@@ -681,15 +677,13 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
-                            <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
-                            <div className="absolute -right-[100px] bottom-[-2px] w-[100px] h-[2px] bg-slate-300" />
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Vertical Connector Cuartos */}
-                        <div className="absolute right-[-100px] top-12 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 3rem)' }} />
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
