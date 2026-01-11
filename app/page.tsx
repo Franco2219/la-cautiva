@@ -219,11 +219,12 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL ---
+  // --- SORTEO CUADRO FINAL (Lógica Estricta) ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
+    // 1. Determinar Tamaño del Cuadro
     let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
@@ -231,16 +232,24 @@ export default function Home() {
     else bracketSize = 4; 
 
     const byeCount = bracketSize - totalPlayers;
-    
+    const numMatches = bracketSize / 2;
+    const halfMatches = numMatches / 2;
+
+    // 2. Separar Primeros y Segundos
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
+    // 3. Determinar quiénes tienen BYE (Prioridad por Ranking de Zona)
     const playersWithBye = new Set();
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
+    // 4. Inicializar Partidos
+    let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+
+    // 5. Mapas de Sembrados (Seeds) para distribuir 1ros equitativamente
     const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
     const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
     const seedMap8 = [0, 3, 1, 2];
@@ -251,9 +260,7 @@ export default function Home() {
     if (bracketSize === 16) currentMap = seedMap16;
     if (bracketSize === 4) currentMap = seedMap4;
 
-    const numMatches = bracketSize / 2;
-    let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-
+    // 6. Colocar 1ros (Winners)
     winners.forEach((winner, index) => {
         if (index < currentMap.length) {
             const matchIndex = currentMap[index];
@@ -263,28 +270,53 @@ export default function Home() {
         }
     });
 
-    matches.forEach(match => {
+    // 7. Identificar Zonas en cada Mitad para aplicar REGLA ESTRICTA
+    const topHalfMatches = matches.slice(0, halfMatches);
+    const bottomHalfMatches = matches.slice(halfMatches, numMatches);
+
+    const zonesInTopHalf = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(idx => idx !== undefined));
+    const zonesInBottomHalf = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(idx => idx !== undefined));
+
+    // 8. Filtrar y Asignar 2dos (Runners)
+    // Regla: Si el 1ro está en Top, el 2do va a Bottom. Y viceversa.
+    
+    // Runners que DEBEN ir a Top (porque su 1ro está en Bottom)
+    const runnersForTop = runners.filter(r => zonesInBottomHalf.has(r.groupIndex));
+    
+    // Runners que DEBEN ir a Bottom (porque su 1ro está en Top)
+    const runnersForBottom = runners.filter(r => zonesInTopHalf.has(r.groupIndex));
+    
+    // Runners "Libres" (su 1ro ya fue eliminado o no es cabeza de serie principal)
+    const freeRunners = runners.filter(r => !zonesInTopHalf.has(r.groupIndex) && !zonesInBottomHalf.has(r.groupIndex));
+    
+    // Mezclar listas para aleatoriedad
+    const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
+    let poolTop = shuffle([...runnersForTop, ...freeRunners.slice(0, Math.ceil(freeRunners.length / 2))]); // Repartir libres
+    let poolBottom = shuffle([...runnersForBottom, ...freeRunners.slice(Math.ceil(freeRunners.length / 2))]);
+
+    // 9. Llenar los espacios vacíos (p2)
+    matches.forEach((match, index) => {
+        const isTopHalf = index < halfMatches;
+        let pool = isTopHalf ? poolTop : poolBottom;
+
         if (match.p1) {
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                const p1Zone = match.p1.groupIndex;
-                let opponentIndex = runners.findIndex(r => r.groupIndex !== p1Zone);
-                if (opponentIndex === -1) opponentIndex = 0; 
-                
-                if (runners.length > 0) {
-                    match.p2 = runners[opponentIndex];
-                    runners.splice(opponentIndex, 1);
+                if (pool.length > 0) {
+                    match.p2 = pool.pop();
                 } else {
+                    // Fallback de emergencia si el pool se vacía (por números impares raros)
                     match.p2 = { name: "TBD", rank: 0 };
                 }
             }
         } else {
-            if (runners.length >= 2) {
-                match.p1 = runners.pop();
-                match.p2 = runners.pop();
-            } else if (runners.length === 1) {
-                match.p1 = runners.pop();
+            // Partidos sin cabeza de serie 1ro (se llenan con lo que sobra)
+            if (pool.length >= 2) {
+                match.p1 = pool.pop();
+                match.p2 = pool.pop();
+            } else if (pool.length === 1) {
+                match.p1 = pool.pop();
                 match.p2 = { name: "BYE", rank: 0 };
             }
         }
@@ -339,14 +371,11 @@ export default function Home() {
       }
   }
 
-  // --- FUNCIÓN MODIFICADA PARA FORMATO EXCEL ---
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
     
-    // Encabezado del mensaje
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     
-    // Iteración: Nombre 1 (enter) Nombre 2 (enter)
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
         const p2Name = match.p2 ? match.p2.name : "TBD"; 
@@ -436,7 +465,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS Y CON LISTA VERTICAL)
+  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           {/* Jugador 1 */}
@@ -546,9 +575,9 @@ export default function Home() {
                         {/* Separador Visual de Mitades */}
                         {i === (generatedBracket.length / 2) - 1 && (
                             <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
-                                <div className="h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent flex-1" />
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                                 <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Mitad de Cuadro</span>
-                                <div className="h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent flex-1" />
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                             </div>
                         )}
                     </>
