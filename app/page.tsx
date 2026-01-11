@@ -219,11 +219,12 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL ---
+  // --- SORTEO CUADRO FINAL (Lógica SEMBRADOS: Z3 y Z4 al final de mitades) ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
+    // 1. Determinar Tamaño del Cuadro
     let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
@@ -232,38 +233,63 @@ export default function Home() {
 
     const byeCount = bracketSize - totalPlayers;
     const numMatches = bracketSize / 2;
-    const halfMatches = numMatches / 2;
+    const halfMatches = numMatches / 2; // Punto de quiebre (Mitad de arriba vs Mitad de abajo)
 
+    // 2. Separar Primeros y Segundos
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
+    // 3. Asignar BYEs
     const playersWithBye = new Set();
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
-    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
-    const seedMap8 = [0, 3, 1, 2];
-    const seedMap4 = [0, 1];
+    // 4. Configurar Posiciones Fijas para Sembrados (Winners)
+    // - Z1 -> Index 0 (Arriba del todo)
+    // - Z2 -> Index Last (Abajo del todo)
+    // - Z3/Z4 -> Rotan entre (Last Index Top Half) y (First Index Bottom Half)
+    
+    const idxTopSeed = 0;
+    const idxBottomSeed = numMatches - 1;
+    const idxMidTop = halfMatches - 1; // Último partido de la mitad de arriba
+    const idxMidBottom = halfMatches;  // Primer partido de la mitad de abajo
 
-    let currentMap = seedMap8;
-    if (bracketSize === 32) currentMap = seedMap32;
-    if (bracketSize === 16) currentMap = seedMap16;
-    if (bracketSize === 4) currentMap = seedMap4;
+    // Identificar ganadores específicos
+    const wZ1 = winners.find(p => p.groupIndex === 0);
+    const wZ2 = winners.find(p => p.groupIndex === 1);
+    const wZ3 = winners.find(p => p.groupIndex === 2);
+    const wZ4 = winners.find(p => p.groupIndex === 3);
+    const otherWinners = winners.filter(p => p.groupIndex > 3).sort(() => Math.random() - 0.5);
 
+    // Inicializar array de partidos
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    winners.forEach((winner, index) => {
-        if (index < currentMap.length) {
-            const matchIndex = currentMap[index];
-            matches[matchIndex].p1 = winner;
-        } else {
-            runners.push(winner); 
+    // Colocar Cabezas de Serie
+    if(wZ1) matches[idxTopSeed].p1 = wZ1;
+    if(wZ2) matches[idxBottomSeed].p1 = wZ2;
+
+    // Rotar Z3 y Z4 en el medio
+    if (wZ3 && wZ4) {
+        const mids = [wZ3, wZ4].sort(() => Math.random() - 0.5);
+        matches[idxMidTop].p1 = mids[0];
+        matches[idxMidBottom].p1 = mids[1];
+    } else if (wZ3) {
+        // Si solo está Z3 (raro, cuadro impar), va a uno de los medios
+        matches[idxMidTop].p1 = wZ3;
+    }
+
+    // Colocar el resto de ganadores en huecos vacíos
+    matches.forEach(match => {
+        if (!match.p1 && otherWinners.length > 0) {
+            match.p1 = otherWinners.pop();
         }
     });
+    // Si aún quedan huecos en p1 (ej: cuadro grande con pocos ganadores), se llenan con runners luego
 
+    // 5. Filtrar y Asignar 2dos (Runners)
+    // Detectamos qué Zonas están en qué mitad para evitar cruces
     const topHalfMatches = matches.slice(0, halfMatches);
     const bottomHalfMatches = matches.slice(halfMatches, numMatches);
 
@@ -275,17 +301,22 @@ export default function Home() {
     const freeRunners = runners.filter(r => !zonesInTopHalf.has(r.groupIndex) && !zonesInBottomHalf.has(r.groupIndex));
     
     const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
-    let poolTop = shuffle([...runnersForTop, ...freeRunners.slice(0, Math.ceil(freeRunners.length / 2))]); 
-    let poolBottom = shuffle([...runnersForBottom, ...freeRunners.slice(Math.ceil(freeRunners.length / 2))]);
+    // Repartir libres equitativamente
+    const splitIndex = Math.ceil(freeRunners.length / 2);
+    let poolTop = shuffle([...runnersForTop, ...freeRunners.slice(0, splitIndex)]); 
+    let poolBottom = shuffle([...runnersForBottom, ...freeRunners.slice(splitIndex)]);
 
+    // 6. Llenar p2 (Rivales)
     matches.forEach((match, index) => {
         const isTopHalf = index < halfMatches;
         let pool = isTopHalf ? poolTop : poolBottom;
 
         if (match.p1) {
+            // Si tiene BYE
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
+                // Sacar del pool
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
@@ -293,6 +324,8 @@ export default function Home() {
                 }
             }
         } else {
+            // Si el slot p1 estaba vacío (sin ganador de zona)
+            // Llenamos con lo que quede del pool (Runners vs Runners)
             if (pool.length >= 2) {
                 match.p1 = pool.pop();
                 match.p2 = pool.pop();
@@ -570,6 +603,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ... (Resto de componentes: damas-empty, group-phase, direct-bracket, ranking-view sin cambios) ... */}
         {navState.level === "damas-empty" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
             <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
@@ -584,7 +618,7 @@ export default function Home() {
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
             <div className="flex justify-between items-center mb-8">
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
-              {!isSorteoConfirmado && (
+              {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
@@ -622,10 +656,12 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           {/* Middle Line to Next Round */}
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
@@ -648,10 +684,12 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
@@ -673,10 +711,12 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
@@ -694,7 +734,7 @@ export default function Home() {
                       return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
-                  <Trophy className="w-24 h-24 text-orange-400 mb-4 mx-auto text-center" />
+                  <Trophy className="w-24 h-24 text-orange-400 mb-4 mx-auto text-center animate-bounce" />
                   <span className="text-[#b35a38] font-black text-4xl italic uppercase text-center w-full block text-center">{bracketData.winner || "Campeón"}</span>
                 </div>
               </div>
