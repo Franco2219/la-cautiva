@@ -622,12 +622,10 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           {/* Middle Line to Next Round */}
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
@@ -650,12 +648,10 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
@@ -677,12 +673,10 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
