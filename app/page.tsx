@@ -191,7 +191,6 @@ export default function Home() {
     setIsSorteoConfirmado(true);
   };
 
-  // Renderizado Seguro de Tabla (Corrige el Application Error)
   const GroupTable = ({ group }: { group: any }) => (
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
@@ -220,75 +219,116 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL (Lógica Top/Bottom) ---
+  // --- SORTEO CUADRO FINAL (Lógica BYE Dinámica) ---
+  
   const generatePlayoffBracket = (qualifiers: any[]) => {
-    const winners = qualifiers.filter(q => q.rank === 1); 
-    const runners = qualifiers.filter(q => q.rank === 2); 
+    const totalPlayers = qualifiers.length;
     
-    const wZ1 = winners.find(p => p.groupIndex === 0);
-    const wZ2 = winners.find(p => p.groupIndex === 1);
-    const wZ3 = winners.find(p => p.groupIndex === 2);
-    const wZ4 = winners.find(p => p.groupIndex === 3);
+    // 1. Determinar Tamaño del Cuadro (8 o 16)
+    let bracketSize = 8;
+    if (totalPlayers > 8) bracketSize = 16;
+    
+    // 2. Calcular Cantidad de BYES
+    const byeCount = bracketSize - totalPlayers;
+    
+    // 3. Separar Primeros y Segundos
+    // Ordenar ganadores por índice de zona (0=Z1, 1=Z2...) para prioridad de BYE
+    const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); // 2dos mezclados
 
-    const rZ1 = runners.find(p => p.groupIndex === 0);
-    const rZ2 = runners.find(p => p.groupIndex === 1);
-    const rZ3 = runners.find(p => p.groupIndex === 2);
-    const rZ4 = runners.find(p => p.groupIndex === 3);
-
-    // Validación básica: necesitamos al menos las 4 zonas para armar cuartos bien
-    if (!wZ1 || !wZ2 || !wZ3 || !wZ4 || !rZ1 || !rZ2 || !rZ3 || !rZ4) {
-        alert("Faltan datos en las columnas F/G. Asegúrate de tener los clasificados de las 4 zonas.");
-        return null;
+    // 4. Asignar BYES a los 1ros por prioridad
+    // Creamos un Set de IDs (o nombres) que tienen BYE
+    const playersWithBye = new Set();
+    for(let i=0; i < byeCount; i++) {
+        if(winners[i]) {
+            playersWithBye.add(winners[i].name);
+        } else {
+            // Si hay más BYEs que 1ros (raro pero posible), se asignan a 2dos (no debería pasar con este formato de grupos)
+        }
     }
 
-    let matches: any[] = [{p1: null, p2: null}, {p1: null, p2: null}, {p1: null, p2: null}, {p1: null, p2: null}];
+    // 5. Inicializar Partidos (Array vacío del tamaño bracketSize / 2)
+    // Para 16 -> 8 partidos. Para 8 -> 4 partidos.
+    const numMatches = bracketSize / 2;
+    let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    // 1. Cabezas de Serie (Primeros)
-    // 1º Zona 1 -> Arriba (Top)
-    matches[0].p1 = wZ1;
+    // 6. Colocar Cabezas de Serie (Winners) en posiciones fijas
+    // Estructura visual deseada: 
+    // Match 0: Top Seed (Z1)
+    // Match N-1: 2nd Seed (Z2)
+    // Resto distribuidos
     
-    // 1º Zona 2 -> Abajo (Bottom)
-    matches[3].p1 = wZ2;
+    // Función auxiliar para obtener el índice del partido según el "Seed Rank"
+    // Para cuadro de 16 (8 partidos): 
+    // Seed 1 -> Match 0
+    // Seed 2 -> Match 7
+    // Seed 3 -> Match 4
+    // Seed 4 -> Match 3
+    // Seed 5 -> Match 2
+    // Seed 6 -> Match 5
+    // Seed 7 -> Match 6
+    // Seed 8 -> Match 1
+    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
+    const seedMap8 = [0, 3, 1, 2];
 
-    // Sorteo de 1º Zona 3 y 4
-    const midWinners = [wZ3, wZ4].sort(() => Math.random() - 0.5);
-    matches[1].p1 = midWinners[0]; // Top Half
-    matches[2].p1 = midWinners[1]; // Bottom Half
+    const currentMap = bracketSize === 16 ? seedMap16 : seedMap8;
 
-    // 2. Segundos (Runners) - Regla: Mitad Opuesta
-    const topRunnersPool = [];
-    const bottomRunnersPool = [];
+    // Colocamos a los 1ros en sus llaves
+    winners.forEach((winner, index) => {
+        if (index < currentMap.length) {
+            const matchIndex = currentMap[index];
+            matches[matchIndex].p1 = winner;
+        } else {
+            // Si hay más ganadores que espacios de cabezas de serie (raro), van al pool de sorteo
+            runners.push(winner); 
+        }
+    });
 
-    // rZ1 va a Bottom (porque wZ1 está en Top)
-    bottomRunnersPool.push(rZ1);
-    // rZ2 va a Top (porque wZ2 está en Bottom)
-    topRunnersPool.push(rZ2);
+    // 7. Llenar los oponentes (p2)
+    // Si p1 tiene BYE -> p2 es "BYE"
+    // Si no -> p2 es un Runner-up sorteado
+    
+    matches.forEach(match => {
+        if (match.p1) {
+            if (playersWithBye.has(match.p1.name)) {
+                match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; // BYE Object
+            } else {
+                // Sacar un 2do del pool
+                // Intentar buscar uno de zona distinta si es posible
+                const p1Zone = match.p1.groupIndex;
+                let opponentIndex = runners.findIndex(r => r.groupIndex !== p1Zone);
+                
+                if (opponentIndex === -1) {
+                    // Si no queda otra, juega con uno de su zona (no debería pasar si hay suficientes zonas)
+                    opponentIndex = 0; 
+                }
+                
+                if (runners.length > 0) {
+                    match.p2 = runners[opponentIndex];
+                    runners.splice(opponentIndex, 1); // Remover del pool
+                } else {
+                    match.p2 = { name: "TBD", rank: 0 }; // No debería pasar si la mate es correcta
+                }
+            }
+        } else {
+            // Partidos sin cabeza de serie (solo pasa si hay pocos 1ros)
+            // Llenar con lo que quede en runners
+            if (runners.length >= 2) {
+                match.p1 = runners.pop();
+                match.p2 = runners.pop();
+            }
+        }
+    });
 
-    // rZ3: Si wZ3 está en Top (matches[1]), rZ3 va a Bottom. Sino a Top.
-    if (matches[1].p1?.groupIndex === 2) bottomRunnersPool.push(rZ3);
-    else topRunnersPool.push(rZ3);
-
-    // rZ4: Si wZ4 está en Top (matches[1]), rZ4 va a Bottom. Sino a Top.
-    if (matches[1].p1?.groupIndex === 3) bottomRunnersPool.push(rZ4);
-    else topRunnersPool.push(rZ4);
-
-    // 3. Asignar aleatoriamente dentro de las mitades correspondientes
-    const shuffledTopRunners = topRunnersPool.sort(() => Math.random() - 0.5);
-    const shuffledBottomRunners = bottomRunnersPool.sort(() => Math.random() - 0.5);
-
-    matches[0].p2 = shuffledTopRunners[0];
-    matches[1].p2 = shuffledTopRunners[1];
-    matches[2].p2 = shuffledBottomRunners[0];
-    matches[3].p2 = shuffledBottomRunners[1];
-
-    return matches;
+    return { matches, bracketSize, totalPlayers };
   }
 
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
       setIsLoading(true);
       setGeneratedBracket([]);
       
-      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+      const sheetName = `Grupos ${tournamentShort} ${category}`;
+      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       
       try {
           const response = await fetch(url);
@@ -297,11 +337,11 @@ export default function Home() {
           
           let qualifiers = [];
           
-          // Leemos las primeras 8 filas (por si acaso) de las columnas F (idx 5) y G (idx 6)
-          for(let i = 0; i < 8; i++) { 
+          // Escanear hasta 16 filas en busca de clasificados
+          for(let i = 0; i < 16; i++) { 
               if (rows[i]) {
-                  const winnerName = rows[i][5]; 
-                  const runnerName = rows[i][6]; 
+                  const winnerName = rows[i][5]; // F
+                  const runnerName = rows[i][6]; // G
                   
                   if (winnerName && winnerName !== "-" && winnerName !== "") {
                       qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
@@ -312,14 +352,15 @@ export default function Home() {
               }
           }
 
-          if (qualifiers.length >= 8) { 
-             const draw = generatePlayoffBracket(qualifiers);
-             if (draw) {
-                 setGeneratedBracket(draw);
-                 setNavState({ ...navState, level: "generate-bracket", category, tournamentShort });
+          if (qualifiers.length > 3) { // Mínimo 4 para semifinales
+             const result = generatePlayoffBracket(qualifiers);
+             if (result) {
+                 setGeneratedBracket(result.matches);
+                 // Guardamos info extra en el estado si hace falta (ej: tamaño del cuadro)
+                 setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
           } else {
-             alert("No se encontraron suficientes clasificados.");
+             alert("No hay suficientes clasificados (Mínimo 4) en la pestaña de Grupos.");
           }
 
       } catch (e) {
@@ -332,10 +373,17 @@ export default function Home() {
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n*CUARTOS DE FINAL:*\n`;
+    
+    // Determinar nombre de la ronda inicial
+    const rondaNombre = generatedBracket.length === 8 ? "OCTAVOS DE FINAL" : "CUARTOS DE FINAL";
+    
+    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n*${rondaNombre}:*\n`;
+    
     generatedBracket.forEach((match, i) => {
-        const ubicacion = i < 2 ? "(Parte Alta)" : "(Parte Baja)";
-        mensaje += `Partido ${i+1} ${ubicacion}: ${match.p1.name} (1º) vs ${match.p2.name} (2º)\n`;
+        const p1Name = match.p1 ? match.p1.name : "TBD";
+        const p2Name = match.p2 ? (match.p2.name === "BYE" ? "_BYE (Pasa)_" : match.p2.name) : "TBD";
+        
+        mensaje += `Partido ${i+1}: ${p1Name} vs ${p2Name}\n`;
     });
     mensaje += `\n_Validar orden para carga en Excel_`;
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -366,10 +414,10 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
     
-    const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
     try {
-      const response = await fetch(url);
+      const response = await fetch(urlBracket);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
@@ -384,16 +432,26 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Escanear las primeras 10 filas en busca de datos en Columna F (Indice 5)
-          let foundQualifiers = false;
-          for(let i=0; i<Math.min(rows.length, 10); i++) {
-             if (rows[i][5] && rows[i][5] !== "" && rows[i][5] !== "-") {
-                 foundQualifiers = true;
-                 break;
-             }
-          }
+          // Check for Qualifiers in Group Sheet
+          const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
+          const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
           
-          setBracketData({ hasData: false, canGenerate: foundQualifiers });
+          try {
+             const resGroups = await fetch(urlGroups);
+             const txtGroups = await resGroups.text();
+             const rowsGroups = parseCSV(txtGroups);
+             
+             let foundQualifiers = false;
+             for(let i=0; i<Math.min(rowsGroups.length, 16); i++) {
+                 if (rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
+                     foundQualifiers = true;
+                     break;
+                 }
+             }
+             setBracketData({ hasData: false, canGenerate: foundQualifiers });
+          } catch(err2) {
+             setBracketData({ hasData: false, canGenerate: false });
+          }
       }
 
     } catch (error) { 
@@ -485,22 +543,26 @@ export default function Home() {
         {navState.level === "generate-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center max-w-4xl mx-auto">
              <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
-               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">Sorteo Cuartos de Final</h2>
+               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
+                   {navState.bracketSize === 16 ? "Sorteo Octavos de Final" : "Sorteo Cuartos de Final"}
+               </h2>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {generatedBracket.map((match, i) => (
                     <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center shadow-sm">
-                        <div className="flex flex-col text-left">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Cabeza de Serie</span>
-                            <span className="font-black text-[#b35a38]">{match.p1.name}</span>
-                            <span className="text-[10px] text-slate-400">1º Zona {match.p1.groupIndex + 1}</span>
+                        <div className="flex flex-col text-left w-1/3">
+                            <span className="text-xs font-bold text-slate-400 uppercase">Cabeza</span>
+                            <span className="font-black text-[#b35a38] truncate">{match.p1 ? match.p1.name : "TBD"}</span>
+                            {match.p1 && <span className="text-[10px] text-slate-400">1º Zona {match.p1.groupIndex + 1}</span>}
                         </div>
                         <span className="font-black text-slate-300 text-xl">VS</span>
-                        <div className="flex flex-col text-right">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Clasificado</span>
-                            <span className="font-bold text-slate-700">{match.p2.name}</span>
-                            <span className="text-[10px] text-slate-400">2º Zona {match.p2.groupIndex + 1}</span>
+                        <div className="flex flex-col text-right w-1/3">
+                            <span className="text-xs font-bold text-slate-400 uppercase">Rival</span>
+                            <span className={`font-bold ${match.p2?.name === 'BYE' ? 'text-green-600' : 'text-slate-700'} truncate`}>
+                                {match.p2 ? match.p2.name : "TBD"}
+                            </span>
+                            {match.p2 && match.p2.name !== 'BYE' && <span className="text-[10px] text-slate-400">2º Zona {match.p2.groupIndex + 1}</span>}
                         </div>
                     </div>
                 ))}
