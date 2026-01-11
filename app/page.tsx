@@ -339,23 +339,21 @@ export default function Home() {
       }
   }
 
+  // --- FUNCIÓN MODIFICADA PARA FORMATO EXCEL ---
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
     
-    let rondaNombre = "CUADRO FINAL";
-    if (navState.bracketSize === 32) rondaNombre = "16AVOS DE FINAL";
-    else if (navState.bracketSize === 16) rondaNombre = "OCTAVOS DE FINAL";
-    else if (navState.bracketSize === 8) rondaNombre = "CUARTOS DE FINAL";
-    else if (navState.bracketSize === 4) rondaNombre = "SEMIFINALES";
+    // Encabezado del mensaje
+    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     
-    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n*${rondaNombre}:*\n`;
-    
-    generatedBracket.forEach((match, i) => {
+    // Iteración: Nombre 1 (enter) Nombre 2 (enter)
+    generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
-        const p2Name = match.p2 ? (match.p2.name === "BYE" ? "_BYE (Pasa)_" : match.p2.name) : "TBD";
-        mensaje += `Partido ${i+1}: ${p1Name} vs ${p2Name}\n`;
+        const p2Name = match.p2 ? match.p2.name : "TBD"; 
+        
+        mensaje += `${p1Name}\n${p2Name}\n`;
     });
-    mensaje += `\n_Validar orden para carga en Excel_`;
+    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
@@ -438,13 +436,13 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS)
+  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS Y CON LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           {/* Jugador 1 */}
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
-              <span className={`font-black text-2xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
+              <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
                   {match.p1 ? match.p1.name : "TBD"}
               </span>
           </div>
@@ -452,12 +450,10 @@ export default function Home() {
           {/* Jugador 2 */}
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
-              <span className={`font-black text-2xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
+              <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
                   {match.p2 ? match.p2.name : "TBD"}
               </span>
           </div>
-          
-          {/* Elemento decorativo eliminado a petición */}
       </div>
   );
 
@@ -545,7 +541,17 @@ export default function Home() {
              {/* Contenedor Visual de Lista Vertical */}
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
-                    <GeneratedMatch key={i} match={match} />
+                    <>
+                        <GeneratedMatch key={i} match={match} />
+                        {/* Separador Visual de Mitades */}
+                        {i === (generatedBracket.length / 2) - 1 && (
+                            <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent flex-1" />
+                                <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Mitad de Cuadro</span>
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent flex-1" />
+                            </div>
+                        )}
+                    </>
                 ))}
              </div>
 
@@ -557,6 +563,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ... (Resto de componentes: damas-empty, group-phase, direct-bracket, ranking-view sin cambios) ... */}
         {navState.level === "damas-empty" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto">
             <h2 className="text-4xl font-black text-[#b35a38] mb-6 uppercase italic">{navState.selectedCategory}</h2>
