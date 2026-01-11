@@ -438,27 +438,26 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO
+  // COMPONENTE VISUAL MEJORADO (SIN LINEAS CURVAS)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           {/* Jugador 1 */}
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-              {match.p1 && <span className="text-[#b35a38] font-black text-sm w-12 text-right">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
-              <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
+              {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank}º Z{match.p1.groupIndex + 1}</span>}
+              <span className={`font-black text-2xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
                   {match.p1 ? match.p1.name : "TBD"}
               </span>
           </div>
           
           {/* Jugador 2 */}
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-              {match.p2 && match.p2.name !== 'BYE' && <span className="text-[#b35a38] font-black text-sm w-12 text-right">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
-              <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
+              {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank}º Z{match.p2.groupIndex + 1}</span>}
+              <span className={`font-black text-2xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
                   {match.p2 ? match.p2.name : "TBD"}
               </span>
           </div>
           
-          {/* Línea conectora tipo llave (solo visual) */}
-          <div className="absolute -right-6 top-[25%] bottom-[25%] w-6 border-r-2 border-y-2 border-slate-300 rounded-r-xl opacity-60"></div>
+          {/* Elemento decorativo eliminado a petición */}
       </div>
   );
 
