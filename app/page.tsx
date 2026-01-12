@@ -533,7 +533,7 @@ export default function Home() {
     
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
-    // Función auxiliar para verificar si podemos generar sorteo (FALLBACK)
+    // Función auxiliar para verificar si se puede generar sorteo (FALLBACK)
     const checkCanGenerate = async () => {
         // Detectar tipo de torneo
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
