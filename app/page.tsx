@@ -32,7 +32,7 @@ export default function Home() {
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
-  const [isFixedData, setIsFixedData] = useState(false) // Mantenemos esto para los botones
+  const [isFixedData, setIsFixedData] = useState(false)
 
   const parseCSV = (text: string) => {
     if (!text) return [];
@@ -125,7 +125,7 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS (RESTAURADA) ---
+  // --- LECTURA DE GRUPOS FIJOS ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
@@ -195,7 +195,6 @@ export default function Home() {
     setIsSorteoConfirmado(true);
   };
 
-  // --- GROUP TABLE RESTAURADA (VERSION SIMPLE Y SEGURA) ---
   const GroupTable = ({ group }: { group: any }) => (
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
@@ -203,13 +202,13 @@ export default function Home() {
         <thead>
           <tr className="bg-slate-50 border-b">
             <th className="p-3 border-r w-32 text-left font-bold text-[#b35a38]">JUGADOR</th>
-            {group.players.map((p: string, i: number) => (
+            {group.players && group.players.map((p: string, i: number) => (
               <th key={i} className="p-3 border-r text-center font-bold text-slate-400">{p ? p.split(' ')[0] : ""}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {group.players.map((p1: string, i: number) => (
+          {group.players && group.players.map((p1: string, i: number) => (
             <tr key={i} className="border-b">
               <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left">{p1}</td>
               {group.players.map((p2: string, j: number) => (
@@ -224,10 +223,12 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL ---
+  // --- SORTEO CUADRO FINAL (Lógica Rotación y Cruces) ---
+  
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
+    // 1. Determinar Tamaño del Cuadro
     let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
@@ -241,55 +242,87 @@ export default function Home() {
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
+    // Asignar BYES por mérito (1ros de zona)
     const playersWithBye = new Set();
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
-    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
-    const seedMap8 = [0, 3, 1, 2];
-    const seedMap4 = [0, 1];
-
-    let currentMap = seedMap8;
-    if (bracketSize === 32) currentMap = seedMap32;
-    if (bracketSize === 16) currentMap = seedMap16;
-    if (bracketSize === 4) currentMap = seedMap4;
-
+    // Inicializar Partidos
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    winners.forEach((winner, index) => {
-        if (index < currentMap.length) {
-            const matchIndex = currentMap[index];
-            matches[matchIndex].p1 = winner;
-        } else {
-            runners.push(winner); 
-        }
+    // --- POSICIONAMIENTO DE 1ROS (WINNERS) ---
+    // Z1 y Z2 Fijos. Z3 y Z4 Rotan.
+    
+    const wZ1 = winners.find(w => w.groupIndex === 0);
+    const wZ2 = winners.find(w => w.groupIndex === 1);
+    const wZ3 = winners.find(w => w.groupIndex === 2);
+    const wZ4 = winners.find(w => w.groupIndex === 3);
+    const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+
+    // Índices de posición (semillas)
+    const idxTop = 0; 
+    const idxBottom = numMatches - 1;
+    const idxMidTop = halfMatches - 1; // Último de arriba
+    const idxMidBottom = halfMatches; // Primero de abajo
+
+    if (wZ1) matches[idxTop].p1 = wZ1;
+    if (wZ2) matches[idxBottom].p1 = wZ2;
+
+    // Rotación Z3 / Z4
+    const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+    if (mids.length > 0) matches[idxMidTop].p1 = mids[0];
+    if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
+
+    // Rellenar resto de 1ros en huecos vacíos
+    matches.forEach(m => {
+        if (!m.p1 && otherWinners.length > 0) m.p1 = otherWinners.pop();
     });
 
+    // --- POSICIONAMIENTO DE 2DOS (RUNNERS) ---
+    // Detectamos qué Zonas están en qué mitad
     const topHalfMatches = matches.slice(0, halfMatches);
-    const bottomHalfMatches = matches.slice(halfMatches, numMatches);
+    const bottomHalfMatches = matches.slice(halfMatches);
 
-    const zonesInTopHalf = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(idx => idx !== undefined));
-    const zonesInBottomHalf = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(idx => idx !== undefined));
+    const zonesInTop = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
+    const zonesInBottom = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
 
-    const runnersForTop = runners.filter(r => zonesInBottomHalf.has(r.groupIndex));
-    const runnersForBottom = runners.filter(r => zonesInTopHalf.has(r.groupIndex));
-    const freeRunners = runners.filter(r => !zonesInTopHalf.has(r.groupIndex) && !zonesInBottomHalf.has(r.groupIndex));
-    
+    // Filtrar Runners para evitar cruces
+    const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
+    const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
+    const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
+
+    // Mezclar
     const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
-    let poolTop = shuffle([...runnersForTop, ...freeRunners.slice(0, Math.ceil(freeRunners.length / 2))]); 
-    let poolBottom = shuffle([...runnersForBottom, ...freeRunners.slice(Math.ceil(freeRunners.length / 2))]);
+    let poolTop = shuffle([...mustGoTop]);
+    let poolBottom = shuffle([...mustGoBottom]);
+    let poolFree = shuffle([...freeAgents]);
 
+    // Rellenar Top con sus obligados + libres
+    while (poolTop.length < halfMatches && poolFree.length > 0) {
+        poolTop.push(poolFree.pop());
+    }
+    // Rellenar Bottom con sus obligados + resto de libres
+    while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) {
+        poolBottom.push(poolFree.pop());
+    }
+    
+    // Asegurar aleatoriedad final en los pools
+    poolTop = shuffle(poolTop);
+    poolBottom = shuffle(poolBottom);
+
+    // Asignar a los partidos
     matches.forEach((match, index) => {
         const isTopHalf = index < halfMatches;
         let pool = isTopHalf ? poolTop : poolBottom;
 
         if (match.p1) {
+            // Si tiene BYE
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
+                // Sacar rival del pool
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
@@ -297,6 +330,7 @@ export default function Home() {
                 }
             }
         } else {
+            // Partido sin cabeza de serie (relleno)
             if (pool.length >= 2) {
                 match.p1 = pool.pop();
                 match.p2 = pool.pop();
@@ -626,13 +660,13 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
+                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
-                          {/* Vertical Connector 16avos */}
-                          <div className="absolute right-[-60px] top-8 bottom-0 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2rem)' }} />
                           {/* Middle Line to Next Round */}
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
@@ -654,13 +688,13 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
+                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Vertical Connector Octavos */}
-                        <div className="absolute right-[-80px] top-10 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 2.5rem)' }} />
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
@@ -681,13 +715,13 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
-                        {/* Vertical Connector Cuartos */}
-                        <div className="absolute right-[-100px] top-12 w-[2px] bg-slate-300" style={{ height: 'calc(100% - 3rem)' }} />
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
