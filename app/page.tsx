@@ -223,12 +223,11 @@ export default function Home() {
     </div>
   );
 
-  // --- SORTEO CUADRO FINAL (Lógica Rotación y Cruces) ---
+  // --- SORTEO CUADRO FINAL ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     
-    // 1. Determinar Tamaño del Cuadro
     let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
@@ -242,14 +241,22 @@ export default function Home() {
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
-    // Asignar BYES por mérito (1ros de zona)
     const playersWithBye = new Set();
     for(let i=0; i < byeCount; i++) {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    // Inicializar Partidos
+    const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
+    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
+    const seedMap8 = [0, 3, 1, 2];
+    const seedMap4 = [0, 1];
+
+    let currentMap = seedMap8;
+    if (bracketSize === 32) currentMap = seedMap32;
+    if (bracketSize === 16) currentMap = seedMap16;
+    if (bracketSize === 4) currentMap = seedMap4;
+
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
     // --- POSICIONAMIENTO DE 1ROS (WINNERS) ---
@@ -281,48 +288,35 @@ export default function Home() {
     });
 
     // --- POSICIONAMIENTO DE 2DOS (RUNNERS) ---
-    // Detectamos qué Zonas están en qué mitad
     const topHalfMatches = matches.slice(0, halfMatches);
     const bottomHalfMatches = matches.slice(halfMatches);
 
     const zonesInTop = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
     const zonesInBottom = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
 
-    // Filtrar Runners para evitar cruces
     const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
     const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
     const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
 
-    // Mezclar
     const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
     let poolTop = shuffle([...mustGoTop]);
     let poolBottom = shuffle([...mustGoBottom]);
     let poolFree = shuffle([...freeAgents]);
 
-    // Rellenar Top con sus obligados + libres
-    while (poolTop.length < halfMatches && poolFree.length > 0) {
-        poolTop.push(poolFree.pop());
-    }
-    // Rellenar Bottom con sus obligados + resto de libres
-    while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) {
-        poolBottom.push(poolFree.pop());
-    }
+    while (poolTop.length < halfMatches && poolFree.length > 0) poolTop.push(poolFree.pop());
+    while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) poolBottom.push(poolFree.pop());
     
-    // Asegurar aleatoriedad final en los pools
     poolTop = shuffle(poolTop);
     poolBottom = shuffle(poolBottom);
 
-    // Asignar a los partidos
     matches.forEach((match, index) => {
         const isTopHalf = index < halfMatches;
         let pool = isTopHalf ? poolTop : poolBottom;
 
         if (match.p1) {
-            // Si tiene BYE
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                // Sacar rival del pool
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
@@ -330,7 +324,6 @@ export default function Home() {
                 }
             }
         } else {
-            // Partido sin cabeza de serie (relleno)
             if (pool.length >= 2) {
                 match.p1 = pool.pop();
                 match.p2 = pool.pop();
@@ -660,12 +653,10 @@ export default function Home() {
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
-                            <div className="absolute -right-[60px] bottom-0 w-[60px] h-[2px] bg-slate-300" />
                           </div>
                           {/* Middle Line to Next Round */}
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[100px] w-[40px] h-[2px] bg-slate-300" />
@@ -688,12 +679,10 @@ export default function Home() {
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
-                            <div className="absolute -right-[80px] bottom-0 w-[80px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[120px] w-[40px] h-[2px] bg-slate-300" />
@@ -715,12 +704,10 @@ export default function Home() {
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
-                            <div className="absolute -right-[100px] bottom-0 w-[100px] h-[2px] bg-slate-300" />
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
