@@ -839,9 +839,11 @@ export default function Home() {
                       return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
-                  <Trophy className="w-24 h-24 text-orange-400 mb-4 mx-auto text-center animate-bounce" />
-                  <span className="text-slate-400 font-bold text-xs tracking-widest uppercase mb-1">CAMPEÓN</span>
-                  <span className="text-[#b35a38] font-black text-3xl italic uppercase text-center w-full block">{bracketData.winner || ""}</span>
+                  <Trophy className="w-24 h-24 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
+                  <div className="flex flex-col items-center">
+                     <span className="text-[#b35a38]/70 font-black text-xl uppercase tracking-[0.2em] mb-2">CAMPEÓN</span>
+                     <span className="text-[#b35a38] font-black text-4xl md:text-5xl italic uppercase text-center w-full block drop-shadow-sm">{bracketData.winner || ""}</span>
+                  </div>
                 </div>
               </div>
             ) : (
