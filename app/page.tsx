@@ -533,13 +533,47 @@ export default function Home() {
     
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
+    // Función auxiliar para verificar si se puede generar sorteo
+    const checkCanGenerate = async () => {
+        const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
+        if (isDirect) {
+            const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+            try {
+                const res = await fetch(urlInscriptos);
+                const txt = await res.text();
+                const rows = parseCSV(txt);
+                const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
+                setBracketData({ hasData: false, canGenerate: count >= 4 });
+            } catch (e) {
+                setBracketData({ hasData: false, canGenerate: false });
+            }
+        } else {
+            const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
+            const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
+            try {
+                const resGroups = await fetch(urlGroups);
+                const txtGroups = await resGroups.text();
+                const rowsGroups = parseCSV(txtGroups);
+                let foundQualifiers = false;
+                for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
+                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
+                        foundQualifiers = true;
+                        break;
+                    }
+                }
+                setBracketData({ hasData: false, canGenerate: foundQualifiers });
+            } catch(err2) {
+                setBracketData({ hasData: false, canGenerate: false });
+            }
+        }
+    };
+
     try {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       
-      // VALIDACIÓN EXTENDIDA: Palabras prohibidas que indican que NO es un cuadro de juego
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
       const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
@@ -552,61 +586,11 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Si no hay cuadro definido:
-          const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
-          
-          if (isDirect) {
-               // Si es Directo, consultamos la hoja "Inscriptos" para ver si hay gente
-               const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-               try {
-                   const res = await fetch(urlInscriptos);
-                   const txt = await res.text();
-                   const rows = parseCSV(txt);
-                   // Filtramos los inscriptos de este torneo y categoría
-                   const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
-                   setBracketData({ hasData: false, canGenerate: count >= 4 });
-               } catch (e) {
-                   setBracketData({ hasData: false, canGenerate: false });
-               }
-          } else {
-               // Si es Full, consultamos la hoja "Grupos"
-               const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
-               const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
-               try {
-                  const resGroups = await fetch(urlGroups);
-                  const txtGroups = await resGroups.text();
-                  const rowsGroups = parseCSV(txtGroups);
-                  let foundQualifiers = false;
-                  for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                      if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
-                          foundQualifiers = true;
-                          break;
-                      }
-                  }
-                  setBracketData({ hasData: false, canGenerate: foundQualifiers });
-               } catch(err2) {
-                  setBracketData({ hasData: false, canGenerate: false });
-               }
-          }
+          await checkCanGenerate();
       }
 
     } catch (error) { 
-         // Si falla el fetch del cuadro (hoja no existe), aplicamos la misma lógica de fallback
-         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
-         if (isDirect) {
-             const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-               try {
-                   const res = await fetch(urlInscriptos);
-                   const txt = await res.text();
-                   const rows = parseCSV(txt);
-                   const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
-                   setBracketData({ hasData: false, canGenerate: count >= 4 });
-               } catch (e) {
-                   setBracketData({ hasData: false, canGenerate: false });
-               }
-         } else {
-             setBracketData({ hasData: false, canGenerate: false }); 
-         }
+        await checkCanGenerate();
     } finally { 
         setIsLoading(false); 
     }
@@ -620,7 +604,6 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
