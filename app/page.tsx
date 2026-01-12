@@ -20,7 +20,7 @@ const tournaments = [
   { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
-  { id: "us", name: "US Open", short: "US", type: "direct" }, // CAMBIADO A DIRECT SEGUN TU PEDIDO
+  { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
 export default function Home() {
@@ -372,16 +372,6 @@ export default function Home() {
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
 
-    const seedMap32 = [0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1]; 
-    const seedMap16 = [0, 7, 4, 3, 2, 5, 6, 1]; 
-    const seedMap8 = [0, 3, 1, 2];
-    const seedMap4 = [0, 1];
-
-    let currentMap = seedMap8;
-    if (bracketSize === 32) currentMap = seedMap32;
-    if (bracketSize === 16) currentMap = seedMap16;
-    if (bracketSize === 4) currentMap = seedMap4;
-
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
     const wZ1 = winners.find(w => w.groupIndex === 0);
@@ -548,7 +538,7 @@ export default function Home() {
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
-      const isInvalidSheet = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido"].some(k => firstCell.includes(k));
+      const isInvalidSheet = ["formato", "cant", "zona", "pareja", "inscripto"].some(k => firstCell.includes(k));
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
 
       if (hasContent) {
@@ -559,13 +549,10 @@ export default function Home() {
             setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
           }
       } else {
-          // Si no hay cuadro definido, vemos si habilitamos el botón de generar
           const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
-          
           if (isDirect) {
                setBracketData({ hasData: false, canGenerate: true });
           } else {
-               // Para torneos FULL, revisamos si hay datos en la pestaña Grupos
                const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
                const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                const resGroups = await fetch(urlGroups);
@@ -599,7 +586,6 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -854,7 +840,8 @@ export default function Home() {
                     })}
                   </div>
                   <Trophy className="w-24 h-24 text-orange-400 mb-4 mx-auto text-center animate-bounce" />
-                  <span className="text-[#b35a38] font-black text-4xl italic uppercase text-center w-full block text-center">{bracketData.winner || "Campeón"}</span>
+                  <span className="text-slate-400 font-bold text-xs tracking-widest uppercase mb-1">CAMPEÓN</span>
+                  <span className="text-[#b35a38] font-black text-3xl italic uppercase text-center w-full block">{bracketData.winner || ""}</span>
                 </div>
               </div>
             ) : (
@@ -865,9 +852,15 @@ export default function Home() {
                 {bracketData.canGenerate ? (
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
-                        <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                            <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
-                        </Button>
+                        {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
+                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           </Button>
+                        ) : (
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           </Button>
+                        )}
                     </div>
                 ) : (
                     <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p>
