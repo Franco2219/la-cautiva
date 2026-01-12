@@ -20,7 +20,7 @@ const tournaments = [
   { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
-  { id: "us", name: "US Open", short: "US", type: "full" },
+  { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
 export default function Home() {
