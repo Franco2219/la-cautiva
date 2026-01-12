@@ -526,28 +526,33 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS ---
+  // --- BRACKETS (CORREGIDO Y ROBUSTO) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
     
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
-    // Función auxiliar para verificar si se puede generar sorteo
+    // Función auxiliar para verificar si podemos generar sorteo (FALLBACK)
     const checkCanGenerate = async () => {
+        // Detectar tipo de torneo
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
+        
         if (isDirect) {
+            // Si es DIRECTO -> Buscamos en "Inscriptos" del Excel General
             const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
             try {
                 const res = await fetch(urlInscriptos);
                 const txt = await res.text();
                 const rows = parseCSV(txt);
+                // Filtramos por torneo y categoría
                 const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
                 setBracketData({ hasData: false, canGenerate: count >= 4 });
             } catch (e) {
                 setBracketData({ hasData: false, canGenerate: false });
             }
         } else {
+            // Si es FULL (Grupos) -> Buscamos en la hoja de "Grupos" del Excel Torneos
             const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
             const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
             try {
@@ -572,8 +577,9 @@ export default function Home() {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
-      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       
+      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
+      // Palabras clave que indican que NO es un cuadro de juego
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
       const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
@@ -604,6 +610,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
