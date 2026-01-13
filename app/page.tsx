@@ -526,7 +526,7 @@ export default function Home() {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS (CORREGIDO Y ROBUSTO) ---
+  // --- BRACKETS ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
@@ -670,6 +670,7 @@ export default function Home() {
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
+                if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
               }).map((t) => (
                 <Button key={t.id} onClick={() => {
@@ -884,9 +885,7 @@ export default function Home() {
                                <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
-                           </Button>
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
                         )}
                     </div>
                 ) : (
