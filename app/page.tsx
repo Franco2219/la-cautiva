@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle } from "lucide-react"
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X } from "lucide-react"
 
 // --- CONFIGURACIÓN DE DATOS ---
 const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
@@ -33,6 +33,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
+  
+  // Estados para el calculador de Ranking Oculto
+  const [footerClicks, setFooterClicks] = useState(0);
+  const [showRankingCalc, setShowRankingCalc] = useState(false);
+  const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
   const parseCSV = (text: string) => {
     if (!text) return [];
@@ -40,6 +45,125 @@ export default function Home() {
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
     );
   };
+
+  // --- LOGICA DE CALCULO DE RANKING (Punto 3) ---
+  const handleFooterClick = () => {
+      if (navState.level === "direct-bracket") {
+          const newCount = footerClicks + 1;
+          setFooterClicks(newCount);
+          if (newCount >= 4) {
+              // Activar modo admin ranking
+              calculateAndShowRanking();
+              setFooterClicks(0); // Reset
+          }
+      }
+  };
+
+  const calculateAndShowRanking = async () => {
+    setIsLoading(true);
+    try {
+        // 1. Buscar Baremo de Puntos en Excel "Formatos Grupos" (Filas 37 a 44)
+        const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
+        const res = await fetch(urlBaremo);
+        const txt = await res.text();
+        const rows = parseCSV(txt);
+
+        // Identificar columna del torneo actual
+        const headerRow = rows[0]; // Fila 37
+        const currentTourShort = navState.tournamentShort ? navState.tournamentShort.toLowerCase() : "";
+        
+        let colIndex = -1;
+        // Busqueda laxa del nombre del torneo
+        for(let i=0; i<headerRow.length; i++) {
+            if (headerRow[i] && headerRow[i].toLowerCase().includes(currentTourShort)) {
+                colIndex = i;
+                break;
+            }
+        }
+
+        if (colIndex === -1) {
+            alert("No se encontró la configuración de puntos para este torneo en la hoja Formatos Grupos.");
+            setIsLoading(false);
+            return;
+        }
+
+        // Leer Puntos (Fila 38 a 44 -> Indices 1 a 7 en el array recortado)
+        const pts = {
+            champion: parseInt(rows[1][colIndex]) || 0,   // Fila 38
+            finalist: parseInt(rows[2][colIndex]) || 0,   // Fila 39
+            semi: parseInt(rows[3][colIndex]) || 0,       // Fila 40
+            quarters: parseInt(rows[4][colIndex]) || 0,   // Fila 41
+            octavos: parseInt(rows[5][colIndex]) || 0,    // Fila 42
+            dieciseis: parseInt(rows[6][colIndex]) || 0,  // Fila 43
+            groupWin: parseInt(rows[7][colIndex]) || 0    // Fila 44
+        };
+
+        // 2. Calcular Puntos por Jugador
+        const playerScores: any = {};
+        const addScore = (name: string, score: number) => {
+            if (!name || name === "BYE" || name === "TBD") return;
+            // Nos quedamos con el puntaje más alto alcanzado (el bracket mata grupo)
+            if (!playerScores[name] || score > playerScores[name]) {
+                playerScores[name] = score;
+            }
+        };
+
+        // Analizar Cuadro Final
+        if (bracketData.hasData) {
+            const { r1, r2, r3, r4, winner, isLarge } = bracketData;
+            
+            // Campeon
+            if (winner) addScore(winner, pts.champion);
+
+            // Finalistas (Están en la ultima ronda, si no es winner es finalista)
+            const finalists = isLarge ? r4 : r3; // r4 en 32, r3 en 16/8
+            finalists.forEach((p: string) => {
+                if (p && p !== winner) addScore(p, pts.finalist);
+            });
+
+            // Semifinalistas (Están en r3/r2 pero no en final)
+            const semis = isLarge ? r3 : r2;
+            semis.forEach((p: string) => {
+                if (p && !finalists.includes(p)) addScore(p, pts.semi);
+            });
+
+            // Cuartos
+            const cuartos = isLarge ? r2 : r1;
+            cuartos.forEach((p: string) => {
+                if (p && !semis.includes(p)) addScore(p, pts.quarters);
+            });
+
+            // Octavos (Solo si es Large o si r1 es octavos)
+            if (isLarge) {
+                r1.forEach((p: string) => {
+                    if (p && !cuartos.includes(p)) addScore(p, pts.octavos);
+                });
+            }
+            // Falta logica fina para 16avos si el cuadro es gigante, pero con esto cubrimos la mayoría.
+        }
+
+        // Analizar Fase de Grupos (para el punto consuelo de "1 ganado")
+        // Esto solo si tenemos groupData cargado en memoria o si lo vamos a buscar.
+        // Por simplicidad y eficiencia, si estamos en vista de cuadro, asumimos que groupData puede no estar.
+        // Si quisieras ser muy preciso habria que fetchear grupos de nuevo, pero usemos lo que hay.
+        
+        // Convertir a array y ordenar
+        const rankingArray = Object.keys(playerScores).map(key => ({
+            name: key,
+            points: playerScores[key]
+        })).sort((a, b) => b.points - a.points);
+
+        setCalculatedRanking(rankingArray);
+        setShowRankingCalc(true);
+
+    } catch (e) {
+        console.error(e);
+        alert("Error calculando ranking.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
 
   // --- MOTOR DE SORTEO DIRECTO ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
@@ -153,7 +277,7 @@ export default function Home() {
                     const rival = unseededPlayers.pop();
                     match.p2 = { ...rival, rank: 0 }; 
                 } else {
-                    match.p2 = { name: "TBD", rank: 0 };
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         });
@@ -273,7 +397,6 @@ export default function Home() {
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            // --- DETECCIÓN DE JUGADORES REALES ---
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
             const validPlayersIndices = [];
             const players = [];
@@ -370,12 +493,13 @@ export default function Home() {
     }
 
     return (
-    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit">
+    // CAMBIO PUNTO 2: overflow-x-auto para scroll horizontal
+    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-x-auto">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <table className="w-full text-[11px] md:text-xs">
         <thead>
           <tr className="bg-slate-50 border-b">
-            <th className="p-3 border-r w-32 text-left font-bold text-black">JUGADOR</th>
+            <th className="p-3 border-r w-32 text-left font-bold text-black min-w-[120px]">JUGADOR</th>
             {group.players && group.players.map((p: string, i: number) => {
                let shortName = p;
                if (p) {
@@ -387,7 +511,7 @@ export default function Home() {
                    }
                }
                return (
-                <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase">
+                <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px]">
                     {shortName}
                 </th>
                )
@@ -419,7 +543,7 @@ export default function Home() {
     );
   };
 
-  // --- SORTEO CUADRO FINAL (Desde Grupos) ---
+  // --- SORTEO CUADRO FINAL ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
@@ -679,6 +803,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -829,7 +954,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -889,11 +1014,11 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || ""}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || ""}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -969,6 +1094,53 @@ export default function Home() {
             )}
           </div>
         )}
+        
+        {/* --- MODAL DE RANKING --- */}
+        {showRankingCalc && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
+                    <Button onClick={() => setShowRankingCalc(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost">
+                        <X className="w-6 h-6" />
+                    </Button>
+                    
+                    <div className="text-center mb-6">
+                        <Trophy className="w-12 h-12 text-orange-500 mx-auto mb-2" />
+                        <h3 className="text-2xl font-black uppercase text-slate-800">Cálculo de Puntos</h3>
+                        <p className="text-sm text-slate-500 font-medium">Torneo: {navState.tournamentShort}</p>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl border-2 border-slate-100 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#b35a38] text-white">
+                                <tr>
+                                    <th className="p-3 font-bold text-sm uppercase tracking-wider">Jugador</th>
+                                    <th className="p-3 font-bold text-sm uppercase tracking-wider text-right">Puntos</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {calculatedRanking.map((p, i) => (
+                                    <tr key={i} className="hover:bg-white transition-colors">
+                                        <td className="p-3 font-bold text-slate-700 uppercase text-sm">{p.name}</td>
+                                        <td className="p-3 font-black text-orange-600 text-right">{p.points}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div className="mt-6 text-center">
+                        <p className="text-xs text-slate-400 mb-4">Copia estos valores al Excel de Ranking General</p>
+                        <Button onClick={() => {
+                            const text = calculatedRanking.map(p => `${p.name}\t${p.points}`).join('\n');
+                            navigator.clipboard.writeText(text);
+                            alert("Tabla copiada al portapapeles");
+                        }} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold h-12 rounded-xl">
+                            COPIAR TABLA
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {navState.level === "ranking-view" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
@@ -1002,7 +1174,13 @@ export default function Home() {
           </div>
         )}
       </div>
-      <p className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center">Sistema de seguimiento de torneos en vivo</p>
+      {/* TRIGGER SECRETO DE RANKING EN EL FOOTER */}
+      <p 
+        onClick={handleFooterClick}
+        className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center cursor-pointer select-none active:scale-95 transition-transform"
+      >
+        Sistema de seguimiento de torneos en vivo
+      </p>
     </div>
   );
 }
