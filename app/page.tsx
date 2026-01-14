@@ -229,7 +229,7 @@ export default function Home() {
         capacity: cap,
         players: [],
         results: [["-","-","-"], ["-","-","-"], ["-","-","-"]],
-        positions: ["-", "-", "-"] // Inicializamos posiciones vacías
+        positions: ["-", "-", "-"]
       }));
 
       for (let i = 0; i < numGroups; i++) {
@@ -329,7 +329,26 @@ export default function Home() {
     setIsSorteoConfirmado(true);
   };
 
-  const GroupTable = ({ group }: { group: any }) => (
+  const GroupTable = ({ group }: { group: any }) => {
+    // 1. Verificamos si el grupo está completo (todos los partidos jugados)
+    // Solo chequeamos las celdas que no son la diagonal principal y que corresponden a jugadores existentes
+    const totalPlayers = group.players.length;
+    let isComplete = true;
+
+    for (let i = 0; i < totalPlayers; i++) {
+        for (let j = 0; j < totalPlayers; j++) {
+           if (i === j) continue; // Saltamos diagonal
+           const val = group.results[i]?.[j];
+           // Si hay un guion o está vacío, falta jugar
+           if (!val || val === "-" || val === "") {
+             isComplete = false;
+             break;
+           }
+        }
+        if (!isComplete) break;
+    }
+
+    return (
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <table className="w-full text-[11px] md:text-xs">
@@ -365,24 +384,26 @@ export default function Home() {
               ))}
             </tr>
           ))}
-          {/* FILA DE POSICIONES AGREGADA */}
-          <tr className="bg-[#b35a38]/5 border-t-2 border-[#b35a38]/20">
-             <td className="p-3 border-r font-black text-slate-500 text-left uppercase text-[10px] tracking-widest">POSICIÓN</td>
-             {group.players && group.players.map((_: any, i: number) => {
-                 const pos = group.positions ? group.positions[i] : "";
-                 // Si hay dato y es un numero, le agregamos el grado, si no mostramos el dato tal cual o guion
-                 const displayPos = pos ? (isNaN(pos) ? pos : `${pos}°`) : "-";
-                 return (
-                    <td key={i} className="p-3 border-r text-center font-black text-[#b35a38] text-xl">
-                        {displayPos}
-                    </td>
-                 )
-             })}
-          </tr>
+          {/* FILA DE POSICIONES: SOLO SE MUESTRA SI ESTÁ COMPLETO */}
+          {isComplete && (
+            <tr className="bg-[#b35a38]/5 border-t-2 border-[#b35a38]/20">
+               <td className="p-3 border-r font-black text-black text-left uppercase text-[10px] tracking-widest">POSICIÓN</td>
+               {group.players && group.players.map((_: any, i: number) => {
+                   const pos = group.positions ? group.positions[i] : "";
+                   const displayPos = pos ? (isNaN(pos) ? pos : `${pos}°`) : "-";
+                   return (
+                      <td key={i} className="p-3 border-r text-center font-black text-[#b35a38] text-xl">
+                          {displayPos}
+                      </td>
+                   )
+               })}
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
-  );
+    );
+  };
 
   // --- SORTEO CUADRO FINAL (Desde Grupos) ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -644,19 +665,18 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
-                  {match.p1 ? match.p1.name : "TBD"}
+                  {match.p1 ? match.p1.name : ""}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
-                  {match.p2 ? match.p2.name : "TBD"}
+                  {match.p2 ? match.p2.name : ""}
               </span>
           </div>
       </div>
@@ -762,7 +782,7 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* CAMBIO DE BOTÓN REHACER A SORTEAR (VERDE) */}
+                {/* Verificamos si es Directo para la acción del botón Rehacer */}
                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                    <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold h-12 px-8 shadow-lg">
                        <Shuffle className="mr-2 w-4 h-4" /> Sortear
@@ -829,11 +849,11 @@ export default function Home() {
                       return (
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
                           </div>
                           {/* Middle Line to Next Round */}
@@ -855,11 +875,11 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         </div>
                         {/* Middle Line */}
