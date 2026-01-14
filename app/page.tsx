@@ -273,9 +273,6 @@ export default function Home() {
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            // --- DETECCIÓN DE JUGADORES REALES ---
-            // Solo agregamos jugadores que tengan nombre (no vacíos ni guiones)
-            // Esto soluciona el problema de los espacios en blanco cuando la zona es de 2
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
             const validPlayersIndices = [];
             const players = [];
@@ -284,20 +281,17 @@ export default function Home() {
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
                     players.push(row[0]);
-                    positions.push(row[4] || ""); // Columna E es la posición
-                    validPlayersIndices.push(index); // Guardamos qué fila era (0, 1 o 2)
+                    positions.push(row[4] || ""); 
+                    validPlayersIndices.push(index); 
                 }
             });
 
-            // Construimos la matriz de resultados solo con los jugadores válidos
             const results = [];
             for (let x = 0; x < validPlayersIndices.length; x++) {
                 const rowResults = [];
-                const rowIndex = validPlayersIndices[x]; // Fila original en el bloque de 3
+                const rowIndex = validPlayersIndices[x]; 
                 for (let y = 0; y < validPlayersIndices.length; y++) {
-                    const colIndex = validPlayersIndices[y]; // Columna original (mapeada a índice 1, 2, 3 del array)
-                    // En el CSV: Col B=0 (Nombre), C=1 (vs 1), D=2 (vs 2), E=3 (vs 3)...
-                    // Ajuste: row[1] es vs P1, row[2] es vs P2, row[3] es vs P3
+                    const colIndex = validPlayersIndices[y];
                     const res = rows[i + 1 + rowIndex][1 + colIndex]; 
                     rowResults.push(res);
                 }
@@ -357,7 +351,7 @@ export default function Home() {
   };
 
   const GroupTable = ({ group }: { group: any }) => {
-    // Verificar si el grupo está completo para mostrar posiciones
+    // 1. Verificamos si el grupo está completo para mostrar la columna de posición
     const totalPlayers = group.players.length;
     let isComplete = true;
 
@@ -365,7 +359,9 @@ export default function Home() {
         for (let j = 0; j < totalPlayers; j++) {
            if (i === j) continue; 
            const val = group.results[i]?.[j];
-           if (!val || val === "-" || val === "") {
+           // Consideramos incompleto si es "-" o vacío, pero permitimos espacios simples
+           // A veces el usuario pone "6/4 6/1 ", el trim lo arregla
+           if (!val || val.trim() === "-" || val.trim() === "") {
              isComplete = false;
              break;
            }
@@ -380,7 +376,6 @@ export default function Home() {
         <thead>
           <tr className="bg-slate-50 border-b">
             <th className="p-3 border-r w-32 text-left font-bold text-black">JUGADOR</th>
-            {/* Columnas de Rivales */}
             {group.players && group.players.map((p: string, i: number) => {
                let shortName = p;
                if (p) {
@@ -397,8 +392,8 @@ export default function Home() {
                 </th>
                )
             })}
-            {/* Columna POSICION en el encabezado */}
-            <th className="p-3 text-center font-black text-black bg-slate-100 w-12">POS</th>
+            {/* Solo mostramos la columna POS si está completo */}
+            {isComplete && <th className="p-3 text-center font-black text-black bg-slate-100 w-12">POS</th>}
           </tr>
         </thead>
         <tbody>
@@ -410,14 +405,14 @@ export default function Home() {
                   {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
                 </td>
               ))}
-              {/* Celda de Posición (derecha) */}
-              <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
-                  {isComplete ? (
-                      group.positions && group.positions[i] && !isNaN(group.positions[i]) 
+              {/* Solo mostramos la celda de POS si está completo */}
+              {isComplete && (
+                  <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
+                      {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
                       ? `${group.positions[i]}°` 
-                      : "-"
-                  ) : "-"}
-              </td>
+                      : (group.positions[i] || "-")}
+                  </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -686,6 +681,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
