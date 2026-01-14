@@ -153,7 +153,7 @@ export default function Home() {
                     const rival = unseededPlayers.pop();
                     match.p2 = { ...rival, rank: 0 }; 
                 } else {
-                    match.p2 = { name: "TBD", rank: 0 };
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         });
@@ -428,7 +428,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "TBD", rank: 0 };
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -610,40 +610,18 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // --- HELPER PARA PROYECCIÓN DE RIVALES ("Federer / Nalbandian") ---
-  const getProjectedLabel = (
-      currentPlayer: string | undefined, 
-      previousRound: string[], 
-      index: number
-  ) => {
-      // Si ya hay un ganador (ej: Nadal), mostrar "Nadal"
-      if (currentPlayer) return currentPlayer;
-
-      // Si no, buscar en la ronda anterior quiénes podrían llegar a este slot
-      const feeder1 = previousRound[index * 2];
-      const feeder2 = previousRound[index * 2 + 1];
-
-      // Si ambos existen en la ronda anterior, mostrar "Jugador1 / Jugador2"
-      if (feeder1 && feeder2) {
-          return `${feeder1} / ${feeder2}`;
-      }
-
-      // Si falta info, mostrar "A DEFINIR"
-      return "A DEFINIR";
-  }
-
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
-                  {match.p1 ? match.p1.name : "TBD"}
+                  {match.p1 ? match.p1.name : ""}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
-                  {match.p2 ? match.p2.name : "TBD"}
+                  {match.p2 ? match.p2.name : ""}
               </span>
           </div>
       </div>
@@ -812,11 +790,11 @@ export default function Home() {
                       return (
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
                           </div>
                           {/* Middle Line to Next Round */}
@@ -838,11 +816,11 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || getProjectedLabel(undefined, bracketData.r1, idx*2) }</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || getProjectedLabel(undefined, bracketData.r1, (idx+1)*2) }</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -860,19 +838,14 @@ export default function Home() {
                     const w2 = p2 && (bracketData.isLarge ? bracketData.r4.includes(p2) : bracketData.r3.includes(p2));
                     const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
                     const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
-                    // Para la proyección, si es Large miramos r2, si es normal miramos r1
-                    const prevRound = bracketData.isLarge ? bracketData.r2 : bracketData.r1;
-                    const proj1 = getProjectedLabel(p1, prevRound, idx);
-                    const proj2 = getProjectedLabel(p2, prevRound, idx+1);
-
                     return (
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>{p1 || proj1}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>{p2 || proj2}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -888,11 +861,7 @@ export default function Home() {
                       const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
                       const s = bracketData.isLarge ? bracketData.s4[idx] : bracketData.s3[idx];
                       const win = p && p === bracketData.winner;
-                      
-                      const prevRound = bracketData.isLarge ? bracketData.r3 : bracketData.r2;
-                      const proj = getProjectedLabel(p, prevRound, idx);
-
-                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center truncate`}>{p || proj}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
+                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
                   <Trophy className="w-24 h-24 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
@@ -915,7 +884,9 @@ export default function Home() {
                                <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           </Button>
                         )}
                     </div>
                 ) : (
