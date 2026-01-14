@@ -27,7 +27,7 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -46,15 +46,14 @@ export default function Home() {
     );
   };
 
-  // --- LOGICA DE CALCULO DE RANKING (Punto 3) ---
+  // --- LOGICA DE CALCULO DE RANKING ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
           setFooterClicks(newCount);
           if (newCount >= 4) {
-              // Activar modo admin ranking
               calculateAndShowRanking();
-              setFooterClicks(0); // Reset
+              setFooterClicks(0); 
           }
       }
   };
@@ -62,18 +61,15 @@ export default function Home() {
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        // 1. Buscar Baremo de Puntos en Excel "Formatos Grupos" (Filas 37 a 44)
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        // Identificar columna del torneo actual
-        const headerRow = rows[0]; // Fila 37
+        const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.toLowerCase() : "";
         
         let colIndex = -1;
-        // Busqueda laxa del nombre del torneo
         for(let i=0; i<headerRow.length; i++) {
             if (headerRow[i] && headerRow[i].toLowerCase().includes(currentTourShort)) {
                 colIndex = i;
@@ -82,72 +78,56 @@ export default function Home() {
         }
 
         if (colIndex === -1) {
-            alert("No se encontró la configuración de puntos para este torneo en la hoja Formatos Grupos.");
+            alert("No se encontró la configuración de puntos para este torneo.");
             setIsLoading(false);
             return;
         }
 
-        // Leer Puntos (Fila 38 a 44 -> Indices 1 a 7 en el array recortado)
         const pts = {
-            champion: parseInt(rows[1][colIndex]) || 0,   // Fila 38
-            finalist: parseInt(rows[2][colIndex]) || 0,   // Fila 39
-            semi: parseInt(rows[3][colIndex]) || 0,       // Fila 40
-            quarters: parseInt(rows[4][colIndex]) || 0,   // Fila 41
-            octavos: parseInt(rows[5][colIndex]) || 0,    // Fila 42
-            dieciseis: parseInt(rows[6][colIndex]) || 0,  // Fila 43
-            groupWin: parseInt(rows[7][colIndex]) || 0    // Fila 44
+            champion: parseInt(rows[1][colIndex]) || 0,   
+            finalist: parseInt(rows[2][colIndex]) || 0,   
+            semi: parseInt(rows[3][colIndex]) || 0,       
+            quarters: parseInt(rows[4][colIndex]) || 0,   
+            octavos: parseInt(rows[5][colIndex]) || 0,    
+            dieciseis: parseInt(rows[6][colIndex]) || 0,  
+            groupWin: parseInt(rows[7][colIndex]) || 0    
         };
 
-        // 2. Calcular Puntos por Jugador
         const playerScores: any = {};
         const addScore = (name: string, score: number) => {
-            if (!name || name === "BYE" || name === "TBD") return;
-            // Nos quedamos con el puntaje más alto alcanzado (el bracket mata grupo)
+            if (!name || name === "BYE" || name === "") return;
             if (!playerScores[name] || score > playerScores[name]) {
                 playerScores[name] = score;
             }
         };
 
-        // Analizar Cuadro Final
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, winner, isLarge } = bracketData;
             
-            // Campeon
             if (winner) addScore(winner, pts.champion);
 
-            // Finalistas (Están en la ultima ronda, si no es winner es finalista)
-            const finalists = isLarge ? r4 : r3; // r4 en 32, r3 en 16/8
+            const finalists = isLarge ? r4 : r3; 
             finalists.forEach((p: string) => {
                 if (p && p !== winner) addScore(p, pts.finalist);
             });
 
-            // Semifinalistas (Están en r3/r2 pero no en final)
             const semis = isLarge ? r3 : r2;
             semis.forEach((p: string) => {
                 if (p && !finalists.includes(p)) addScore(p, pts.semi);
             });
 
-            // Cuartos
             const cuartos = isLarge ? r2 : r1;
             cuartos.forEach((p: string) => {
                 if (p && !semis.includes(p)) addScore(p, pts.quarters);
             });
 
-            // Octavos (Solo si es Large o si r1 es octavos)
             if (isLarge) {
                 r1.forEach((p: string) => {
                     if (p && !cuartos.includes(p)) addScore(p, pts.octavos);
                 });
             }
-            // Falta logica fina para 16avos si el cuadro es gigante, pero con esto cubrimos la mayoría.
         }
 
-        // Analizar Fase de Grupos (para el punto consuelo de "1 ganado")
-        // Esto solo si tenemos groupData cargado en memoria o si lo vamos a buscar.
-        // Por simplicidad y eficiencia, si estamos en vista de cuadro, asumimos que groupData puede no estar.
-        // Si quisieras ser muy preciso habria que fetchear grupos de nuevo, pero usemos lo que hay.
-        
-        // Convertir a array y ordenar
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
             points: playerScores[key]
@@ -277,7 +257,7 @@ export default function Home() {
                     const rival = unseededPlayers.pop();
                     match.p2 = { ...rival, rank: 0 }; 
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
                 }
             }
         });
@@ -493,7 +473,6 @@ export default function Home() {
     }
 
     return (
-    // CAMBIO PUNTO 2: overflow-x-auto para scroll horizontal
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-x-auto">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <table className="w-full text-[11px] md:text-xs">
@@ -543,7 +522,7 @@ export default function Home() {
     );
   };
 
-  // --- SORTEO CUADRO FINAL ---
+  // --- SORTEO CUADRO FINAL (Desde Grupos) ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
@@ -621,7 +600,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "TBD", rank: 0 };
+                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
                 }
             }
         } else {
@@ -722,7 +701,7 @@ export default function Home() {
   // --- BRACKETS ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false });
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false, seeds: {} });
     
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
@@ -772,17 +751,54 @@ export default function Home() {
       const rows = parseCSV(csvText);
       
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
-      // Palabras clave que indican que NO es un cuadro de juego
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
       const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
 
       if (hasContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
+
+          // --- LOGICA DE PRECLASIFICADOS (TOP 8) ---
+          let seeds = {};
+          try {
+             // 1. Ranking para puntos
+             const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
+             const rankRes = await fetch(rankUrl);
+             const rankTxt = await rankRes.text();
+             const playersRanking = parseCSV(rankTxt).slice(1).map(row => ({
+               name: row[1] || "",
+               total: row[11] ? parseInt(row[11]) : 0
+             })).filter(p => p.name !== "");
+
+             // 2. Inscriptos
+             const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+             const inscRes = await fetch(inscUrl);
+             const inscTxt = await inscRes.text();
+             const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
+               cols[0] === tournamentShort && cols[1] === category
+             ).map(cols => cols[2]);
+
+             // 3. Entry List Ordenada
+             const entryList = filteredInscriptos.map(n => {
+                 const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
+                 return { name: n, points: p ? p.total : 0 };
+             }).sort((a, b) => b.points - a.points);
+
+             // 4. Mapear Top 8
+             const top8 = entryList.slice(0, 8);
+             const seedMap: any = {};
+             top8.forEach((p, i) => {
+                 if (p.name) seedMap[p.name] = i + 1;
+             });
+             seeds = seedMap;
+
+          } catch(e) { console.log("Error fetching seeds", e); }
+          // ------------------------------------------
+
           if (isLarge) {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false });
+            setBracketData({ r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds });
           } else {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false });
+            setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds });
           }
       } else {
           await checkCanGenerate();
@@ -809,13 +825,13 @@ export default function Home() {
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
-                  {match.p1 ? match.p1.name : "TBD"}
+                  {match.p1 ? match.p1.name : ""}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
-                  {match.p2 ? match.p2.name : "TBD"}
+                  {match.p2 ? match.p2.name : ""}
               </span>
           </div>
       </div>
@@ -954,7 +970,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -985,14 +1001,25 @@ export default function Home() {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
                       const w2 = p2 && bracketData.r2.includes(p2);
+                      
+                      // LOGICA PRECLASIFICADO
+                      const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                      const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+
                       return (
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || ""}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
+                                {seed1 ? <span className="text-[9px] text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {p1 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || ""}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
+                                {seed2 ? <span className="text-[9px] text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {p2 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
                           </div>
                           {/* Middle Line to Next Round */}
@@ -1011,14 +1038,24 @@ export default function Home() {
                     const w2 = p2 && (bracketData.isLarge ? bracketData.r3.includes(p2) : bracketData.r2.includes(p2));
                     const s1 = bracketData.isLarge ? bracketData.s2[idx] : bracketData.s1[idx];
                     const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s1[idx+1];
+                    
+                    const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                    const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+
                     return (
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {p1 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {p2 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -1036,14 +1073,24 @@ export default function Home() {
                     const w2 = p2 && (bracketData.isLarge ? bracketData.r4.includes(p2) : bracketData.r3.includes(p2));
                     const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
                     const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
+                    
+                    const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                    const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+
                     return (
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p1 || ""}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {p1 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>{p2 || ""}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {p2 || ""}
+                            </span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -1059,7 +1106,9 @@ export default function Home() {
                       const p = bracketData.isLarge ? bracketData.r4[idx] : bracketData.r3[idx];
                       const s = bracketData.isLarge ? bracketData.s4[idx] : bracketData.s3[idx];
                       const win = p && p === bracketData.winner;
-                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
+                      const seed = bracketData.seeds ? bracketData.seeds[p] : null;
+
+                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{seed ? <span className="text-sm text-orange-600 font-black mr-2">({seed})</span> : null}{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
                   <Trophy className="w-24 h-24 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
@@ -1078,12 +1127,12 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         )}
                     </div>
