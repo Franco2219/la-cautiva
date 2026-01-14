@@ -34,6 +34,7 @@ export default function Home() {
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
   
+  // Estados para el calculador de Ranking Oculto
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
@@ -161,7 +162,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (CORREGIDO PUNTOS 1 Y BYES) ---
+  // --- MOTOR DE SORTEO DIRECTO (REESCRITO PARA BALANCEO) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -189,15 +190,11 @@ export default function Home() {
             return;
         }
 
-        // Ordenar por ranking
+        // 1. Ordenar Entry List por Ranking
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
         }).sort((a, b) => b.points - a.points);
-
-        // Separar Top 8 (Seeds) del resto (Non-Seeds)
-        const seedsList = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
-        const nonSeedsList = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
 
         const totalPlayers = entryList.length;
         let bracketSize = 4;
@@ -206,97 +203,92 @@ export default function Home() {
         if (totalPlayers > 16) bracketSize = 32;
 
         const byeCount = bracketSize - totalPlayers;
-        const numMatches = bracketSize / 2;
+        
+        // 2. Definir "Slots" (Líneas del cuadro)
+        // Usaremos un array plano de tamaño bracketSize.
+        // Ej para 16: indices 0..15.
+        // Los partidos serán (0 vs 1), (2 vs 3), etc.
+        let slots: any[] = Array(bracketSize).fill(null);
 
-        // Mapa de posiciones de seeds (Standard ATP)
-        let seedMap: number[] = [];
-        if (bracketSize === 4) seedMap = [0, 1];
-        else if (bracketSize === 8) seedMap = [0, 3, 1, 2];
-        else if (bracketSize === 16) seedMap = [0, 7, 3, 4, 1, 6, 2, 5];
-        else if (bracketSize === 32) seedMap = [0, 15, 7, 8, 3, 12, 4, 11, 1, 14, 6, 9, 2, 13, 5, 10]; 
+        // Mapas de posición de Seeds (Donde cae cada seed en el array plano)
+        // Basado en ATP estándar para que no se crucen temprano
+        let seedPos: number[] = [];
+        if (bracketSize === 4) seedPos = [0, 3]; // 1 vs 2 en final (indices 0 y 3 si son 1vs2 y 3vs4? No, array plano: Match1(0,1), Match2(2,3). Seed1->0, Seed2->3 => Final)
+        else if (bracketSize === 8) seedPos = [0, 7, 3, 4]; // 1(0), 2(7), 3(3), 4(4)
+        else if (bracketSize === 16) seedPos = [0, 15, 8, 7, 4, 11, 12, 3]; // Top 8 positions
+        else if (bracketSize === 32) seedPos = [0, 31, 16, 15, 8, 23, 24, 7]; // Top 8 positions aprox
 
-        let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+        // 3. Asignar Seeds (Top 8)
+        // 1 y 2 Fijos. 3 y 4 Sorteados. 5-8 Sorteados.
+        const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
+        
+        // Colocar Seed 1 y 2
+        if (seeds[0]) slots[seedPos[0]] = seeds[0];
+        if (seeds[1]) slots[seedPos[1]] = seeds[1];
 
-        // Funcion auxiliar para asignar pares de seeds aleatoriamente
-        const assignPair = (sA: any, sB: any, idxA: number, idxB: number) => {
-             const pair = [sA, sB].filter(Boolean).sort(() => Math.random() - 0.5);
-             if (pair[0]) matches[idxA].p1 = pair[0];
-             if (pair[1]) matches[idxB].p1 = pair[1];
-        };
-
-        // Asignar Seeds 1 y 2 (Fijos)
-        if (seedsList[0]) matches[seedMap[0]].p1 = seedsList[0];
-        if (seedsList[1]) matches[seedMap[1]].p1 = seedsList[1];
-
-        // Asignar Seeds 3 y 4 (Sorteados)
-        if (seedMap.length >= 4) {
-            assignPair(seedsList[2], seedsList[3], seedMap[2], seedMap[3]);
+        // Sortear 3 y 4
+        if (seeds[2] && seeds[3] && seedPos.length >= 4) {
+             const pair34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
+             slots[seedPos[2]] = pair34[0];
+             slots[seedPos[3]] = pair34[1];
         }
 
-        // Asignar Seeds 5 a 8 (Sorteados en pares: 5-6 y 7-8)
-        if (seedMap.length >= 8) {
-             assignPair(seedsList[4], seedsList[5], seedMap[4], seedMap[5]);
-             assignPair(seedsList[6], seedsList[7], seedMap[6], seedMap[7]);
+        // Sortear 5 a 8
+        if (seeds.length >= 8 && seedPos.length >= 8) {
+             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
+             slots[seedPos[4]] = group58[0];
+             slots[seedPos[5]] = group58[1];
+             slots[seedPos[6]] = group58[2];
+             slots[seedPos[7]] = group58[3];
         }
 
-        // Asignar BYEs (Solo a los Seeds en orden 1..8)
-        let byesToAssign = byeCount;
+        // 4. Asignar BYEs
+        // Los BYEs van a los rivales de los seeds más altos.
+        // Si Seed 1 está en pos 0, su rival es pos 1.
+        // Si Seed 2 está en pos 15, su rival es pos 14.
+        const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
+
+        let byesAssigned = 0;
+        // Recorremos los seeds en orden de ranking (1, 2, 3...) para darles el BYE
+        // Buscamos dónde quedó el Seed X en el array 'slots'
         for (let r = 1; r <= 8; r++) {
-            if (byesToAssign > 0) {
-                // Buscar el partido donde está el seed rank 'r'
-                const matchIdx = matches.findIndex(m => m.p1 && m.p1.rank === r);
-                if (matchIdx !== -1 && !matches[matchIdx].p2) {
-                    matches[matchIdx].p2 = { name: "BYE", rank: 0 };
-                    byesToAssign--;
+            if (byesAssigned < byeCount) {
+                const seedIndex = slots.findIndex(p => p && p.rank === r);
+                if (seedIndex !== -1) {
+                    const rivalIdx = getRivalIndex(seedIndex);
+                    if (slots[rivalIdx] === null) { // Solo si está vacío
+                        slots[rivalIdx] = { name: "BYE", rank: 0 };
+                        byesAssigned++;
+                    }
                 }
             }
         }
 
-        // Rellenar huecos con el resto de jugadores (Non-Seeds)
-        // Recolectar todos los slots vacios (P1 que sean null, P2 que sean null)
-        let emptySlots: { matchIdx: number, slot: 'p1' | 'p2' }[] = [];
-        
-        matches.forEach((m, idx) => {
-            if (!m.p1) emptySlots.push({ matchIdx: idx, slot: 'p1' });
-            if (!m.p2) emptySlots.push({ matchIdx: idx, slot: 'p2' });
-        });
+        // 5. Rellenar con el resto de jugadores (Non-Seeds)
+        const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
+        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar
 
-        // Mezclar Non-Seeds y Empty Slots para aleatoriedad total
-        // O mejor: Mezclar Non-Seeds y asignar secuencialmente a los slots vacios
-        nonSeedsList.sort(() => Math.random() - 0.5);
-        
-        // Si hay mas slots que jugadores (caso raro si falló calculo de bye), sobrarán vacios
-        // Si hay mas jugadores que slots (imposible por calculo de bracketSize), sobrarían jugadores
-        
-        for (let i = 0; i < nonSeedsList.length; i++) {
-            if (emptySlots[i]) {
-                const { matchIdx, slot } = emptySlots[i];
-                matches[matchIdx][slot] = nonSeedsList[i];
+        // Llenar los slots que siguen siendo null
+        for (let i = 0; i < slots.length; i++) {
+            if (slots[i] === null) {
+                if (nonSeeds.length > 0) {
+                    slots[i] = nonSeeds.pop();
+                } else if (byesAssigned < byeCount) {
+                    // Si sobran slots y faltan BYEs (caso raro si hay pocos seeds), poner BYE
+                    slots[i] = { name: "BYE", rank: 0 };
+                    byesAssigned++;
+                } else {
+                     // Hueco vacío (no debería pasar si la mate da bien)
+                     slots[i] = { name: "", rank: 0 };
+                }
             }
         }
-        
-        // Si sobraron slots vacíos (ej: P2 sin oponente y sin BYE asignado por prioridad), poner BYE restante
-        // Esto pasa si byeCount > seedsList.length (ej: cuadro de 32 con solo 10 jugadores)
-        for (let i = nonSeedsList.length; i < emptySlots.length; i++) {
-             const { matchIdx, slot } = emptySlots[i];
-             // El slot debe ser P2 obligatoriamente para ser un BYE valido, o P1 vs BYE?
-             // En un bracket, un hueco vacío es un BYE implícito. 
-             // Asignamos "BYE" para visualización.
-             matches[matchIdx][slot] = { name: "BYE", rank: 0 };
-             
-             // CORRECCIÓN VISUAL: Si P1 es BYE y P2 es alguien, invertir.
-             // Pero con la lógica de llenado, P1 se llenó primero con Seeds.
+
+        // 6. Convertir Slots a Matches
+        let matches = [];
+        for (let i = 0; i < bracketSize; i += 2) {
+            matches.push({ p1: slots[i], p2: slots[i+1] });
         }
-        
-        // Limpieza final: Si un partido quedó P1=BYE y P2=BYE, es un hueco.
-        // Si un partido quedó P1=Jugador y P2=BYE, está bien.
-        // Si un partido quedó P1=BYE y P2=Jugador -> Invertir.
-        matches.forEach(m => {
-            if (m.p1?.name === "BYE" && m.p2?.name !== "BYE") {
-                m.p1 = m.p2;
-                m.p2 = { name: "BYE", rank: 0 };
-            }
-        });
 
         setGeneratedBracket(matches);
         setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
@@ -636,7 +628,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -973,18 +965,18 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* Verificamos si es Directo para la acción del botón Rehacer */}
+                {/* BOTONES INVERTIDOS: SORTEAR NARANJA (IZQ), CONFIRMAR VERDE (DER) */}
                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                   <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold h-12 px-8 shadow-lg">
+                   <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg">
                        <Shuffle className="mr-2 w-4 h-4" /> Sortear
                    </Button>
                 ) : (
-                   <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold h-12 px-8 shadow-lg">
+                   <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg">
                        <Shuffle className="mr-2 w-4 h-4" /> Sortear
                    </Button>
                 )}
                 
-                <Button onClick={confirmarSorteoCuadro} className="bg-orange-500 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                 <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
              </div>
           </div>
@@ -1006,7 +998,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1046,14 +1038,14 @@ export default function Home() {
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
@@ -1082,14 +1074,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1108,7 +1100,7 @@ export default function Home() {
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r4.includes(p1) : bracketData.r3.includes(p1));
                     const w2 = p2 && (bracketData.isLarge ? bracketData.r4.includes(p2) : bracketData.r3.includes(p2));
                     const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
-                    const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s2[idx+1];
+                    const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
                     
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
@@ -1116,18 +1108,18 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-lg uppercase`}>
-                                {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-lg ml-4">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-lg uppercase`}>
-                                {seed2 ? <span className="text-xl text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-lg ml-4">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
@@ -1179,7 +1171,7 @@ export default function Home() {
             )}
           </div>
         )}
-        
+
         {/* --- MODAL DE RANKING --- */}
         {showRankingCalc && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
