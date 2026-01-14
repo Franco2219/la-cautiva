@@ -272,16 +272,43 @@ export default function Home() {
         const parsedGroups = [];
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
-            // Leemos la columna E (índice 4) para la posición: "1", "2", "3"
-            const posP1 = rows[i+1]?.[4] || "";
-            const posP2 = rows[i+2]?.[4] || "";
-            const posP3 = rows[i+3]?.[4] || "";
+            
+            // --- DETECCIÓN DE JUGADORES REALES ---
+            // Solo agregamos jugadores que tengan nombre (no vacíos ni guiones)
+            // Esto soluciona el problema de los espacios en blanco cuando la zona es de 2
+            const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
+            const validPlayersIndices = [];
+            const players = [];
+            const positions = [];
+
+            playersRaw.forEach((row, index) => {
+                if (row && row[0] && row[0] !== "-" && row[0] !== "") {
+                    players.push(row[0]);
+                    positions.push(row[4] || ""); // Columna E es la posición
+                    validPlayersIndices.push(index); // Guardamos qué fila era (0, 1 o 2)
+                }
+            });
+
+            // Construimos la matriz de resultados solo con los jugadores válidos
+            const results = [];
+            for (let x = 0; x < validPlayersIndices.length; x++) {
+                const rowResults = [];
+                const rowIndex = validPlayersIndices[x]; // Fila original en el bloque de 3
+                for (let y = 0; y < validPlayersIndices.length; y++) {
+                    const colIndex = validPlayersIndices[y]; // Columna original (mapeada a índice 1, 2, 3 del array)
+                    // En el CSV: Col B=0 (Nombre), C=1 (vs 1), D=2 (vs 2), E=3 (vs 3)...
+                    // Ajuste: row[1] es vs P1, row[2] es vs P2, row[3] es vs P3
+                    const res = rows[i + 1 + rowIndex][1 + colIndex]; 
+                    rowResults.push(res);
+                }
+                results.push(rowResults);
+            }
 
             parsedGroups.push({
               groupName: rows[i][0],
-              players: [rows[i+1]?.[0], rows[i+2]?.[0], rows[i+3]?.[0]].filter(n => n && n !== "-" && n !== ""),
-              results: rows.slice(i+1, i+4).map(r => r.slice(1, 4)),
-              positions: [posP1, posP2, posP3]
+              players: players,
+              results: results,
+              positions: positions
             });
           }
         }
@@ -330,16 +357,14 @@ export default function Home() {
   };
 
   const GroupTable = ({ group }: { group: any }) => {
-    // 1. Verificamos si el grupo está completo (todos los partidos jugados)
-    // Solo chequeamos las celdas que no son la diagonal principal y que corresponden a jugadores existentes
+    // Verificar si el grupo está completo para mostrar posiciones
     const totalPlayers = group.players.length;
     let isComplete = true;
 
     for (let i = 0; i < totalPlayers; i++) {
         for (let j = 0; j < totalPlayers; j++) {
-           if (i === j) continue; // Saltamos diagonal
+           if (i === j) continue; 
            const val = group.results[i]?.[j];
-           // Si hay un guion o está vacío, falta jugar
            if (!val || val === "-" || val === "") {
              isComplete = false;
              break;
@@ -355,6 +380,7 @@ export default function Home() {
         <thead>
           <tr className="bg-slate-50 border-b">
             <th className="p-3 border-r w-32 text-left font-bold text-black">JUGADOR</th>
+            {/* Columnas de Rivales */}
             {group.players && group.players.map((p: string, i: number) => {
                let shortName = p;
                if (p) {
@@ -371,6 +397,8 @@ export default function Home() {
                 </th>
                )
             })}
+            {/* Columna POSICION en el encabezado */}
+            <th className="p-3 text-center font-black text-black bg-slate-100 w-12">POS</th>
           </tr>
         </thead>
         <tbody>
@@ -382,23 +410,16 @@ export default function Home() {
                   {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
                 </td>
               ))}
+              {/* Celda de Posición (derecha) */}
+              <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
+                  {isComplete ? (
+                      group.positions && group.positions[i] && !isNaN(group.positions[i]) 
+                      ? `${group.positions[i]}°` 
+                      : "-"
+                  ) : "-"}
+              </td>
             </tr>
           ))}
-          {/* FILA DE POSICIONES: SOLO SE MUESTRA SI ESTÁ COMPLETO */}
-          {isComplete && (
-            <tr className="bg-[#b35a38]/5 border-t-2 border-[#b35a38]/20">
-               <td className="p-3 border-r font-black text-black text-left uppercase text-[10px] tracking-widest">POSICIÓN</td>
-               {group.players && group.players.map((_: any, i: number) => {
-                   const pos = group.positions ? group.positions[i] : "";
-                   const displayPos = pos ? (isNaN(pos) ? pos : `${pos}°`) : "-";
-                   return (
-                      <td key={i} className="p-3 border-r text-center font-black text-[#b35a38] text-xl">
-                          {displayPos}
-                      </td>
-                   )
-               })}
-            </tr>
-          )}
         </tbody>
       </table>
     </div>
@@ -815,7 +836,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
