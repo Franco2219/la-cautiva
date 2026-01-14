@@ -66,38 +66,61 @@ export default function Home() {
         const txt = await res.text();
         const rows = parseCSV(txt);
 
+        if (rows.length < 2) {
+             throw new Error("No se encontraron datos en Formatos Grupos");
+        }
+
         const headerRow = rows[0]; 
-        const currentTourShort = navState.tournamentShort ? navState.tournamentShort.toLowerCase() : "";
+        const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
         
         let colIndex = -1;
+        // Búsqueda inteligente de columna
         for(let i=0; i<headerRow.length; i++) {
-            if (headerRow[i] && headerRow[i].toLowerCase().includes(currentTourShort)) {
+            if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) {
                 colIndex = i;
                 break;
             }
         }
+        // Si no encuentra exacto, intenta contener
+        if (colIndex === -1) {
+            for(let i=0; i<headerRow.length; i++) {
+                if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) {
+                    colIndex = i;
+                    break;
+                }
+            }
+        }
 
         if (colIndex === -1) {
-            alert("No se encontró la configuración de puntos para este torneo.");
+            alert(`No se encontró la configuración de puntos para "${navState.tournamentShort}" en la fila 37 de Formatos Grupos.`);
             setIsLoading(false);
             return;
         }
 
+        // Función auxiliar para leer enteros seguros
+        const getPoints = (rowIndex: number) => {
+            if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0;
+            const val = parseInt(rows[rowIndex][colIndex]);
+            return isNaN(val) ? 0 : val;
+        };
+
         const pts = {
-            champion: parseInt(rows[1][colIndex]) || 0,   
-            finalist: parseInt(rows[2][colIndex]) || 0,   
-            semi: parseInt(rows[3][colIndex]) || 0,       
-            quarters: parseInt(rows[4][colIndex]) || 0,   
-            octavos: parseInt(rows[5][colIndex]) || 0,    
-            dieciseis: parseInt(rows[6][colIndex]) || 0,  
-            groupWin: parseInt(rows[7][colIndex]) || 0    
+            champion: getPoints(1),   // Fila 38
+            finalist: getPoints(2),   // Fila 39
+            semi: getPoints(3),       // Fila 40
+            quarters: getPoints(4),   // Fila 41
+            octavos: getPoints(5),    // Fila 42
+            dieciseis: getPoints(6),  // Fila 43
+            groupWin: getPoints(7)    // Fila 44
         };
 
         const playerScores: any = {};
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
-            if (!playerScores[name] || score > playerScores[name]) {
-                playerScores[name] = score;
+            // Limpiar nombre por si viene con espacios
+            const cleanName = name.trim();
+            if (!playerScores[cleanName] || score > playerScores[cleanName]) {
+                playerScores[cleanName] = score;
             }
         };
 
@@ -138,7 +161,7 @@ export default function Home() {
 
     } catch (e) {
         console.error(e);
-        alert("Error calculando ranking.");
+        alert("Error calculando ranking. Verificá la hoja Formatos Grupos.");
     } finally {
         setIsLoading(false);
     }
@@ -257,7 +280,7 @@ export default function Home() {
                     const rival = unseededPlayers.pop();
                     match.p2 = { ...rival, rank: 0 }; 
                 } else {
-                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         });
@@ -600,7 +623,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -823,13 +846,13 @@ export default function Home() {
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-              {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
+              {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `${match.p1.rank}.`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
                   {match.p1 ? match.p1.name : ""}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-              {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
+              {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `${match.p2.rank}.`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
                   {match.p2 ? match.p2.name : ""}
               </span>
@@ -1010,14 +1033,14 @@ export default function Home() {
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-[9px] text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-[9px] text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
@@ -1046,14 +1069,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1081,14 +1104,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">({seed1})</span> : null}
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">({seed2})</span> : null}
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
@@ -1108,7 +1131,7 @@ export default function Home() {
                       const win = p && p === bracketData.winner;
                       const seed = bracketData.seeds ? bracketData.seeds[p] : null;
 
-                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{seed ? <span className="text-sm text-orange-600 font-black mr-2">({seed})</span> : null}{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
+                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{seed ? <span className="text-lg text-orange-600 font-black mr-2">{seed}.</span> : null}{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
                   <Trophy className="w-24 h-24 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
@@ -1127,12 +1150,12 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         )}
                     </div>
@@ -1143,7 +1166,7 @@ export default function Home() {
             )}
           </div>
         )}
-        
+
         {/* --- MODAL DE RANKING --- */}
         {showRankingCalc && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
