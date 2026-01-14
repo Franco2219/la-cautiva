@@ -34,7 +34,6 @@ export default function Home() {
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
   
-  // Estados para el calculador de Ranking Oculto
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
@@ -66,22 +65,18 @@ export default function Home() {
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        if (rows.length < 2) {
-             throw new Error("No se encontraron datos en Formatos Grupos");
-        }
+        if (rows.length < 2) throw new Error("No se encontraron datos en Formatos Grupos");
 
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
         
         let colIndex = -1;
-        // Búsqueda inteligente de columna
         for(let i=0; i<headerRow.length; i++) {
             if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) {
                 colIndex = i;
                 break;
             }
         }
-        // Si no encuentra exacto, intenta contener
         if (colIndex === -1) {
             for(let i=0; i<headerRow.length; i++) {
                 if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) {
@@ -97,7 +92,6 @@ export default function Home() {
             return;
         }
 
-        // Función auxiliar para leer enteros seguros
         const getPoints = (rowIndex: number) => {
             if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0;
             const val = parseInt(rows[rowIndex][colIndex]);
@@ -105,19 +99,18 @@ export default function Home() {
         };
 
         const pts = {
-            champion: getPoints(1),   // Fila 38
-            finalist: getPoints(2),   // Fila 39
-            semi: getPoints(3),       // Fila 40
-            quarters: getPoints(4),   // Fila 41
-            octavos: getPoints(5),    // Fila 42
-            dieciseis: getPoints(6),  // Fila 43
-            groupWin: getPoints(7)    // Fila 44
+            champion: getPoints(1),   
+            finalist: getPoints(2),   
+            semi: getPoints(3),       
+            quarters: getPoints(4),   
+            octavos: getPoints(5),    
+            dieciseis: getPoints(6),  
+            groupWin: getPoints(7)    
         };
 
         const playerScores: any = {};
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
-            // Limpiar nombre por si viene con espacios
             const cleanName = name.trim();
             if (!playerScores[cleanName] || score > playerScores[cleanName]) {
                 playerScores[cleanName] = score;
@@ -168,7 +161,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO ---
+  // --- MOTOR DE SORTEO DIRECTO (CORREGIDO PUNTOS 1 Y BYES) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -196,10 +189,15 @@ export default function Home() {
             return;
         }
 
+        // Ordenar por ranking
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
         }).sort((a, b) => b.points - a.points);
+
+        // Separar Top 8 (Seeds) del resto (Non-Seeds)
+        const seedsList = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
+        const nonSeedsList = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
 
         const totalPlayers = entryList.length;
         let bracketSize = 4;
@@ -210,6 +208,7 @@ export default function Home() {
         const byeCount = bracketSize - totalPlayers;
         const numMatches = bracketSize / 2;
 
+        // Mapa de posiciones de seeds (Standard ATP)
         let seedMap: number[] = [];
         if (bracketSize === 4) seedMap = [0, 1];
         else if (bracketSize === 8) seedMap = [0, 3, 1, 2];
@@ -218,70 +217,84 @@ export default function Home() {
 
         let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-        const assignPair = (seedA: any, seedB: any, idxA: number, idxB: number) => {
-             const pair = [seedA, seedB].filter(Boolean).sort(() => Math.random() - 0.5);
+        // Funcion auxiliar para asignar pares de seeds aleatoriamente
+        const assignPair = (sA: any, sB: any, idxA: number, idxB: number) => {
+             const pair = [sA, sB].filter(Boolean).sort(() => Math.random() - 0.5);
              if (pair[0]) matches[idxA].p1 = pair[0];
              if (pair[1]) matches[idxB].p1 = pair[1];
         };
 
-        if (entryList[0]) matches[seedMap[0]].p1 = { ...entryList[0], rank: 1 };
-        if (entryList[1]) matches[seedMap[1]].p1 = { ...entryList[1], rank: 2 };
+        // Asignar Seeds 1 y 2 (Fijos)
+        if (seedsList[0]) matches[seedMap[0]].p1 = seedsList[0];
+        if (seedsList[1]) matches[seedMap[1]].p1 = seedsList[1];
 
+        // Asignar Seeds 3 y 4 (Sorteados)
         if (seedMap.length >= 4) {
-            assignPair(
-                entryList[2] ? { ...entryList[2], rank: 3 } : null,
-                entryList[3] ? { ...entryList[3], rank: 4 } : null,
-                seedMap[2], seedMap[3]
-            );
+            assignPair(seedsList[2], seedsList[3], seedMap[2], seedMap[3]);
         }
 
+        // Asignar Seeds 5 a 8 (Sorteados en pares: 5-6 y 7-8)
         if (seedMap.length >= 8) {
-             assignPair(
-                entryList[4] ? { ...entryList[4], rank: 5 } : null,
-                entryList[5] ? { ...entryList[5], rank: 6 } : null,
-                seedMap[4], seedMap[5]
-            );
-            assignPair(
-                entryList[6] ? { ...entryList[6], rank: 7 } : null,
-                entryList[7] ? { ...entryList[7], rank: 8 } : null,
-                seedMap[6], seedMap[7]
-            );
+             assignPair(seedsList[4], seedsList[5], seedMap[4], seedMap[5]);
+             assignPair(seedsList[6], seedsList[7], seedMap[6], seedMap[7]);
         }
 
-        const remainingForP1 = entryList.slice(8, seedMap.length); 
-        remainingForP1.sort(() => Math.random() - 0.5);
-        
-        for(let i=8; i < seedMap.length; i++) {
-             if (remainingForP1.length > 0) {
-                 matches[seedMap[i]].p1 = { ...remainingForP1.pop(), rank: i + 1 };
-             }
-        }
-
-        const unseededPlayers = entryList.slice(seedMap.length);
-        unseededPlayers.sort(() => Math.random() - 0.5);
-
-        const matchesWithP1 = matches.map((m, i) => ({ ...m, originalIdx: i }))
-                                     .filter(m => m.p1 !== null)
-                                     .sort((a, b) => a.p1.rank - b.p1.rank);
-        
-        const matchesIndicesByRank = matchesWithP1.map(m => m.originalIdx);
-
-        let byesAssigned = 0;
-        matchesIndicesByRank.forEach(idx => {
-            if (byesAssigned < byeCount) {
-                matches[idx].p2 = { name: "BYE", rank: 0 };
-                byesAssigned++;
+        // Asignar BYEs (Solo a los Seeds en orden 1..8)
+        let byesToAssign = byeCount;
+        for (let r = 1; r <= 8; r++) {
+            if (byesToAssign > 0) {
+                // Buscar el partido donde está el seed rank 'r'
+                const matchIdx = matches.findIndex(m => m.p1 && m.p1.rank === r);
+                if (matchIdx !== -1 && !matches[matchIdx].p2) {
+                    matches[matchIdx].p2 = { name: "BYE", rank: 0 };
+                    byesToAssign--;
+                }
             }
+        }
+
+        // Rellenar huecos con el resto de jugadores (Non-Seeds)
+        // Recolectar todos los slots vacios (P1 que sean null, P2 que sean null)
+        let emptySlots: { matchIdx: number, slot: 'p1' | 'p2' }[] = [];
+        
+        matches.forEach((m, idx) => {
+            if (!m.p1) emptySlots.push({ matchIdx: idx, slot: 'p1' });
+            if (!m.p2) emptySlots.push({ matchIdx: idx, slot: 'p2' });
         });
 
-        matches.forEach(match => {
-            if (!match.p2) {
-                if (unseededPlayers.length > 0) {
-                    const rival = unseededPlayers.pop();
-                    match.p2 = { ...rival, rank: 0 }; 
-                } else {
-                    match.p2 = { name: "", rank: 0 };
-                }
+        // Mezclar Non-Seeds y Empty Slots para aleatoriedad total
+        // O mejor: Mezclar Non-Seeds y asignar secuencialmente a los slots vacios
+        nonSeedsList.sort(() => Math.random() - 0.5);
+        
+        // Si hay mas slots que jugadores (caso raro si falló calculo de bye), sobrarán vacios
+        // Si hay mas jugadores que slots (imposible por calculo de bracketSize), sobrarían jugadores
+        
+        for (let i = 0; i < nonSeedsList.length; i++) {
+            if (emptySlots[i]) {
+                const { matchIdx, slot } = emptySlots[i];
+                matches[matchIdx][slot] = nonSeedsList[i];
+            }
+        }
+        
+        // Si sobraron slots vacíos (ej: P2 sin oponente y sin BYE asignado por prioridad), poner BYE restante
+        // Esto pasa si byeCount > seedsList.length (ej: cuadro de 32 con solo 10 jugadores)
+        for (let i = nonSeedsList.length; i < emptySlots.length; i++) {
+             const { matchIdx, slot } = emptySlots[i];
+             // El slot debe ser P2 obligatoriamente para ser un BYE valido, o P1 vs BYE?
+             // En un bracket, un hueco vacío es un BYE implícito. 
+             // Asignamos "BYE" para visualización.
+             matches[matchIdx][slot] = { name: "BYE", rank: 0 };
+             
+             // CORRECCIÓN VISUAL: Si P1 es BYE y P2 es alguien, invertir.
+             // Pero con la lógica de llenado, P1 se llenó primero con Seeds.
+        }
+        
+        // Limpieza final: Si un partido quedó P1=BYE y P2=BYE, es un hueco.
+        // Si un partido quedó P1=Jugador y P2=BYE, está bien.
+        // Si un partido quedó P1=BYE y P2=Jugador -> Invertir.
+        matches.forEach(m => {
+            if (m.p1?.name === "BYE" && m.p2?.name !== "BYE") {
+                m.p1 = m.p2;
+                m.p2 = { name: "BYE", rank: 0 };
             }
         });
 
@@ -623,7 +636,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "", rank: 0 }; // TBD ELIMINADO
                 }
             }
         } else {
@@ -993,7 +1006,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} size="sm" className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1033,14 +1046,14 @@ export default function Home() {
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
@@ -1069,14 +1082,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1095,7 +1108,7 @@ export default function Home() {
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r4.includes(p1) : bracketData.r3.includes(p1));
                     const w2 = p2 && (bracketData.isLarge ? bracketData.r4.includes(p2) : bracketData.r3.includes(p2));
                     const s1 = bracketData.isLarge ? bracketData.s3[idx] : bracketData.s2[idx];
-                    const s2 = bracketData.isLarge ? bracketData.s3[idx+1] : bracketData.s2[idx+1];
+                    const s2 = bracketData.isLarge ? bracketData.s2[idx+1] : bracketData.s2[idx+1];
                     
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
@@ -1103,18 +1116,18 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-lg uppercase`}>
+                                {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-lg uppercase`}>
+                                {seed2 ? <span className="text-xl text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
@@ -1131,7 +1144,7 @@ export default function Home() {
                       const win = p && p === bracketData.winner;
                       const seed = bracketData.seeds ? bracketData.seeds[p] : null;
 
-                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-lg text-center`}>{seed ? <span className="text-lg text-orange-600 font-black mr-2">{seed}.</span> : null}{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
+                      return (<div key={idx} className={`h-14 border-b-4 ${win ? 'border-[#b35a38]' : 'border-slate-200'} flex justify-between items-end bg-white text-center`}><span className={`${win ? 'text-[#b35a38] font-black' : 'text-slate-800 font-bold'} uppercase text-xl text-center`}>{seed ? <span className="text-xl text-orange-600 font-black mr-2">{seed}.</span> : null}{p || ""}</span><span className="text-[#b35a38] font-black text-lg ml-4">{s}</span></div>);
                     })}
                   </div>
                   <Trophy className="w-24 h-24 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
@@ -1150,12 +1163,12 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         )}
                     </div>
@@ -1166,7 +1179,7 @@ export default function Home() {
             )}
           </div>
         )}
-
+        
         {/* --- MODAL DE RANKING --- */}
         {showRankingCalc && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
