@@ -228,7 +228,8 @@ export default function Home() {
         groupName: `Zona ${i + 1}`,
         capacity: cap,
         players: [],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]]
+        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]],
+        positions: ["-", "-", "-"] // Inicializamos posiciones vacías
       }));
 
       for (let i = 0; i < numGroups; i++) {
@@ -271,10 +272,16 @@ export default function Home() {
         const parsedGroups = [];
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
+            // Leemos la columna E (índice 4) para la posición: "1", "2", "3"
+            const posP1 = rows[i+1]?.[4] || "";
+            const posP2 = rows[i+2]?.[4] || "";
+            const posP3 = rows[i+3]?.[4] || "";
+
             parsedGroups.push({
               groupName: rows[i][0],
               players: [rows[i+1]?.[0], rows[i+2]?.[0], rows[i+3]?.[0]].filter(n => n && n !== "-" && n !== ""),
-              results: rows.slice(i+1, i+4).map(r => r.slice(1, 4))
+              results: rows.slice(i+1, i+4).map(r => r.slice(1, 4)),
+              positions: [posP1, posP2, posP3]
             });
           }
         }
@@ -328,11 +335,8 @@ export default function Home() {
       <table className="w-full text-[11px] md:text-xs">
         <thead>
           <tr className="bg-slate-50 border-b">
-            {/* CORRECCIÓN: JUGADOR en Negro */}
             <th className="p-3 border-r w-32 text-left font-bold text-black">JUGADOR</th>
-            {/* CORRECCIÓN: Nombres de Columna Naranja, Font Black, Sin Coma, Apellido + Inicial */}
             {group.players && group.players.map((p: string, i: number) => {
-               // Lógica para formatear nombre: "Fernandez, Sebastian" -> "FERNANDEZ S."
                let shortName = p;
                if (p) {
                    const clean = p.replace(/,/g, "").trim().split(/\s+/);
@@ -342,7 +346,6 @@ export default function Home() {
                        shortName = clean[0];
                    }
                }
-               
                return (
                 <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase">
                     {shortName}
@@ -362,6 +365,20 @@ export default function Home() {
               ))}
             </tr>
           ))}
+          {/* FILA DE POSICIONES AGREGADA */}
+          <tr className="bg-[#b35a38]/5 border-t-2 border-[#b35a38]/20">
+             <td className="p-3 border-r font-black text-slate-500 text-left uppercase text-[10px] tracking-widest">POSICIÓN</td>
+             {group.players && group.players.map((_: any, i: number) => {
+                 const pos = group.positions ? group.positions[i] : "";
+                 // Si hay dato y es un numero, le agregamos el grado, si no mostramos el dato tal cual o guion
+                 const displayPos = pos ? (isNaN(pos) ? pos : `${pos}°`) : "-";
+                 return (
+                    <td key={i} className="p-3 border-r text-center font-black text-[#b35a38] text-xl">
+                        {displayPos}
+                    </td>
+                 )
+             })}
+          </tr>
         </tbody>
       </table>
     </div>
@@ -633,13 +650,13 @@ export default function Home() {
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
-                  {match.p1 ? match.p1.name : ""}
+                  {match.p1 ? match.p1.name : "TBD"}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
-                  {match.p2 ? match.p2.name : ""}
+                  {match.p2 ? match.p2.name : "TBD"}
               </span>
           </div>
       </div>
@@ -745,14 +762,18 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* Verificamos si es Directo para la acción del botón Rehacer */}
+                {/* CAMBIO DE BOTÓN REHACER A SORTEAR (VERDE) */}
                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                   <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
+                   <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold h-12 px-8 shadow-lg">
+                       <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                   </Button>
                 ) : (
-                   <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
+                   <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold h-12 px-8 shadow-lg">
+                       <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                   </Button>
                 )}
                 
-                <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                <Button onClick={confirmarSorteoCuadro} className="bg-orange-500 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                 <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
              </div>
           </div>
@@ -808,11 +829,11 @@ export default function Home() {
                       return (
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || ""}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || ""}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
                           </div>
                           {/* Middle Line to Next Round */}
@@ -834,11 +855,11 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || ""}</span>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p1 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || ""}</span>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>{p2 || "TBD"}</span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
                         </div>
                         {/* Middle Line */}
@@ -902,7 +923,9 @@ export default function Home() {
                                <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
+                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
+                           </Button>
                         )}
                     </div>
                 ) : (
