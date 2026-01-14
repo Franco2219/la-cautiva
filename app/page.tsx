@@ -273,6 +273,7 @@ export default function Home() {
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
+            // --- DETECCIÓN DE JUGADORES REALES ---
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
             const validPlayersIndices = [];
             const players = [];
@@ -281,7 +282,6 @@ export default function Home() {
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
                     players.push(row[0]);
-                    // Leemos la posicion. Si hay error (#NAME? o #VALUE!), guardamos un valor seguro.
                     let rawPos = row[4] || "";
                     if (rawPos.startsWith("#")) rawPos = "-";
                     positions.push(rawPos); 
@@ -357,12 +357,10 @@ export default function Home() {
     const totalPlayers = group.players.length;
     let isComplete = true;
 
-    // Validación más robusta de "Grupo Completo"
     for (let i = 0; i < totalPlayers; i++) {
         for (let j = 0; j < totalPlayers; j++) {
            if (i === j) continue; 
            const val = group.results[i]?.[j];
-           // Si no hay valor, o es un guion, o es muy corto (ej: " "), falta jugar
            if (!val || val.trim() === "-" || val.trim().length < 2) {
              isComplete = false;
              break;
@@ -372,7 +370,7 @@ export default function Home() {
     }
 
     return (
-    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center">
+    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <table className="w-full text-[11px] md:text-xs">
         <thead>
@@ -394,7 +392,6 @@ export default function Home() {
                 </th>
                )
             })}
-            {/* Solo mostramos la columna POS si está completo */}
             {isComplete && <th className="p-3 text-center font-black text-black bg-slate-100 w-12">POS</th>}
           </tr>
         </thead>
@@ -407,7 +404,6 @@ export default function Home() {
                   {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
                 </td>
               ))}
-              {/* Solo mostramos la celda de POS si está completo */}
               {isComplete && (
                   <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
                       {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
@@ -688,13 +684,13 @@ export default function Home() {
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `#${match.p1.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
-                  {match.p1 ? match.p1.name : ""}
+                  {match.p1 ? match.p1.name : "TBD"}
               </span>
           </div>
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
               {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `#${match.p2.rank}`) : ""}</span>}
               <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
-                  {match.p2 ? match.p2.name : ""}
+                  {match.p2 ? match.p2.name : "TBD"}
               </span>
           </div>
       </div>
@@ -843,7 +839,7 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
               <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
           </div>
