@@ -153,7 +153,7 @@ export default function Home() {
                     const rival = unseededPlayers.pop();
                     match.p2 = { ...rival, rank: 0 }; 
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "TBD", rank: 0 };
                 }
             }
         });
@@ -328,10 +328,27 @@ export default function Home() {
       <table className="w-full text-[11px] md:text-xs">
         <thead>
           <tr className="bg-slate-50 border-b">
-            <th className="p-3 border-r w-32 text-left font-bold text-[#b35a38]">JUGADOR</th>
-            {group.players && group.players.map((p: string, i: number) => (
-              <th key={i} className="p-3 border-r text-center font-bold text-slate-400">{p ? p.split(' ')[0] : ""}</th>
-            ))}
+            {/* CORRECCIÓN: JUGADOR en Negro */}
+            <th className="p-3 border-r w-32 text-left font-bold text-black">JUGADOR</th>
+            {/* CORRECCIÓN: Nombres de Columna Naranja, Font Black, Sin Coma, Apellido + Inicial */}
+            {group.players && group.players.map((p: string, i: number) => {
+               // Lógica para formatear nombre: "Fernandez, Sebastian" -> "FERNANDEZ S."
+               let shortName = p;
+               if (p) {
+                   const clean = p.replace(/,/g, "").trim().split(/\s+/);
+                   if (clean.length > 1) {
+                       shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                   } else {
+                       shortName = clean[0];
+                   }
+               }
+               
+               return (
+                <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase">
+                    {shortName}
+                </th>
+               )
+            })}
           </tr>
         </thead>
         <tbody>
@@ -428,7 +445,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "TBD", rank: 0 };
                 }
             }
         } else {
@@ -610,6 +627,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -884,9 +902,7 @@ export default function Home() {
                                <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-[#b35a38] text-white hover:bg-[#8c3d26] font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Generar Sorteo de Cuadro
-                           </Button>
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12"><RefreshCw className="mr-2" /> Rehacer</Button>
                         )}
                     </div>
                 ) : (
