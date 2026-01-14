@@ -281,7 +281,10 @@ export default function Home() {
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
                     players.push(row[0]);
-                    positions.push(row[4] || ""); 
+                    // Leemos la posicion. Si hay error (#NAME? o #VALUE!), guardamos un valor seguro.
+                    let rawPos = row[4] || "";
+                    if (rawPos.startsWith("#")) rawPos = "-";
+                    positions.push(rawPos); 
                     validPlayersIndices.push(index); 
                 }
             });
@@ -351,17 +354,16 @@ export default function Home() {
   };
 
   const GroupTable = ({ group }: { group: any }) => {
-    // 1. Verificamos si el grupo está completo para mostrar la columna de posición
     const totalPlayers = group.players.length;
     let isComplete = true;
 
+    // Validación más robusta de "Grupo Completo"
     for (let i = 0; i < totalPlayers; i++) {
         for (let j = 0; j < totalPlayers; j++) {
            if (i === j) continue; 
            const val = group.results[i]?.[j];
-           // Consideramos incompleto si es "-" o vacío, pero permitimos espacios simples
-           // A veces el usuario pone "6/4 6/1 ", el trim lo arregla
-           if (!val || val.trim() === "-" || val.trim() === "") {
+           // Si no hay valor, o es un guion, o es muy corto (ej: " "), falta jugar
+           if (!val || val.trim() === "-" || val.trim().length < 2) {
              isComplete = false;
              break;
            }
@@ -401,7 +403,7 @@ export default function Home() {
             <tr key={i} className="border-b">
               <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left">{p1}</td>
               {group.players.map((p2: string, j: number) => (
-                <td key={j} className={`p-3 border-r text-center font-black text-lg ${i === j ? 'bg-slate-100 text-slate-300' : 'text-slate-700'}`}>
+                <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
                   {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
                 </td>
               ))}
@@ -410,7 +412,7 @@ export default function Home() {
                   <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
                       {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
                       ? `${group.positions[i]}°` 
-                      : (group.positions[i] || "-")}
+                      : (group.positions[i] === "-" ? "-" : group.positions[i])}
                   </td>
               )}
             </tr>
@@ -681,7 +683,6 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
