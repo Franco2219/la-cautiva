@@ -27,7 +27,7 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +46,7 @@ export default function Home() {
     );
   };
 
-  // --- LOGICA DE CALCULO DE RANKING ---
+  // --- LOGICA DE CALCULO DE RANKING (CORREGIDA) ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
@@ -99,6 +99,8 @@ export default function Home() {
             return isNaN(val) ? 0 : val;
         };
 
+        // CORRECCION: Mapeo estricto según orden solicitado (filas relativas al rango A37)
+        // Row 0 = Header, Row 1 = Ganador, Row 2 = Finalista, Row 3 = Semi, Row 4 = Cuartos, Row 5 = Octavos, Row 6 = 16avos, Row 7 = GroupWin
         const pts = {
             champion: getPoints(1),   
             finalist: getPoints(2),   
@@ -113,34 +115,45 @@ export default function Home() {
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
             const cleanName = name.trim();
+            // Sobrescribir siempre con el puntaje más alto alcanzado
             if (!playerScores[cleanName] || score > playerScores[cleanName]) {
                 playerScores[cleanName] = score;
             }
         };
 
         if (bracketData.hasData) {
-            const { r1, r2, r3, r4, winner, bracketSize } = bracketData;
+            const { r1, r2, r3, r4, winner, runnerUp, bracketSize } = bracketData;
             
-            if (winner) addScore(winner, pts.champion);
-
-            // Logica adaptativa segun tamaño
-            let finalists = [], semis = [], cuartos = [], octavos = [];
+            // CORRECCION: Asignación de rondas correcta según tamaño del cuadro
+            let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
 
             if (bracketSize === 32) {
-                finalists = r4; semis = r3; cuartos = r2; octavos = r1;
+                // En cuadro de 32: r4 son Semis, r3 Cuartos, r2 Octavos, r1 16avos
+                semis = r4; 
+                cuartos = r3; 
+                octavos = r2; 
+                dieciseis = r1;
             } else if (bracketSize === 16) {
-                finalists = r3; semis = r2; cuartos = r1;
+                // En cuadro de 16: r3 son Semis, r2 Cuartos, r1 Octavos
+                semis = r3; 
+                cuartos = r2; 
+                octavos = r1;
             } else { // 8
-                finalists = r2; semis = r1;
+                // En cuadro de 8: r2 son Semis, r1 Cuartos
+                semis = r2; 
+                cuartos = r1;
             }
 
-            finalists.forEach((p: string) => { if (p && p !== winner) addScore(p, pts.finalist); });
-            semis.forEach((p: string) => { if (p && !finalists.includes(p)) addScore(p, pts.semi); });
-            cuartos.forEach((p: string) => { if (p && !semis.includes(p)) addScore(p, pts.quarters); });
+            // Aplicar puntos base por ronda alcanzada
+            if (bracketSize === 32) dieciseis.forEach((p: string) => addScore(p, pts.dieciseis));
+            if (bracketSize >= 16) octavos.forEach((p: string) => addScore(p, pts.octavos));
             
-            if (bracketSize >= 16) {
-                 octavos.forEach((p: string) => { if (p && !cuartos.includes(p)) addScore(p, pts.octavos); });
-            }
+            cuartos.forEach((p: string) => addScore(p, pts.quarters));
+            semis.forEach((p: string) => addScore(p, pts.semi));
+            
+            // Puntos superiores
+            if (runnerUp) addScore(runnerUp, pts.finalist);
+            if (winner) addScore(winner, pts.champion);
         }
 
         const rankingArray = Object.keys(playerScores).map(key => ({
@@ -159,6 +172,8 @@ export default function Home() {
     }
   };
 
+  // ... (RESTO DE LAS FUNCIONES IGUAL: runDirectDraw, runATPDraw, fetchGroupPhase, confirmarYEnviar, GroupTable, generatePlayoffBracket, fetchQualifiersAndDraw, confirmarSorteoCuadro, fetchRankingData) ...
+  // [SE MANTIENEN IDÉNTICAS A TU CÓDIGO ORIGINAL HASTA fetchBracketData]
 
   // --- MOTOR DE SORTEO DIRECTO (ESTRICTO ATP BALANCEADO) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
@@ -772,7 +787,7 @@ export default function Home() {
   // --- BRACKETS ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
@@ -892,13 +907,17 @@ export default function Home() {
           } catch(e) { console.log("Error fetching seeds", e); }
 
           let rawData: any = {};
+          const winner = rows[0][8] || rows[0][6] || rows[0][4] || "";
+          // INTENTO DE LEER RUNNER UP (Subcampeon) de la celda debajo del ganador
+          const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
+
           if (bracketSize === 32) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: rows[0][8] || "", bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: rows[0][6] || "", bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
           } else {
             // Super 8: La col 0 es Cuartos
-            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: rows[0][4] || "", bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
           }
           
           if (bracketSize !== 8) rawData = processByes(rawData); 
@@ -955,6 +974,7 @@ export default function Home() {
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto">
+          {/* ... (MENÚS DE NAVEGACIÓN IDÉNTICOS) ... */}
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           {navState.level === "main-menu" && <div className="grid grid-cols-1 gap-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button><Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button><Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button></div>}
           {navState.level === "year-selection" && <div className="space-y-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button></div>}
@@ -1006,7 +1026,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- PANTALLA DE SORTEO GENERADO (VISUAL LISTA UNICA) --- */}
+        {/* ... (COMPONENTES DE SORTEO GENERADO Y GRUPOS IDÉNTICOS) ... */}
         {navState.level === "generate-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center">
              <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0">
@@ -1079,18 +1099,20 @@ export default function Home() {
           </div>
         )}
 
+        {/* --- PANTALLA DE CUADRO (MODIFICADA CSS Y VISUAL) --- */}
         {navState.level === "direct-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center">
-            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0">
-              <h2 className="text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-hidden">
+            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto">
+              <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
             
             {bracketData.hasData ? (
-              <div className="flex flex-row items-center justify-center gap-20 min-w-max py-8 px-4 relative text-center">
+              // Contenedor Ajustado: overflow-x-auto solo en móvil. En escritorio (md) se usa flex completo.
+              <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto md:overflow-visible gap-4 py-8 px-2 relative text-left">
                 
                 {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
-                  <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                  <div className="flex flex-col justify-around min-w-[140px] md:flex-1 relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
@@ -1099,20 +1121,20 @@ export default function Home() {
                       const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                       return (
-                        <div key={idx} className="relative flex flex-col space-y-4 mb-4">
-                          <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                        <div key={idx} className="relative flex flex-col space-y-2 mb-2">
+                          <div className={`h-6 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[100px]`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx]}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
                           </div>
-                          <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                          <div className={`h-6 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[100px]`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx+1]}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
                           </div>
-                          <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] md:-right-[20px] w-[10px] md:w-[20px] h-[1px] bg-slate-300" />
                         </div>
                       )
                     })}
@@ -1121,9 +1143,8 @@ export default function Home() {
 
                 {/* OCTAVOS (Si es > 8) */}
                 {bracketData.bracketSize >= 16 && (
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around min-w-[140px] md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
-                    // Si es 32, Octavos es R2. Si es 16, Octavos es R1.
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
                     const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r3 : bracketData.r2;
@@ -1136,20 +1157,20 @@ export default function Home() {
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-6 mb-4">
-                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col space-y-4">
+                        <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
                         </div>
-                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] md:-right-[20px] w-[10px] md:w-[20px] h-[1px] bg-slate-300" />
                       </div>
                     );
                   })}
@@ -1157,9 +1178,8 @@ export default function Home() {
                 )}
 
                 {/* CUARTOS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around min-w-[140px] md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx) => {
-                    // 32: r3, 16: r2, 8: r1
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
                     const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1172,29 +1192,28 @@ export default function Home() {
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-20 mb-8">
-                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col space-y-8">
+                        <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
                         </div>
-                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] md:-right-[20px] w-[10px] md:w-[20px] h-[1px] bg-slate-300" />
                       </div>
                     );
                   })}
                 </div>
 
                 {/* SEMIS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around min-w-[140px] md:flex-1 relative">
                   {[0, 2].map((idx) => {
-                     // 32: r4, 16: r3, 8: r2
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
                      const s = bracketData.bracketSize === 32 ? bracketData.s4 : (bracketData.bracketSize === 16 ? bracketData.s3 : bracketData.s2);
                      
@@ -1206,31 +1225,40 @@ export default function Home() {
                      const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                      return (
-                      <div key={idx} className="relative flex flex-col space-y-36 mb-16">
-                        <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col space-y-12">
+                        <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                         </div>
-                        <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] md:-right-[20px] w-[10px] md:w-[20px] h-[1px] bg-slate-300" />
                       </div>
                      )
                   })}
                 </div>
 
-                {/* FINAL (Siempre) */}
-                <div className="flex flex-col justify-center h-auto min-h-[600px] items-center w-96 relative text-center">
-                  <Trophy className="w-20 h-20 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
+                {/* FINAL (Columna Agregada para visualización correcta) */}
+                 <div className="flex flex-col justify-center min-w-[60px] md:flex-1 relative">
+                    <div className="relative flex flex-col space-y-24">
+                        <div className={`h-px w-full bg-slate-300 relative`}>
+                            <div className="absolute right-0 top-0 translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-slate-300" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* CAMPEON (Siempre) */}
+                <div className="flex flex-col justify-center items-center min-w-[140px] md:flex-1 relative text-center">
+                  <Trophy className="w-16 h-16 text-orange-400 mb-4 mx-auto text-center animate-bounce" />
                   <div className="flex flex-col items-center">
-                     <span className="text-[#b35a38]/70 font-black text-sm uppercase tracking-[0.2em] mb-2">CAMPEÓN</span>
-                     <span className="text-[#b35a38] font-black text-4xl italic uppercase text-center w-full block drop-shadow-sm">{bracketData.winner || ""}</span>
+                     <span className="text-[#b35a38]/70 font-black text-xs uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
+                     <span className="text-[#b35a38] font-black text-2xl italic uppercase text-center w-full block drop-shadow-sm">{bracketData.winner || "?"}</span>
                   </div>
                 </div>
 
