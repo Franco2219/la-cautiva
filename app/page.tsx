@@ -205,35 +205,27 @@ export default function Home() {
         const byeCount = bracketSize - totalPlayers;
         
         // 2. Definir "Slots" (Líneas del cuadro)
-        // Usaremos un array plano de tamaño bracketSize.
-        // Ej para 16: indices 0..15.
-        // Los partidos serán (0 vs 1), (2 vs 3), etc.
         let slots: any[] = Array(bracketSize).fill(null);
 
-        // Mapas de posición de Seeds (Donde cae cada seed en el array plano)
-        // Basado en ATP estándar para que no se crucen temprano
+        // Mapas de posición de Seeds
         let seedPos: number[] = [];
-        if (bracketSize === 4) seedPos = [0, 3]; // 1 vs 2 en final (indices 0 y 3 si son 1vs2 y 3vs4? No, array plano: Match1(0,1), Match2(2,3). Seed1->0, Seed2->3 => Final)
-        else if (bracketSize === 8) seedPos = [0, 7, 3, 4]; // 1(0), 2(7), 3(3), 4(4)
-        else if (bracketSize === 16) seedPos = [0, 15, 8, 7, 4, 11, 12, 3]; // Top 8 positions
-        else if (bracketSize === 32) seedPos = [0, 31, 16, 15, 8, 23, 24, 7]; // Top 8 positions aprox
+        if (bracketSize === 4) seedPos = [0, 3];
+        else if (bracketSize === 8) seedPos = [0, 7, 3, 4]; 
+        else if (bracketSize === 16) seedPos = [0, 15, 8, 7, 4, 11, 12, 3];
+        else if (bracketSize === 32) seedPos = [0, 31, 16, 15, 8, 23, 24, 7];
 
         // 3. Asignar Seeds (Top 8)
-        // 1 y 2 Fijos. 3 y 4 Sorteados. 5-8 Sorteados.
         const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
         
-        // Colocar Seed 1 y 2
         if (seeds[0]) slots[seedPos[0]] = seeds[0];
         if (seeds[1]) slots[seedPos[1]] = seeds[1];
 
-        // Sortear 3 y 4
         if (seeds[2] && seeds[3] && seedPos.length >= 4) {
              const pair34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
              slots[seedPos[2]] = pair34[0];
              slots[seedPos[3]] = pair34[1];
         }
 
-        // Sortear 5 a 8
         if (seeds.length >= 8 && seedPos.length >= 8) {
              const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
              slots[seedPos[4]] = group58[0];
@@ -243,20 +235,15 @@ export default function Home() {
         }
 
         // 4. Asignar BYEs
-        // Los BYEs van a los rivales de los seeds más altos.
-        // Si Seed 1 está en pos 0, su rival es pos 1.
-        // Si Seed 2 está en pos 15, su rival es pos 14.
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
 
         let byesAssigned = 0;
-        // Recorremos los seeds en orden de ranking (1, 2, 3...) para darles el BYE
-        // Buscamos dónde quedó el Seed X en el array 'slots'
         for (let r = 1; r <= 8; r++) {
             if (byesAssigned < byeCount) {
                 const seedIndex = slots.findIndex(p => p && p.rank === r);
                 if (seedIndex !== -1) {
                     const rivalIdx = getRivalIndex(seedIndex);
-                    if (slots[rivalIdx] === null) { // Solo si está vacío
+                    if (slots[rivalIdx] === null) {
                         slots[rivalIdx] = { name: "BYE", rank: 0 };
                         byesAssigned++;
                     }
@@ -264,21 +251,18 @@ export default function Home() {
             }
         }
 
-        // 5. Rellenar con el resto de jugadores (Non-Seeds)
+        // 5. Rellenar con el resto de jugadores
         const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
-        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar
+        nonSeeds.sort(() => Math.random() - 0.5); 
 
-        // Llenar los slots que siguen siendo null
         for (let i = 0; i < slots.length; i++) {
             if (slots[i] === null) {
                 if (nonSeeds.length > 0) {
                     slots[i] = nonSeeds.pop();
                 } else if (byesAssigned < byeCount) {
-                    // Si sobran slots y faltan BYEs (caso raro si hay pocos seeds), poner BYE
                     slots[i] = { name: "BYE", rank: 0 };
                     byesAssigned++;
                 } else {
-                     // Hueco vacío (no debería pasar si la mate da bien)
                      slots[i] = { name: "", rank: 0 };
                 }
             }
@@ -287,7 +271,13 @@ export default function Home() {
         // 6. Convertir Slots a Matches
         let matches = [];
         for (let i = 0; i < bracketSize; i += 2) {
-            matches.push({ p1: slots[i], p2: slots[i+1] });
+            let p1 = slots[i];
+            let p2 = slots[i+1];
+            // Asegurar visualmente que BYE sea P2 si es posible
+            if (p1?.name === "BYE" && p2?.name !== "BYE") {
+                let temp = p1; p1 = p2; p2 = temp;
+            }
+            matches.push({ p1, p2 });
         }
 
         setGeneratedBracket(matches);
@@ -501,51 +491,53 @@ export default function Home() {
     }
 
     return (
-    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-x-auto">
+    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
-      <table className="w-full text-[11px] md:text-xs">
-        <thead>
-          <tr className="bg-slate-50 border-b">
-            <th className="p-3 border-r w-32 text-left font-bold text-black min-w-[120px]">JUGADOR</th>
-            {group.players && group.players.map((p: string, i: number) => {
-               let shortName = p;
-               if (p) {
-                   const clean = p.replace(/,/g, "").trim().split(/\s+/);
-                   if (clean.length > 1) {
-                       shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
-                   } else {
-                       shortName = clean[0];
-                   }
-               }
-               return (
-                <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px]">
-                    {shortName}
-                </th>
-               )
-            })}
-            {isComplete && <th className="p-3 text-center font-black text-black bg-slate-100 w-12">POS</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {group.players && group.players.map((p1: string, i: number) => (
-            <tr key={i} className="border-b">
-              <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left">{p1}</td>
-              {group.players.map((p2: string, j: number) => (
-                <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
-                  {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
-                </td>
+      <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[600px] text-[11px] md:text-xs">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="p-3 border-r w-32 text-left font-bold text-black min-w-[120px] whitespace-nowrap">JUGADOR</th>
+                {group.players && group.players.map((p: string, i: number) => {
+                  let shortName = p;
+                  if (p) {
+                      const clean = p.replace(/,/g, "").trim().split(/\s+/);
+                      if (clean.length > 1) {
+                          shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                      } else {
+                          shortName = clean[0];
+                      }
+                  }
+                  return (
+                    <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px] whitespace-nowrap">
+                        {shortName}
+                    </th>
+                  )
+                })}
+                {isComplete && <th className="p-3 text-center font-black text-black bg-slate-100 w-12 whitespace-nowrap">POS</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {group.players && group.players.map((p1: string, i: number) => (
+                <tr key={i} className="border-b">
+                  <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left whitespace-nowrap">{p1}</td>
+                  {group.players.map((p2: string, j: number) => (
+                    <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
+                      {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
+                    </td>
+                  ))}
+                  {isComplete && (
+                      <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50 whitespace-nowrap">
+                          {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
+                          ? `${group.positions[i]}°` 
+                          : (group.positions[i] === "-" ? "-" : group.positions[i])}
+                      </td>
+                  )}
+                </tr>
               ))}
-              {isComplete && (
-                  <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50">
-                      {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
-                      ? `${group.positions[i]}°` 
-                      : (group.positions[i] === "-" ? "-" : group.positions[i])}
-                  </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+      </div>
     </div>
     );
   };
@@ -998,7 +990,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-orange-500 text-white font-bold"><RefreshCw className="mr-2" /> REHACER</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1038,14 +1030,14 @@ export default function Home() {
                         <div key={idx} className="relative flex flex-col space-y-4 mb-4">
                           <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-[10px] ml-2">{bracketData.s1[idx+1]}</span>
@@ -1074,14 +1066,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1109,17 +1101,17 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-xl text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
