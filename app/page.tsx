@@ -35,7 +35,6 @@ export default function Home() {
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
   
-  // Estados para el calculador de Ranking Oculto
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
@@ -47,11 +46,9 @@ export default function Home() {
     );
   };
 
-  // --- FUNCION: Enviar lista Basti ---
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${navState.tournamentShort || navState.currentTour}*\n\n`;
     
-    // Generación de Sorteo (Grupos o Cuadro)
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
              if (m.p1 && m.p2 && m.p2.name !== "BYE") {
@@ -59,7 +56,6 @@ export default function Home() {
              }
          });
     }
-    // Fase de Grupos (Panel de Control)
     else if (navState.level === "group-phase") {
         groupData.forEach(group => {
             const players = group.players;
@@ -77,7 +73,6 @@ export default function Home() {
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // --- LOGICA DE CALCULO DE RANKING ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
@@ -720,7 +715,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "", rank: 0 }; 
                 }
             }
         } else {
@@ -753,7 +748,6 @@ export default function Home() {
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
-                  // M (12) y N (13)
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
                   
@@ -773,8 +767,7 @@ export default function Home() {
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
           } else {
-             // Mensaje corregido
-             alert("no hay clasificados para sortear");
+             alert("No se encontraron clasificados para sortear");
           }
 
       } catch (e) {
@@ -869,7 +862,6 @@ export default function Home() {
                 const p1 = r1[i]; const p2 = r1[i+1];
                 const targetIdx = Math.floor(i / 2);
                 if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    // STRICT CHECK: Only advance if opponent is literally "BYE"
                     if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
                     else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
                 }
@@ -884,7 +876,6 @@ export default function Home() {
              const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
              const targetIdx = Math.floor(i / 2);
              if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 // STRICT CHECK: Only advance if opponent is literally "BYE"
                  if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
                  else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
              }
@@ -940,14 +931,11 @@ export default function Home() {
 
           let rawData: any = {};
           
-          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
-          // Definir indice basado en el tamaño, no "guessing"
           let winnerIdx = -1;
-          if (bracketSize === 32) winnerIdx = 10; // K
-          else if (bracketSize === 16) winnerIdx = 8; // I
-          else if (bracketSize === 8) winnerIdx = 6; // G
+          if (bracketSize === 32) winnerIdx = 10; 
+          else if (bracketSize === 16) winnerIdx = 8; 
+          else if (bracketSize === 8) winnerIdx = 6; 
           
-          // Solo leemos el ganador si el índice es válido y la celda existe
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
 
@@ -1094,7 +1082,6 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* Botón Enviar Lista Basti (Visible en sorteo) */}
                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 w-12 rounded-xl">
                     <List className="w-6 h-6" />
                 </Button>
@@ -1132,7 +1119,7 @@ export default function Home() {
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
                   
-                  {/* Botón Basti: Solo visible si NO está confirmado */}
+                  {/* Botón Lista Basti: Solo visible si NO está confirmado */}
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
                   
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
@@ -1172,13 +1159,13 @@ export default function Home() {
                         <>
                           <div key={idx} className="relative flex flex-col space-y-2 mb-2">
                             <div className={`h-6 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
                                   {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
                             </div>
                             <div className={`h-6 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
                                   {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
@@ -1210,13 +1197,13 @@ export default function Home() {
                       <>
                         <div key={idx} className="relative flex flex-col space-y-4">
                           <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                              <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
                           <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1247,13 +1234,13 @@ export default function Home() {
                       <>
                         <div key={idx} className="relative flex flex-col space-y-8">
                           <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
                           <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1282,13 +1269,13 @@ export default function Home() {
                       <>
                         <div key={idx} className="relative flex flex-col space-y-12">
                           <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
                           <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1330,12 +1317,12 @@ export default function Home() {
                         return (
                             <div className="relative flex flex-col space-y-2">
                                 <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {topFinalistName || ""}
                                     </span>
                                 </div>
                                 <div className={`h-8 border-b ${isBotWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {botFinalistName || ""}
                                     </span>
                                 </div>
@@ -1350,7 +1337,8 @@ export default function Home() {
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
-                        <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
+                        {/* Palabra CAMPEÓN agrandada */}
+                        <span className="text-[#b35a38]/70 font-black text-xs md:text-sm uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
@@ -1365,10 +1353,7 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti: Visible también aquí */}
-                            <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-10 w-12 rounded-xl">
-                                <List className="w-5 h-5" />
-                            </Button>
+                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
