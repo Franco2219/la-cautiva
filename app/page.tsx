@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X } from "lucide-react"
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X, Copy } from "lucide-react"
 
 // --- CONFIGURACIÓN DE DATOS ---
 const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
@@ -162,7 +162,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (REESCRITO PARA BALANCEO) ---
+  // --- MOTOR DE SORTEO DIRECTO (SLOT SYSTEM) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -190,7 +190,7 @@ export default function Home() {
             return;
         }
 
-        // 1. Ordenar Entry List por Ranking
+        // 1. Ranking y Seeds
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
@@ -204,45 +204,47 @@ export default function Home() {
 
         const byeCount = bracketSize - totalPlayers;
         
-        // 2. Definir "Slots" (Líneas del cuadro)
+        // 2. Sistema de Slots (Array Plano)
         let slots: any[] = Array(bracketSize).fill(null);
 
-        // Mapas de posición de Seeds
+        // Mapa de posiciones ESTÁNDAR para Seeds (Indices del array plano 0..bracketSize-1)
         let seedPos: number[] = [];
-        if (bracketSize === 4) seedPos = [0, 3];
-        else if (bracketSize === 8) seedPos = [0, 7, 3, 4]; 
-        else if (bracketSize === 16) seedPos = [0, 15, 8, 7, 4, 11, 12, 3];
-        else if (bracketSize === 32) seedPos = [0, 31, 16, 15, 8, 23, 24, 7];
+        if (bracketSize === 4) seedPos = [0, 3]; 
+        else if (bracketSize === 8) seedPos = [0, 7, 3, 4, 1, 6, 2, 5]; 
+        else if (bracketSize === 16) seedPos = [0, 15, 8, 7, 4, 11, 12, 3]; 
+        else if (bracketSize === 32) seedPos = [0, 31, 16, 15, 8, 23, 24, 7]; 
 
-        // 3. Asignar Seeds (Top 8)
+        // 3. Colocar Seeds
         const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
         
+        // 1 y 2 Fijos
         if (seeds[0]) slots[seedPos[0]] = seeds[0];
         if (seeds[1]) slots[seedPos[1]] = seeds[1];
 
+        // 3 y 4 Sorteados
         if (seeds[2] && seeds[3] && seedPos.length >= 4) {
-             const pair34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
-             slots[seedPos[2]] = pair34[0];
-             slots[seedPos[3]] = pair34[1];
+             const pair = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
+             slots[seedPos[2]] = pair[0];
+             slots[seedPos[3]] = pair[1];
         }
 
+        // 5 a 8 Sorteados
         if (seeds.length >= 8 && seedPos.length >= 8) {
-             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
-             slots[seedPos[4]] = group58[0];
-             slots[seedPos[5]] = group58[1];
-             slots[seedPos[6]] = group58[2];
-             slots[seedPos[7]] = group58[3];
+             const group = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
+             for(let i=0; i<4; i++) slots[seedPos[4+i]] = group[i];
         }
 
-        // 4. Asignar BYEs
+        // 4. Asignar BYEs (Solo a rivales de Seeds, del 1 al 8)
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
 
         let byesAssigned = 0;
+        // Recorremos los seeds en orden de ranking
         for (let r = 1; r <= 8; r++) {
             if (byesAssigned < byeCount) {
                 const seedIndex = slots.findIndex(p => p && p.rank === r);
                 if (seedIndex !== -1) {
                     const rivalIdx = getRivalIndex(seedIndex);
+                    // Solo asignamos si está vacío. Esto evita BYE vs BYE.
                     if (slots[rivalIdx] === null) {
                         slots[rivalIdx] = { name: "BYE", rank: 0 };
                         byesAssigned++;
@@ -251,29 +253,30 @@ export default function Home() {
             }
         }
 
-        // 5. Rellenar con el resto de jugadores
+        // 5. Rellenar huecos con Non-Seeds
         const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
-        nonSeeds.sort(() => Math.random() - 0.5); 
+        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar bolsa
 
         for (let i = 0; i < slots.length; i++) {
             if (slots[i] === null) {
                 if (nonSeeds.length > 0) {
                     slots[i] = nonSeeds.pop();
                 } else if (byesAssigned < byeCount) {
+                     // Si sobran BYEs y faltan jugadores (raro, pero posible en cuadros chicos)
                     slots[i] = { name: "BYE", rank: 0 };
                     byesAssigned++;
                 } else {
-                     slots[i] = { name: "", rank: 0 };
+                     slots[i] = { name: "", rank: 0 }; // Hueco (TBD eliminado)
                 }
             }
         }
 
-        // 6. Convertir Slots a Matches
+        // 6. Convertir a Partidos
         let matches = [];
         for (let i = 0; i < bracketSize; i += 2) {
+            // Ajuste visual: Si P1 es BYE y P2 es Jugador, invertir para que se vea lindo
             let p1 = slots[i];
             let p2 = slots[i+1];
-            // Asegurar visualmente que BYE sea P2 si es posible
             if (p1?.name === "BYE" && p2?.name !== "BYE") {
                 let temp = p1; p1 = p2; p2 = temp;
             }
@@ -765,6 +768,53 @@ export default function Home() {
         }
     };
 
+    // --- FUNCION AUTO-AVANCE: MUEVE JUGADORES VS BYE A SIGUIENTE RONDA ---
+    const processByes = (data: any) => {
+        const { r1, r2, r3, r4, isLarge } = data;
+        const newR2 = [...r2];
+        const newR3 = [...r3];
+        const newR4 = [...r4];
+
+        // 16avos -> Octavos (Solo en Large)
+        if (isLarge) {
+            for (let i = 0; i < r1.length; i += 2) {
+                const p1 = r1[i];
+                const p2 = r1[i+1];
+                const targetIdx = Math.floor(i / 2);
+                
+                // Si la celda destino esta vacia, intentamos auto-avanzar
+                if (!newR2[targetIdx]) {
+                    if (p1 && (!p2 || p2 === "BYE" || p2 === "")) newR2[targetIdx] = p1;
+                    else if (p2 && (!p1 || p1 === "BYE" || p1 === "")) newR2[targetIdx] = p2;
+                }
+            }
+            data.r2 = newR2;
+        }
+
+        // Octavos -> Cuartos (r2 -> r3 en Large, r1 -> r2 en Normal)
+        const roundPrev = isLarge ? newR2 : r1;
+        const roundNext = isLarge ? newR3 : r2; // Destino
+        
+        for (let i = 0; i < roundPrev.length; i += 2) {
+             const p1 = roundPrev[i];
+             const p2 = roundPrev[i+1];
+             const targetIdx = Math.floor(i / 2);
+             
+             if (!roundNext[targetIdx]) {
+                 if (p1 && (!p2 || p2 === "BYE" || p2 === "")) roundNext[targetIdx] = p1;
+                 else if (p2 && (!p1 || p1 === "BYE" || p1 === "")) roundNext[targetIdx] = p2;
+             }
+        }
+        
+        // Asignar de vuelta a data
+        if (isLarge) { data.r3 = newR3; } else { data.r2 = roundNext; }
+
+        // Cuartos -> Semis
+        // ... (misma logica para siguientes rondas si quisieras, generalmente BYE solo es 1ra ronda)
+
+        return data;
+    }
+
     try {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
@@ -778,10 +828,8 @@ export default function Home() {
       if (hasContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
 
-          // --- LOGICA DE PRECLASIFICADOS (TOP 8) ---
           let seeds = {};
           try {
-             // 1. Ranking para puntos
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
              const rankRes = await fetch(rankUrl);
              const rankTxt = await rankRes.text();
@@ -790,7 +838,6 @@ export default function Home() {
                total: row[11] ? parseInt(row[11]) : 0
              })).filter(p => p.name !== "");
 
-             // 2. Inscriptos
              const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
              const inscRes = await fetch(inscUrl);
              const inscTxt = await inscRes.text();
@@ -798,13 +845,11 @@ export default function Home() {
                cols[0] === tournamentShort && cols[1] === category
              ).map(cols => cols[2]);
 
-             // 3. Entry List Ordenada
              const entryList = filteredInscriptos.map(n => {
                  const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
                  return { name: n, points: p ? p.total : 0 };
              }).sort((a, b) => b.points - a.points);
 
-             // 4. Mapear Top 8
              const top8 = entryList.slice(0, 8);
              const seedMap: any = {};
              top8.forEach((p, i) => {
@@ -813,13 +858,18 @@ export default function Home() {
              seeds = seedMap;
 
           } catch(e) { console.log("Error fetching seeds", e); }
-          // ------------------------------------------
 
+          let rawData: any = {};
           if (isLarge) {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds });
+            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds };
           } else {
-            setBracketData({ r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds });
+            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds };
           }
+          
+          // APLICAR AUTO-AVANCE
+          const processedData = processByes(rawData);
+          setBracketData(processedData);
+
       } else {
           await checkCanGenerate();
       }
@@ -957,7 +1007,7 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* BOTONES INVERTIDOS: SORTEAR NARANJA (IZQ), CONFIRMAR VERDE (DER) */}
+                {/* BOTONES CORREGIDOS: SORTEAR NARANJA (IZQ), CONFIRMAR VERDE (DER) */}
                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                    <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg">
                        <Shuffle className="mr-2 w-4 h-4" /> Sortear
@@ -1066,14 +1116,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1101,17 +1151,17 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-lg ml-4">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-xl text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-lg ml-4">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
@@ -1197,14 +1247,23 @@ export default function Home() {
                         </table>
                     </div>
                     
-                    <div className="mt-6 text-center">
-                        <p className="text-xs text-slate-400 mb-4">Copia estos valores al Excel de Ranking General</p>
+                    <div className="mt-6 flex gap-4">
                         <Button onClick={() => {
                             const text = calculatedRanking.map(p => `${p.name}\t${p.points}`).join('\n');
                             navigator.clipboard.writeText(text);
                             alert("Tabla copiada al portapapeles");
-                        }} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold h-12 rounded-xl">
-                            COPIAR TABLA
+                        }} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-12 rounded-xl">
+                            <Copy className="mr-2 w-4 h-4" /> COPIAR TABLA
+                        </Button>
+                        
+                        <Button onClick={() => {
+                            let mensaje = `*RANKING CALCULADO - ${navState.tournamentShort}*\n\n`;
+                            calculatedRanking.forEach(p => {
+                                mensaje += `${p.name}: ${p.points}\n`;
+                            });
+                            window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                        }} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold h-12 rounded-xl">
+                            <Send className="mr-2 w-4 h-4" /> ENVIAR AL DUEÑO
                         </Button>
                     </div>
                 </div>
