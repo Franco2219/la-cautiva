@@ -1232,7 +1232,58 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* FINAL + CAMPEON (Unificados para ahorrar espacio y que se vea la copa) */}
+                 {/* FINAL (Nueva Columna Explícita) */}
+                <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
+                    {(() => {
+                        // Lógica para deducir quién es el finalista de arriba y de abajo
+                        const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
+                        
+                        let topFinalistName = "";
+                        let botFinalistName = "";
+
+                        // El ganador de la semi de arriba (indices 0 y 1)
+                        // El ganador de la semi de abajo (indices 2 y 3)
+                        
+                        // Si tenemos winner y runnerUp, intentamos asignarlos
+                        if (bracketData.winner) {
+                             const topSemiPlayers = [semisR[0], semisR[1]];
+                             const botSemiPlayers = [semisR[2], semisR[3]];
+                             
+                             if (topSemiPlayers.includes(bracketData.winner)) {
+                                 topFinalistName = bracketData.winner;
+                                 botFinalistName = bracketData.runnerUp;
+                             } else if (botSemiPlayers.includes(bracketData.winner)) {
+                                 botFinalistName = bracketData.winner;
+                                 topFinalistName = bracketData.runnerUp;
+                             } else {
+                                 // Fallback si no machea (ej. sorteo recién hecho)
+                                 topFinalistName = bracketData.winner;
+                                 botFinalistName = bracketData.runnerUp;
+                             }
+                        }
+
+                        const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
+                        const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
+
+                        return (
+                            <div className="relative flex flex-col space-y-2">
+                                <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                                        {topFinalistName || "TBD"}
+                                    </span>
+                                </div>
+                                <div className={`h-8 border-b ${isBotWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs md:text-sm uppercase truncate`}>
+                                        {botFinalistName || "TBD"}
+                                    </span>
+                                </div>
+                                <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                {/* CAMPEON (Siempre) */}
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                          {/* Linea conectora de la final */}
