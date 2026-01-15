@@ -561,7 +561,7 @@ export default function Home() {
              break;
            }
         }
-        if (!isComplete) break;
+        if (isComplete) break;
     }
 
     return (
@@ -905,7 +905,12 @@ export default function Home() {
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
 
       if (hasContent) {
-          const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
+          // *** FIX: DETECCIÓN AUTOMÁTICA BASADA EN DATOS REALES ***
+          // Contamos cuántas filas tienen realmente un nombre en la primera columna.
+          const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
+          // Si hay más de 16 jugadores en col 1, es un cuadro grande (32). Si no, es normal (16).
+          const isLarge = playersInCol1 > 16;
+          
           let seeds = {};
           try {
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
