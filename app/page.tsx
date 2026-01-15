@@ -323,7 +323,7 @@ const OFFLINE_DATA: any = {
 7,Gafni Edgardo,100,,,,,,,,,100
 8,"Gil, G",100,,,,,,,,,100
 9,Pablo Sepulveda,100,,,,,,,,,100
-10,Petrilo Ale,100,,,,,,,,,100\
+10,Petrilo Ale,100,,,,,,,,,100
 11,Arevalo Ariel,,100,,,,,,,,100
 12,"Lodico, G",,100,,,,,,,,100
 13,"Romero, A",,50,,,,,,,,50
@@ -738,7 +738,7 @@ Porciuncula,,,,,,`,
   "Grupos AO B1": `Zona 1,"Toso, Marcel","Romero, A","Lodico, G",Posicion,"Toso, Marcel","Romero, A",,,Puntaje matematico para la posicion
 "Toso, Marcel",,6/4 6/1,6/2 1/6 6/4,1°,Curti Rama,Gafni Edgardo,,,20408
 "Romero, A",4/6 1/6,,6/3 1/6 6/4,2°,"Lerro, P","Castro, Ariel",,,10200
-"Lodico, G",2/6 6/1 4/6,3/6 6/1 4/6,,3°,"Verio, Ale\",\"Chade, L",,,100
+"Lodico, G",2/6 6/1 4/6,3/6 6/1 4/6,,3°,\"Verio, Ale\",\"Chade, L\",,,100
 Zona 2,Curti Rama,"Gil, G",Gafni Edgardo,,Ferro Fran,"Rinaudo, Joaquin",,,0
 Curti Rama,,,,1°,"Guerra, Facu","Gianni, Fer",,,0
 "Gil, G",,,,1°,,,,,0
@@ -793,6 +793,18 @@ AO,RG,Adelaide,S8 250,S8 500,,,
 ,,,2...`
 };
 
+const tournaments = [
+  { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
+  { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
+  { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
+  { id: "ao", name: "Australian Open", short: "AO", type: "full" }, 
+  { id: "iw", name: "Indian Wells", short: "IW", type: "full" },
+  { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
+  { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
+  { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
+  { id: "us", name: "US Open", short: "US", type: "direct" },
+]
+
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
@@ -838,11 +850,6 @@ export default function Home() {
 
         if (rows.length < 2) throw new Error("No se encontraron datos en Formatos Grupos");
 
-        // (La lógica de cálculo se mantiene igual, solo cambia el origen de los datos)
-        // Buscamos fila 37 aprox en el CSV original, aqui puede variar por el recorte.
-        // Asumimos que la tabla de puntos está al final del CSV recortado.
-        // Haremos una búsqueda dinámica mejor.
-        
         let startRowIndex = -1;
         for(let i=0; i<rows.length; i++) {
             if (rows[i] && rows[i].join("").includes("Puntajes Torneos")) {
@@ -852,7 +859,6 @@ export default function Home() {
         }
         
         if (startRowIndex === -1) {
-             // Fallback a lógica fija si no se encuentra
              startRowIndex = rows.length - 2; 
         }
 
@@ -885,7 +891,6 @@ export default function Home() {
             groupWin: getPoints(7)    
         };
 
-        // ... (resto de lógica de cálculo igual) ...
         const playerScores: any = {};
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
@@ -1573,7 +1578,7 @@ export default function Home() {
         }
       };
 
-      const hasContent = rows.length > 0 && rows[0][0] && rows[0][0] !== "";
+      const hasContent = rows.length > 0 && rows[0] && rows[0][0] && rows[0][0] !== "";
 
       if (hasContent) {
           // *** DETECCIÓN DE TAMAÑO (SUPER 8 vs OCTAVOS vs 32) ***
@@ -1853,16 +1858,16 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-sm ml-2">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
                         </div>
                       </div>
                     );
@@ -1887,16 +1892,16 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-sm ml-1">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-sm ml-1">{s2}</span>
                         </div>
                       </div>
                     );
@@ -1919,16 +1924,16 @@ export default function Home() {
                      return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-1">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-base ml-1">{s2}</span>
                         </div>
                       </div>
                      )
