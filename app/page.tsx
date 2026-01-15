@@ -10,7 +10,7 @@ const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t';
 const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
 const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
 const MI_TELEFONO = "5491150568353"; 
-const TELEFONO_BASTI = "5491123965949"; // Número para lista de partidos
+const TELEFONO_BASTI = "5491123965949"; 
 
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
@@ -47,17 +47,24 @@ export default function Home() {
     );
   };
 
-  // --- FUNCION NUEVA: Enviar lista Basti ---
+  // --- FUNCION: Enviar lista Basti ---
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${navState.tournamentShort || navState.currentTour}*\n\n`;
     
-    // Si estamos en fase de grupos
-    if (navState.level === "group-phase") {
+    // Generación de Sorteo (Grupos o Cuadro)
+    if (generatedBracket.length > 0) {
+         generatedBracket.forEach(m => {
+             if (m.p1 && m.p2 && m.p2.name !== "BYE") {
+                 mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
+             }
+         });
+    }
+    // Fase de Grupos (Panel de Control)
+    else if (navState.level === "group-phase") {
         groupData.forEach(group => {
             const players = group.players;
             for (let i = 0; i < players.length; i++) {
                 for (let j = i + 1; j < players.length; j++) {
-                    // Si no hay resultado, es partido a jugar
                     const res = group.results[i] && group.results[i][j] ? group.results[i][j] : "-";
                     if (!res || res === "-" || res === "") {
                         mensaje += `${players[i]} vs ${players[j]}\n`;
@@ -65,14 +72,6 @@ export default function Home() {
                 }
             }
         });
-    } 
-    // Si estamos generando cuadro (Sorteo directo o post-grupos)
-    else if (generatedBracket.length > 0) {
-         generatedBracket.forEach(m => {
-             if (m.p1 && m.p2 && m.p2.name !== "BYE") {
-                 mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
-             }
-         });
     }
 
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -475,17 +474,14 @@ export default function Home() {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
                     players.push(row[0]);
                     
-                    // Posicion (Col E -> index 4)
                     let rawPos = row[4] || "";
                     if (rawPos.startsWith("#")) rawPos = "-";
                     positions.push(rawPos); 
                     
-                    // Puntos (Col F -> index 5)
                     let rawPts = row[5] || "";
                     if (rawPts.startsWith("#")) rawPts = "";
                     points.push(rawPts);
 
-                    // Dif Sets (Col G -> index 6)
                     let rawDif = row[6] || "";
                     if (rawDif.startsWith("#")) rawDif = "";
                     diff.push(rawDif);
@@ -724,7 +720,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 }; // Sin TBD
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -757,7 +753,7 @@ export default function Home() {
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
-                  // Cambio: Ganadores y Segundos ahora se leen de M (index 12) y N (index 13)
+                  // M (12) y N (13)
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
                   
@@ -777,7 +773,8 @@ export default function Home() {
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
           } else {
-             alert(`Solo se encontraron ${qualifiers.length} clasificados en las columnas M y N de la pestaña ${sheetName}. Verifica los datos.`);
+             // Mensaje corregido
+             alert("no hay clasificados para sortear");
           }
 
       } catch (e) {
@@ -872,6 +869,7 @@ export default function Home() {
                 const p1 = r1[i]; const p2 = r1[i+1];
                 const targetIdx = Math.floor(i / 2);
                 if (!newR2[targetIdx] || newR2[targetIdx] === "") {
+                    // STRICT CHECK: Only advance if opponent is literally "BYE"
                     if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
                     else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
                 }
@@ -886,6 +884,7 @@ export default function Home() {
              const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
              const targetIdx = Math.floor(i / 2);
              if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
+                 // STRICT CHECK: Only advance if opponent is literally "BYE"
                  if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
                  else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
              }
@@ -940,7 +939,16 @@ export default function Home() {
           } catch(e) { console.log("Error fetching seeds", e); }
 
           let rawData: any = {};
-          const winner = rows[0][8] || rows[0][6] || rows[0][4] || "";
+          
+          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
+          // Definir indice basado en el tamaño, no "guessing"
+          let winnerIdx = -1;
+          if (bracketSize === 32) winnerIdx = 10; // K
+          else if (bracketSize === 16) winnerIdx = 8; // I
+          else if (bracketSize === 8) winnerIdx = 6; // G
+          
+          // Solo leemos el ganador si el índice es válido y la celda existe
+          const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
 
           if (bracketSize === 32) {
@@ -1086,7 +1094,7 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* Nuevo Botón Enviar Lista Basti */}
+                {/* Botón Enviar Lista Basti (Visible en sorteo) */}
                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 w-12 rounded-xl">
                     <List className="w-6 h-6" />
                 </Button>
@@ -1122,13 +1130,13 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
                   
-                  {/* Nuevo Botón Enviar Lista Basti */}
-                  <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold"><List className="mr-2" /> ENVIAR LISTA BASTI</Button>
+                  {/* Botón Basti: Solo visible si NO está confirmado */}
+                  <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
                   
-                  <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
-                  <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
+                  <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                  <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
               )}
             </div>
@@ -1136,7 +1144,6 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
               <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
             </div>
-            {/* Ajuste de columnas a 2 en desktop (lg:grid-cols-2) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
@@ -1150,10 +1157,8 @@ export default function Home() {
             </div>
             
             {bracketData.hasData ? (
-              // Contenedor principal del cuadro: ajustado gaps y flex para que entre todo
               <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
                 
-                {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
                   <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
@@ -1180,7 +1185,6 @@ export default function Home() {
                             </div>
                             <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                           </div>
-                          {/* Espacio en el medio */}
                           {idx === 14 && <MiddleSpacer />}
                         </>
                       )
@@ -1188,7 +1192,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* OCTAVOS (Si es > 8) */}
                 {bracketData.bracketSize >= 16 && (
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
@@ -1220,7 +1223,6 @@ export default function Home() {
                           </div>
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                         </div>
-                        {/* Espacio en el medio */}
                         {i === 3 && <MiddleSpacer />}
                       </>
                     );
@@ -1228,7 +1230,6 @@ export default function Home() {
                 </div>
                 )}
 
-                {/* CUARTOS (Siempre) */}
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
@@ -1259,14 +1260,12 @@ export default function Home() {
                           </div>
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                         </div>
-                        {/* Espacio en el medio */}
                         {i === 1 && <MiddleSpacer />}
                       </>
                     );
                   })}
                 </div>
 
-                {/* SEMIS (Siempre) */}
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2].map((idx, i) => {
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1296,14 +1295,12 @@ export default function Home() {
                           </div>
                           <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                         </div>
-                        {/* Espacio en el medio */}
                         {i === 0 && <MiddleSpacer />}
                       </>
                      )
                   })}
                 </div>
 
-                 {/* FINAL (Sin TBD) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
                         const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1348,15 +1345,13 @@ export default function Home() {
                     })()}
                 </div>
 
-                {/* CAMPEON (Texto Agrandado) */}
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
-                        <span className="text-[#b35a38]/70 font-black text-[10px] uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
-                        {/* Aumentado a text-3xl md:text-5xl */}
-                        <span className="text-[#b35a38] font-black text-3xl md:text-5xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || "?"}</span>
+                        <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
+                        <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
 
@@ -1369,31 +1364,27 @@ export default function Home() {
                 {bracketData.canGenerate ? (
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
-                        {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                           </Button>
-                        ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
-                               <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                           </Button>
-                        )}
+                        <div className="flex gap-2 justify-center">
+                            {/* Botón Lista Basti: Visible también aquí */}
+                            <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-10 w-12 rounded-xl">
+                                <List className="w-5 h-5" />
+                            </Button>
+                            {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
+                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
+                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                            </Button>
+                            ) : (
+                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
+                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
+                            </Button>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p>
                 )}
               </div>
             )}
-            
-            {/* Botón Lista de Partidos en Vista de Cuadro */}
-            {bracketData.hasData && (
-                <div className="mt-8 flex justify-center pb-4">
-                   <Button onClick={enviarListaBasti} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
-                        <List className="mr-2" /> ENVIAR LISTA BASTI
-                   </Button>
-                </div>
-            )}
-
           </div>
         )}
 
