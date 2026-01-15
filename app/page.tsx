@@ -6,64 +6,64 @@ import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X, Copy } from "lucide-react"
 
 // ==============================================================================
-// BASE DE DATOS OFFLINE (Cargada desde tus CSVs)
+// BASE DE DATOS OFFLINE (Cargada y Corregida)
 // ==============================================================================
 const OFFLINE_DATA: any = {
   // --- RANKINGS 2025 ---
-  "A 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Roland Garros,Wimbledon,Us Open,Masters,TOTAL,,,,,,,,
-1,Palmero Thiago,400,1000,400,400,1300,800,,4300,,,,,,,,
-2,Martin Fernandez,1300,,,2000,,,,3300,,,,,,,,
-3,Cristian Orso,100,,200,200,2000,800,,3300,,,,,,,,
-4,Mauri Di giacomo,,,1000,800,,1300,,3100,,,,,,,,
-5,Juan Cruz Recalde,800,,650,,800,,,2250,,,,,,,,
-6,Di Lullo,2000,,,,,,,2000,,,,,,,,.
-7,Maxi Tucci,800,400,100,,400,200,,1900,,,,,,,,
-8,Juampi Doffigny,400,650,100,200,200,200,,1750,,,,,,,,
-9,Juampi Lois,400,,200,800,,200,,1600,,,,,,,,
-10,Benja Gunzelman,,,,1300,,,,1300,,,,,,,,
-11,Luis Cobas,200,,400,200,100,400,,1300,,,,,,,,
-12,Martin Olivera,200,,200,400,100,400,,1300,,,,,,,,
-13,Alan Santamaria,,,,,,100,800,900,,,,,,,,
-14,Tomi Olguin,,,,800,,,100,900,,,,,,,,
-15,Diego Fronza,50,,50,100,100,400,,700,,,,,,,,
-16,Mauri Ramos,200,200,100,100,,,50,650,,,,,,,,
-17,Nico Palmero,,,50,50,200,200,,500,,,,,,,,
-18,Juan carrizo,100,100,50,50,100,100,,500,,,,,,,,
-19,Acosta Lisandro,,,,,400,,,400,,,,,,,,
-20,Diego zelarrayan,,,100,100,200,,,400,,,,,,,,
-21,Leandro Bernal,200,200,,,,,0,400,,,,,,,,
-22,Nico Dicuzzo,,,200,,100,100,,400,,,,,,,,
-23,Pablo De Tina,,,50,100,100,100,,350,,,,,,,,
-24,Ayala Martin,,,,,100,200,,300,,,,,,,,
-25,Melchiori,,,50,,200,,,250,,,,,,,,
-26,"Chade, Lautaro",,,200,50,,,0,250,,,,,,,,
-27,Videla Gabriel,,,100,,100,,,200,,,,,,,,
-28,Schuldt Adolfo,,,50,50,100,,,200,,,,,,,,
-29,Julian Rinaldi,100,,,,100,,,200,,,,,,,,
-30,Alejandro Verio,,,50,50,100,,,200,,,,,,,,
-31,Charly Valenzuela,,,200,,,,,200,,,,,,,,
-32,Ezequiel Ramos,,,,,200,,,200,,,,,,,,
-33,Mariano Juarez,50,,,100,,,,150,,,,,,,,
-34,Jony Alvarez,,,100,,,,,100,,,,,,,,
-35,Mariano Piola,,,,100,,,,100,,,,,,,,
-36,Mauri C,50,,50,,,,,100,,,,,,,,
-37,Ale Antelo,,,50,50,,,,100,,,,,,,,
-38,Migue Otero,,,50,50,,,,100,,,,,,,,
-39,Agus Lening,,,100,,,,,100,,,,,,,,
-40,Seba Suarez,,,50,,50,,,100,,,,,,,,
-41,Mauri Di giacomo Padre,,,100,,,,,100,,,,,,,,
-42,Seba Mendez,,,100,,,,,100,,,,,,,,
-43,Tamburrino,100,,,,,,,100,,,,,,,,
-44,Rojas Lucas,,,100,,,,,100,,,,,,,,
-45,"Souto, Lean",,,,,100,,,100,,,,,,,,
-46,"Fernandez, Tomás ",,,,,100,,,100,,,,,,,,
-47,"Alvarez, M",,,,,,100,,100,,,,,,,,
-48,Cabrera Martin,,,50,,,,,50,,,,,,,,
-49,Barbero D,,,50,,,,,50,,,,,,,,
-50,Gomez Sergio,,,50,,,,,50,,,,,,,,
-51,Gimenez A,,,,50,,,,50,,,,,,,,
-52,Rinaudo Joaquin,,,,50,,,,50,,,,,,,,
-53,Gomez Matu,,,,50,,,,50,,,,,,,,`,
+  "A 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Roland Garros,Wimbledon,Us Open,Masters,TOTAL
+1,Palmero Thiago,400,1000,400,400,1300,800,,4300
+2,Martin Fernandez,1300,,,2000,,,,3300
+3,Cristian Orso,100,,200,200,2000,800,,3300
+4,Mauri Di giacomo,,,1000,800,,1300,,3100
+5,Juan Cruz Recalde,800,,650,,800,,,2250
+6,Di Lullo,2000,,,,,,,2000
+7,Maxi Tucci,800,400,100,,400,200,,1900
+8,Juampi Doffigny,400,650,100,200,200,200,,1750
+9,Juampi Lois,400,,200,800,,200,,1600
+10,Benja Gunzelman,,,,1300,,,,1300
+11,Luis Cobas,200,,400,200,100,400,,1300
+12,Martin Olivera,200,,200,400,100,400,,1300
+13,Alan Santamaria,,,,,,100,800,900
+14,Tomi Olguin,,,,800,,,100,900
+15,Diego Fronza,50,,50,100,100,400,,700
+16,Mauri Ramos,200,200,100,100,,,50,650
+17,Nico Palmero,,,50,50,200,200,,500
+18,Juan carrizo,100,100,50,50,100,100,,500
+19,Acosta Lisandro,,,,,400,,,400
+20,Diego zelarrayan,,,100,100,200,,,400
+21,Leandro Bernal,200,200,,,,,0,400
+22,Nico Dicuzzo,,,200,,100,100,,400
+23,Pablo De Tina,,,50,100,100,100,,350
+24,Ayala Martin,,,,,100,200,,300
+25,Melchiori,,,50,,200,,,250
+26,"Chade, Lautaro",,,200,50,,,0,250
+27,Videla Gabriel,,,100,,100,,,200
+28,Schuldt Adolfo,,,50,50,100,,,200
+29,Julian Rinaldi,100,,,,100,,,200
+30,Alejandro Verio,,,50,50,100,,,200
+31,Charly Valenzuela,,,200,,,,,200
+32,Ezequiel Ramos,,,,,200,,,200
+33,Mariano Juarez,50,,,100,,,,150
+34,Jony Alvarez,,,100,,,,,100
+35,Mariano Piola,,,,100,,,,100
+36,Mauri C,50,,50,,,,,100
+37,Ale Antelo,,,50,50,,,,100
+38,Migue Otero,,,50,50,,,,100
+39,Agus Lening,,,100,,,,,100
+40,Seba Suarez,,,50,,50,,,100
+41,Mauri Di giacomo Padre,,,100,,,,,100
+42,Seba Mendez,,,100,,,,,100
+43,Tamburrino,100,,,,,,,100
+44,Rojas Lucas,,,100,,,,,100
+45,"Souto, Lean",,,,,100,,,100
+46,"Fernandez, Tomás ",,,,,100,,,100
+47,"Alvarez, M",,,,,,100,,100
+48,Cabrera Martin,,,50,,,,,50
+49,Barbero D,,,50,,,,,50
+50,Gomez Sergio,,,50,,,,,50
+51,Gimenez A,,,,50,,,,50
+52,Rinaudo Joaquin,,,,50,,,,50
+53,Gomez Matu,,,,50,,,,50`,
 
   "B1 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Rolan Garros,Wimbledon,Us Open,Masters,TOTAL
 1,"Castro, Ariel",800,,400,800,1300,2000,400,5700
@@ -280,38 +280,7 @@ const OFFLINE_DATA: any = {
 50,Gomez Sergio,,,,,,,,,,0
 51,Gimenez A,,,,,,,,,,0
 52,Rinaudo Joaquin,,,,,,,,,,0
-53,Gomez Matu,,,,,,,,,,0
-54,Agustin Purita,,,,,,,,,,0
-55,Alberto Ruhl,,,,,,,,,,0
-56,Aldo Perez,,,,,,,,,,0
-57,Ale Fenzi,,,,,,,,,,0
-58,Ale Gimenez,,,,,,,,,,0
-59,Axel Ochoa,,,,,,,,,,0
-60,Bartolomeo,,,,,,,,,,0
-61,Damian Vergani,,,,,,,,,,0
-62,Diego Fracchia,,,,,,,,,,0
-63,Diego Magaldi,,,,,,,,,,0
-64,Esteban Ceolin,,,,,,,,,,0
-65,Facu sarmiento,,,,,,,,,,0
-66,Facundo Tumio,,,,,,,,,,0
-67,Fede Agüero,,,,,,,,,,0
-68,Federico Mendez,,,,,,,,,,0
-69,Fran Ferro,,,,,,,,,,0
-70,Gabriel Videla,,,,,,,,,,0
-71,Gerar Dicuzzo,,,,,,,,,,0
-72,H Bach,,,,,,,,,,0
-73,Iader Orfeo,,,,,,,,,,0
-74,Jonatan Perez,,,,,,,,,,0
-75,Jose Lucero,,,,,,,,,,0
-76,Juli Buriano,,,,,,,,,,0
-77,Matias Roces,,,,,,,,,,0
-78,Nico Bartolomeo,,,,,,,,,,0
-79,Nicolas Megno,,,,,,,,,,0
-80,Pablo Lerro,,,,,,,,,,0
-81,Pablo Sepulveda,,,,,,,,,,0
-82,Santi Iacovino,,,,,,,,,,0
-83,Siamana Matias,,,,,,,,,,0
-84,Tomas Gunzelman,,,,,,,,,,0`,
+53,Gomez Matu,,,,,,,,,,0`,
 
   "B1 2026": `POSICION,NOMBRE,Super 8/500,Super 8/250,Adelaide,AO,IW,,,,,TOTAL
 1,"Toso, Marcel",500,,,,,,,,,500
@@ -377,43 +346,7 @@ const OFFLINE_DATA: any = {
 61,Zupancic,,,,,,,,,,0
 62,Ramos Ruben,,,,,,,,,,0
 63,Ramos Ezequiel,,,,,,,,,,0
-64,Tules Matias,,,,,,,,,,0
-65,Agustin Purita,,,,,,,,,,0
-66,Alan Santamaria,,,,,,,,,,0
-67,Ale Fenzi,,,,,,,,,,0
-68,Alex Varela,,,,,,,,,,0
-69,Angel Rinaudo,,,,,,,,,,0
-70,Ariel Arpajou,,,,,,,,,,0
-71,Ariel De Luca,,,,,,,,,,0
-72,Ariel Diaz,,,,,,,,,,0
-73,Ariel Gago,,,,,,,,,,0
-74,Axel Ochoa,,,,,,,,,,0
-75,Bacha,,,,,,,,,,0
-76,Baldino,,,,,,,,,,0
-77,Bartolomeo,,,,,,,,,,0
-78,Benja Gunzelman,,,,,,,,,,0
-79,Blas Torales,,,,,,,,,,0
-80,Brian,,,,,,,,,,0
-81,C Rodriguez,,,,,,,,,,0
-82,Cabrera,,,,,,,,,,0
-83,Cesar Velozo,,,,,,,,,,0
-84,Claudio Catalini,,,,,,,,,,0
-85,Claudio Monti,,,,,,,,,,0
-86,Cobi,,,,,,,,,,0
-87,Colo Medina,,,,,,,,,,0
-88,Cristian Diaz,,,,,,,,,,0
-89,Cristian Orso,,,,,,,,,,0
-90,Damian Vergani,,,,,,,,,,0
-91,Dani Romero,,,,,,,,,,0
-92,Daniel Gonzalez,,,,,,,,,,0
-93,Dany,,,,,,,,,,0
-94,David Molina,,,,,,,,,,0
-95,Diego Fracchia,,,,,,,,,,0
-96,Diego Lorenzatti,,,,,,,,,,0
-97,Diego Rodriguez,,,,,,,,,,0
-98,E Perez,,,,,,,,,,0
-99,Edu Perez,,,,,,,,,,0
-100,Esteban Ceolin,,,,,,,,,,0`,
+64,Tules Matias,,,,,,,,,,0`,
 
   "B2 2026": `POSICION,NOMBRE,Super 8/500,Super 8/250,Adelaide,AO,IW,,,,,TOTAL
 1,"Oliva, Fer",500,,,,,,,,,500
@@ -473,49 +406,7 @@ const OFFLINE_DATA: any = {
 55,Uchima E,,,,,,,,,,0
 56,Torres German,,,,,,,,,,0
 57,Fede Agüero,,,,,,,,,,0
-58,Catalini,,,,,,,,,,0
-59,A Mastrogiovanni,,,,,,,,,,0
-60,Adrian Ledesma,,,,,,,,,,0
-61,Adrian Orellana,,,,,,,,,,0
-62,Adrian Ortiz,,,,,,,,,,0
-63,Agustin Alvarez,,,,,,,,,,0
-64,Agustin Canapino,,,,,,,,,,0
-65,Agustin Purita,,,,,,,,,,0
-66,Alberto Ruhl,,,,,,,,,,0
-67,Ale Fenzi,,,,,,,,,,0
-68,Alejandro Verio,,,,,,,,,,0
-69,Alex Varela,,,,,,,,,,0
-70,Angel Rinaudo,,,,,,,,,,0
-71,Ariel Arpajou,,,,,,,,,,0
-72,Ariel Castro,,,,,,,,,,0
-73,Ariel De Luca,,,,,,,,,,0
-74,Ariel Diaz,,,,,,,,,,0
-75,Ariel Gago,,,,,,,,,,0
-76,Axel Ochoa,,,,,,,,,,0
-77,Bacha,,,,,,,,,,0
-78,Bartolomeo,,,,,,,,,,0
-79,Benja Gunzelman,,,,,,,,,,0
-80,Blas Torales,,,,,,,,,,0
-81,Brian,,,,,,,,,,0
-82,C Rodriguez,,,,,,,,,,0
-83,Cabrera,,,,,,,,,,0
-84,Carlos Ruiz,,,,,,,,,,0
-85,Cesar Velozo,,,,,,,,,,0
-86,Claudio Monti,,,,,,,,,,0
-87,Cobi,,,,,,,,,,0
-88,Colo Medina,,,,,,,,,,0
-89,Cristian Diaz,,,,,,,,,,0
-90,Cristian Fuentes,,,,,,,,,,0
-91,Cristian Orso,,,,,,,,,,0
-92,Damian Vergani,,,,,,,,,,0
-93,Dani Romero,,,,,,,,,,0
-94,Daniel Gonzalez,,,,,,,,,,0
-95,Dany,,,,,,,,,,0
-96,Diego Fracchia,,,,,,,,,,0
-97,Diego Lorenzatti,,,,,,,,,,0
-98,Diego Magaldi,,,,,,,,,,0
-99,Diego Rodriguez,,,,,,,,,,0
-100,E Perez,,,,,,,,,,0`,
+58,Catalini,,,,,,,,,,0`,
 
   "C 2026": `POSICION,NOMBRE,Super 8 / 500,Adelaide,AO,IW,,,,,,TOTAL
 1,"Pautaso, Lean",500,,,,,,,,,500
@@ -553,56 +444,7 @@ const OFFLINE_DATA: any = {
 33,Cornejo C,,,,,,,,,,0
 34,Nieto N,,,,,,,,,,0
 35,Pantaneti F,,,,,,,,,,0
-36,Joel,,,,,,,,,,0
-37,A Mastrogiovanni,,,,,,,,,,0
-38,Adrian Ledesma,,,,,,,,,,0
-39,Adrian Ortiz,,,,,,,,,,0
-40,Agustin Alvarez,,,,,,,,,,0
-41,Agustin Canapino,,,,,,,,,,0
-42,Agustin Purita,,,,,,,,,,0
-43,Alan Santamaria,,,,,,,,,,0
-44,Alberto Ruhl,,,,,,,,,,0
-45,Aldo Perez,,,,,,,,,,0
-46,Ale Fenzi,,,,,,,,,,0
-47,Ale Gimenez,,,,,,,,,,0
-48,Alex Varela,,,,,,,,,,0
-49,Angel Rinaudo,,,,,,,,,,0
-50,Ariel Arpajou,,,,,,,,,,0
-51,Ariel Castro,,,,,,,,,,0
-52,Ariel De Luca,,,,,,,,,,0
-53,Ariel Diaz,,,,,,,,,,0
-54,Ariel Gago,,,,,,,,,,0
-55,Augusto Ale,,,,,,,,,,0
-56,Axel Ochoa,,,,,,,,,,0
-57,Bacha,,,,,,,,,,0
-58,Baldino,,,,,,,,,,0
-59,Bartolomeo,,,,,,,,,,0
-60,Benja Gunzelman,,,,,,,,,,0
-61,Blas Torales,,,,,,,,,,0
-62,Brian,,,,,,,,,,0
-63,C Rodriguez,,,,,,,,,,0
-64,Cabrera,,,,,,,,,,0
-65,Carlos Ruiz,,,,,,,,,,0
-66,Cesar Velozo,,,,,,,,,,0
-67,Chris suarez,,,,,,,,,,0
-68,Cisterna,,,,,,,,,,0
-69,Claudio Monti,,,,,,,,,,0
-70,Cobi,,,,,,,,,,0
-71,Colo Medina,,,,,,,,,,0
-72,Cristian Diaz,,,,,,,,,,0
-73,Cristian Fuentes,,,,,,,,,,0
-74,Cristian Orso,,,,,,,,,,0
-75,Damian Vergani,,,,,,,,,,0
-76,Dani Romero,,,,,,,,,,0
-77,Daniel Gonzalez,,,,,,,,,,0
-78,Daniel Torrico,,,,,,,,,,0
-79,Dany,,,,,,,,,,0
-80,Denis Larrivey,,,,,,,,,,0
-81,Diego Fracchia,,,,,,,,,,0
-82,Diego Lorenzatti,,,,,,,,,,0
-83,Diego Magaldi,,,,,,,,,,0
-84,Diego Rodriguez,,,,,,,,,,0
-85,E Perez,,,,,,,,,,0`,
+36,Joel,,,,,,,,,,0`,
 
   // --- INSCRIPTOS ---
   "Inscriptos": `Torneo,Categoria,Jugador,,,,,,
@@ -734,11 +576,11 @@ De Souza,,,,,,
 "Peralta, G",,,,,,
 Porciuncula,,,,,,`,
 
-  // --- GRUPOS Y FORMATOS ---
+  // --- GRUPOS ---
   "Grupos AO B1": `Zona 1,"Toso, Marcel","Romero, A","Lodico, G",Posicion,"Toso, Marcel","Romero, A",,,Puntaje matematico para la posicion
 "Toso, Marcel",,6/4 6/1,6/2 1/6 6/4,1°,Curti Rama,Gafni Edgardo,,,20408
 "Romero, A",4/6 1/6,,6/3 1/6 6/4,2°,"Lerro, P","Castro, Ariel",,,10200
-"Lodico, G",2/6 6/1 4/6,3/6 6/1 4/6,,3°,\"Verio, Ale\",\"Chade, L\",,,100
+"Lodico, G",2/6 6/1 4/6,3/6 6/1 4/6,,3°,"Verio, Ale","Chade, L",,,100
 Zona 2,Curti Rama,"Gil, G",Gafni Edgardo,,Ferro Fran,"Rinaudo, Joaquin",,,0
 Curti Rama,,,,1°,"Guerra, Facu","Gianni, Fer",,,0
 "Gil, G",,,,1°,,,,,0
@@ -750,9 +592,9 @@ Zona 3,"Lerro, P","Castro, Ariel",-,,,,,,0
 Zona 4,"Verio, Ale","Chade, L",Ruhl Alberto,,,,,,0
 "Verio, Ale",,,,1°,,,,,0
 "Chade, L",,,,1°,,,,,0
-Ruhl Alberto,,,,1°,,,,,0
-Zona ...`,
+Ruhl Alberto,,,,1°,,,,,0`,
 
+  // --- FORMATOS GRUPOS (PUNTAJES AGREGADOS) ---
   "Formatos Grupos": `Formatos,Columna A (Nombres),Columna B (Res),Columna C (Res),Columna D (Res),Posicion,,
 1,Zona 1,,,,,,
 2,Jugador 1,-,6-4 6-2,6-1 6-1,,,
@@ -790,7 +632,13 @@ Puntajes Torneos,,,,,,,
 ,,,,,,,
 ,,,,,,,
 AO,RG,Adelaide,S8 250,S8 500,,,
-,,,2...`
+2000,2000,500,250,500,,,
+1200,1200,300,150,300,,,
+720,720,180,90,180,,,
+360,360,90,45,90,,,
+180,180,45,22,45,,,
+90,90,22,11,22,,,
+10,10,10,10,10,,,`
 };
 
 const tournaments = [
@@ -821,10 +669,11 @@ export default function Home() {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // PARSER MODIFICADO PARA LEER DE VARIABLE LOCAL
+  // PARSER MODIFICADO PARA LEER CORRECTAMENTE NOMBRES CON COMILLAS Y COMAS
   const parseCSV = (text: string) => {
     if (!text) return [];
     return text.trim().split('\n').map(row => 
+      // Regex para separar por comas ignorando las que estan dentro de comillas
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
     );
   };
@@ -1510,16 +1359,21 @@ export default function Home() {
   }
 
   const confirmarSorteoCuadro = () => {
-    if (generatedBracket.length === 0) return;
+    // Si no hay sorteo nuevo, intenta usar los datos del cuadro actual
+    const dataToSend = generatedBracket.length > 0 ? generatedBracket : [];
     
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     
-    generatedBracket.forEach((match) => {
-        const p1Name = match.p1 ? match.p1.name : "TBD";
-        const p2Name = match.p2 ? match.p2.name : "TBD"; 
-        
-        mensaje += `${p1Name}\n${p2Name}\n`;
-    });
+    // Si estamos viendo un bracket existente (Adelaide) y no uno generado recien
+    if (dataToSend.length === 0 && bracketData.hasData) {
+        mensaje += `(Cuadro ya generado previamente)\nVer en la web.`;
+    } else {
+        dataToSend.forEach((match) => {
+            const p1Name = match.p1 ? match.p1.name : "TBD";
+            const p2Name = match.p2 ? match.p2.name : "TBD"; 
+            mensaje += `${p1Name}\n${p2Name}\n`;
+        });
+    }
     
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
@@ -1897,7 +1751,7 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-1">{s1}</span>
                         </div>
-                        <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                        <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate w-full text-left`}>
                                 {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
