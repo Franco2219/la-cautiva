@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X, Copy } from "lucide-react"
 
 // ==============================================================================
-// BASE DE DATOS OFFLINE (Cargada y Corregida)
+// BASE DE DATOS OFFLINE (CORREGIDA Y CON PUNTOS AGREGADOS)
 // ==============================================================================
 const OFFLINE_DATA: any = {
   // --- RANKINGS 2025 ---
@@ -672,7 +672,8 @@ export default function Home() {
   // PARSER MODIFICADO PARA LEER CORRECTAMENTE NOMBRES CON COMILLAS Y COMAS
   const parseCSV = (text: string) => {
     if (!text) return [];
-    return text.trim().split('\n').map(row => 
+    // Limpiamos \r que rompen los CSV generados en Windows/Excel
+    return text.replace(/\r/g, '').trim().split('\n').map(row => 
       // Regex para separar por comas ignorando las que estan dentro de comillas
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
     );
@@ -708,7 +709,7 @@ export default function Home() {
         }
         
         if (startRowIndex === -1) {
-             startRowIndex = rows.length - 2; 
+             startRowIndex = rows.length - 8; // Ajuste manual porque sabemos que están al final
         }
 
         const headerRow = rows[startRowIndex]; 
@@ -1136,10 +1137,31 @@ export default function Home() {
   }
 
   const confirmarYEnviar = () => {
-    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n\n`; });
+    let mensaje = `*SORTEO CONFIRMADO - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
+    
+    // Si tenemos un cuadro generado nuevo, lo usamos
+    if (generatedBracket.length > 0) {
+        generatedBracket.forEach((match) => {
+            const p1Name = match.p1 ? match.p1.name : "TBD";
+            const p2Name = match.p2 ? match.p2.name : "TBD"; 
+            mensaje += `${p1Name} vs ${p2Name}\n`;
+        });
+    } 
+    // Si estamos viendo un cuadro existente (bracketData), enviamos los cruces de primera ronda
+    else if (bracketData.hasData) {
+        const { r1, s1, bracketSize } = bracketData;
+        const matchesCount = bracketSize === 32 ? 16 : (bracketSize === 16 ? 8 : 4);
+        
+        for(let i=0; i<matchesCount; i++) {
+            const p1 = r1[i*2] || "TBD";
+            const p2 = r1[i*2+1] || "TBD";
+            mensaje += `${p1} vs ${p2}\n`;
+        }
+    } else {
+        mensaje += "No hay datos para enviar.";
+    }
+    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    setIsSorteoConfirmado(true);
   };
 
   const GroupTable = ({ group }: { group: any }) => {
@@ -1359,24 +1381,32 @@ export default function Home() {
   }
 
   const confirmarSorteoCuadro = () => {
-    // Si no hay sorteo nuevo, intenta usar los datos del cuadro actual
-    const dataToSend = generatedBracket.length > 0 ? generatedBracket : [];
-    
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     
-    // Si estamos viendo un bracket existente (Adelaide) y no uno generado recien
-    if (dataToSend.length === 0 && bracketData.hasData) {
-        mensaje += `(Cuadro ya generado previamente)\nVer en la web.`;
-    } else {
-        dataToSend.forEach((match) => {
+    // Si tenemos un cuadro generado nuevo, lo usamos
+    if (generatedBracket.length > 0) {
+        generatedBracket.forEach((match) => {
             const p1Name = match.p1 ? match.p1.name : "TBD";
             const p2Name = match.p2 ? match.p2.name : "TBD"; 
-            mensaje += `${p1Name}\n${p2Name}\n`;
+            mensaje += `${p1Name} vs ${p2Name}\n`;
         });
+    } 
+    // Si estamos viendo un cuadro existente (bracketData), enviamos los cruces de primera ronda
+    else if (bracketData.hasData) {
+        const { r1, s1, bracketSize } = bracketData;
+        const matchesCount = bracketSize === 32 ? 16 : (bracketSize === 16 ? 8 : 4);
+        
+        for(let i=0; i<matchesCount; i++) {
+            const p1 = r1[i*2] || "TBD";
+            const p2 = r1[i*2+1] || "TBD";
+            mensaje += `${p1} vs ${p2}\n`;
+        }
+    } else {
+        mensaje += "No hay datos para enviar.";
     }
     
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-  }
+  };
 
   // --- RANKING (MODIFICADO OFFLINE) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
