@@ -11,8 +11,8 @@ const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
 const MI_TELEFONO = "5491150568353"; 
 
-// --- CONFIGURACIÓN DE PROXY (CÓDIGO PARCHE) ---
-const PROXY = "https://api.allorigins.win/raw?url=";
+// --- CONFIGURACIÓN DE PROXY ---
+const PROXY_URL = "https://api.allorigins.win/raw?url=";
 
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
@@ -37,7 +37,6 @@ export default function Home() {
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
   
-  // Estados para el calculador de Ranking Oculto
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
@@ -49,7 +48,6 @@ export default function Home() {
     );
   };
 
-  // --- LOGICA DE CALCULO DE RANKING ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
@@ -65,8 +63,7 @@ export default function Home() {
     setIsLoading(true);
     try {
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
-        // Cambio a PROXY
-        const res = await fetch(PROXY + encodeURIComponent(urlBaremo));
+        const res = await fetch(PROXY_URL + encodeURIComponent(urlBaremo));
         const txt = await res.text();
         const rows = parseCSV(txt);
 
@@ -74,7 +71,6 @@ export default function Home() {
 
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
-        
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) {
             if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) {
@@ -124,24 +120,19 @@ export default function Home() {
 
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, winner, isLarge } = bracketData;
-            
             if (winner) addScore(winner, pts.champion);
-
             const finalists = isLarge ? r4 : r3; 
             finalists.forEach((p: string) => {
                 if (p && p !== winner) addScore(p, pts.finalist);
             });
-
             const semis = isLarge ? r3 : r2;
             semis.forEach((p: string) => {
                 if (p && !finalists.includes(p)) addScore(p, pts.semi);
             });
-
             const cuartos = isLarge ? r2 : r1;
             cuartos.forEach((p: string) => {
                 if (p && !semis.includes(p)) addScore(p, pts.quarters);
             });
-
             if (isLarge) {
                 r1.forEach((p: string) => {
                     if (p && !cuartos.includes(p)) addScore(p, pts.octavos);
@@ -165,8 +156,6 @@ export default function Home() {
     }
   };
 
-
-  // --- MOTOR DE SORTEO DIRECTO ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -174,8 +163,7 @@ export default function Home() {
     
     try {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-        // Cambio a PROXY
-        const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
+        const rankRes = await fetch(PROXY_URL + encodeURIComponent(rankUrl));
         const rankCsv = await rankRes.text();
         const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
           name: row[1] || "",
@@ -183,8 +171,7 @@ export default function Home() {
         })).filter(p => p.name !== "");
 
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-        // Cambio a PROXY
-        const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
+        const inscRes = await fetch(PROXY_URL + encodeURIComponent(inscUrl));
         const inscCsv = await inscRes.text();
         const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
           cols[0] === tournamentShort && cols[1] === categoryShort
@@ -196,7 +183,6 @@ export default function Home() {
             return;
         }
 
-        // 1. Ranking y Clasificación
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
@@ -209,69 +195,47 @@ export default function Home() {
         if (totalPlayers > 16) bracketSize = 32;
 
         const byeCount = bracketSize - totalPlayers;
-        
         let slots: any[] = Array(bracketSize).fill(null);
 
-        // --- DEFINICIÓN DE POSICIONES DE SEEDS (ESTRICTA) ---
-        // 1 y 2: Extremos
-        // 3 y 4: Frontera media (para 32 es 15 y 16)
-        // 5 a 8: Fronteras de cuartos (para 32 son 7, 8, 23, 24)
+        let seedPos: any = { 1: 0, 2: bracketSize - 1, 3: [(bracketSize / 2) - 1, bracketSize / 2] };
         
-        let pos1 = 0;
-        let pos2 = bracketSize - 1;
-        let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
-        
-        // Calcular posiciones para 5-8
-        let pos58: number[] = [];
-        if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
-        else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
+        // Posiciones 5-8
+        if (bracketSize === 16) seedPos[5] = [2, 5, 10, 13];
+        if (bracketSize === 32) seedPos[5] = [7, 8, 23, 24]; 
         
         const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
         
-        // Asignar 1 y 2
-        if (seeds[0]) slots[pos1] = seeds[0];
-        if (seeds[1]) slots[pos2] = seeds[1];
+        // 1 y 2
+        if (seeds[0]) slots[seedPos[1]] = seeds[0];
+        if (seeds[1]) slots[seedPos[2]] = seeds[1];
 
-        // Asignar 3 y 4 (Sorteo arriba/abajo de la frontera)
+        // 3 y 4
         if (seeds[2] && seeds[3]) {
-            const group34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
-            slots[pos34[0]] = group34[0]; // Cierra mitad arriba
-            slots[pos34[1]] = group34[1]; // Abre mitad abajo
+            const pair34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
+            slots[seedPos[3][0]] = pair34[0];
+            slots[seedPos[3][1]] = pair34[1];
         } else if (seeds[2]) {
-             slots[pos34[Math.floor(Math.random()*2)]] = seeds[2];
+             slots[seedPos[3][Math.floor(Math.random()*2)]] = seeds[2];
         }
 
-        // Asignar 5 a 8 (2 arriba, 2 abajo)
-        if (seeds.length >= 8 && pos58.length === 4) {
+        // 5 a 8
+        if (seeds.length >= 8 && seedPos[5]) {
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
-            
-            // Tomamos 2 seeds para arriba y 2 para abajo
-            const seedsTop = group58.slice(0, 2);
-            const seedsBot = group58.slice(2, 4);
-
-            // Asignar a slots de arriba (random cual en cual)
-            const posTop = [pos58[0], pos58[1]].sort(() => Math.random() - 0.5);
-            slots[posTop[0]] = seedsTop[0];
-            slots[posTop[1]] = seedsTop[1];
-
-            // Asignar a slots de abajo
-            const posBot = [pos58[2], pos58[3]].sort(() => Math.random() - 0.5);
-            slots[posBot[0]] = seedsBot[0];
-            slots[posBot[1]] = seedsBot[1];
+            for (let i = 0; i < 4; i++) {
+                if (seedPos[5][i] !== undefined) slots[seedPos[5][i]] = group58[i];
+            }
         }
 
-        // --- ASIGNACIÓN DE BYES (PRIORIDAD + ANTI-BYE) ---
+        // ASIGNACIÓN DE BYES
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
-
         let byesRemaining = byeCount;
 
-        // 1. Dar BYE a los Seeds 1-8 en orden (Si hay BYEs disponibles)
+        // 1. A los seeds
         for (let r = 1; r <= 8; r++) {
             if (byesRemaining > 0) {
                 const seedIdx = slots.findIndex(s => s && s.rank === r);
                 if (seedIdx !== -1) {
                     const rivalIdx = getRivalIndex(seedIdx);
-                    // Solo asignamos si está vacío (seguridad)
                     if (slots[rivalIdx] === null) {
                         slots[rivalIdx] = { name: "BYE", rank: 0 };
                         byesRemaining--;
@@ -280,7 +244,7 @@ export default function Home() {
             }
         }
 
-        // 2. Si sobran BYEs, repartir en PARTIDOS VACÍOS
+        // 2. Si sobran, buscar pares vacíos
         let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
              if (slots[i] === null && slots[i+1] === null) {
@@ -313,47 +277,44 @@ export default function Home() {
             }
         }
         
-        // 3. Rellenar huecos con Jugadores Restantes (Non-Seeds)
+        // 3. Resto de jugadores
         const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
-        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar
+        nonSeeds.sort(() => Math.random() - 0.5); 
 
         let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
         let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
-        
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         
-        // Llenar slots
-        for (const player of nonSeeds) {
-             const emptyTop = emptySlots.filter(i => i < bracketSize/2);
-             const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
-             let targetIdx = -1;
+        const getRival = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
+        
+        // Ordenar huecos por prioridad: Llenar donde el rival es NULL (para evitar BYE vs BYE)
+        emptySlots.sort((a, b) => {
+             const rivalA = slots[getRival(a)];
+             const rivalB = slots[getRival(b)];
+             const score = (r: any) => (r === null ? 10 : 1);
+             return score(rivalB) - score(rivalA);
+        });
 
-             if (countTop <= countBot && emptyTop.length > 0) {
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             } else if (emptyBot.length > 0) {
-                  targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-             } else if (emptyTop.length > 0) { 
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             }
-
-             if (targetIdx !== -1) {
-                 slots[targetIdx] = player;
-                 if (targetIdx < bracketSize/2) countTop++; else countBot++;
-                 emptySlots = emptySlots.filter(i => i !== targetIdx);
-             }
-        }
+        // Llenar
+        nonSeeds.forEach(player => {
+            // Re-evaluar balance si no es critico
+            // Aqui simplificamos: llenar ordenado por prioridad anti-bye
+            if (emptySlots.length > 0) {
+                const idx = emptySlots.shift();
+                if (idx !== undefined) slots[idx] = player;
+            }
+        });
 
         // 4. Limpieza final
         for (let i = 0; i < slots.length; i++) {
             if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 };
         }
 
-        // 5. Convertir a Partidos
+        // 5. Matches
         let matches = [];
         for (let i = 0; i < bracketSize; i += 2) {
             let p1 = slots[i];
             let p2 = slots[i+1];
-            // Visual: BYE a P2
             if (p1?.name === "BYE" && p2?.name !== "BYE") {
                 let temp = p1; p1 = p2; p2 = temp;
             }
@@ -370,15 +331,13 @@ export default function Home() {
     }
   }
 
-  // --- MOTOR DE SORTEO ATP (GRUPOS) ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     setIsFixedData(false);
     try {
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      // Cambio a PROXY
-      const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
+      const rankRes = await fetch(PROXY_URL + encodeURIComponent(rankUrl));
       const rankCsv = await rankRes.text();
       const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
         name: row[1] || "",
@@ -386,8 +345,7 @@ export default function Home() {
       })).filter(p => p.name !== "");
 
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      // Cambio a PROXY
-      const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
+      const inscRes = await fetch(PROXY_URL + encodeURIComponent(inscUrl));
       const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
         cols[0] === tournamentShort && cols[1] === categoryShort
@@ -457,7 +415,6 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
@@ -466,8 +423,7 @@ export default function Home() {
     try {
       const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      // Cambio a PROXY
-      const res = await fetch(PROXY + encodeURIComponent(url));
+      const res = await fetch(PROXY_URL + encodeURIComponent(url));
       const csvText = await res.text();
       
       let foundGroups = false;
@@ -634,7 +590,6 @@ export default function Home() {
     );
   };
 
-  // --- SORTEO CUADRO FINAL (Desde Grupos) ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
@@ -738,7 +693,7 @@ export default function Home() {
       
       try {
           // Cambio a PROXY
-          const response = await fetch(PROXY + encodeURIComponent(url));
+          const response = await fetch(PROXY_URL + encodeURIComponent(url));
           const csvText = await response.text();
           const rows = parseCSV(csvText);
           
@@ -798,7 +753,7 @@ export default function Home() {
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
     try {
       // Cambio a PROXY
-      const response = await fetch(PROXY + encodeURIComponent(url));
+      const response = await fetch(PROXY_URL + encodeURIComponent(url));
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       if (rows.length > 0) {
@@ -817,7 +772,7 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false, seeds: {} });
     
-    // FUNCION AUTO-AVANCE: MUEVE JUGADORES VS BYE A SIGUIENTE RONDA
+    // FUNCION AUTO-AVANCE ESTRICTO: Solo si rival es "BYE"
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, isLarge } = data;
         const newR2 = [...r2];
@@ -862,7 +817,7 @@ export default function Home() {
     try {
       const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
       // Cambio a PROXY
-      const res = await fetch(PROXY + encodeURIComponent(urlBracket));
+      const res = await fetch(PROXY_URL + encodeURIComponent(urlBracket));
       const rows = parseCSV(await res.text());
       
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
@@ -871,13 +826,17 @@ export default function Home() {
       const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
 
       if (hasContent) {
-          const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
-
+          // DETECCION INTELIGENTE DE TAMAÑO:
+          const dataRowsCount = rows.filter(r => r[0] && r[0].trim() !== "").length;
+          
+          const isLarge = dataRowsCount > 16; 
+          const isSmall = dataRowsCount <= 8; 
+          
           let seeds = {};
           try {
              // Proxy para Seeds tmb
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-             const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
+             const rankRes = await fetch(PROXY_URL + encodeURIComponent(rankUrl));
              const rankTxt = await rankRes.text();
              const playersRanking = parseCSV(rankTxt).slice(1).map(row => ({
                name: row[1] || "",
@@ -885,7 +844,7 @@ export default function Home() {
              })).filter(p => p.name !== "");
 
              const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-             const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
+             const inscRes = await fetch(PROXY_URL + encodeURIComponent(inscUrl));
              const inscTxt = await inscRes.text();
              const entry = parseCSV(inscTxt).slice(1).filter(c => c[0] === tournamentShort && c[1] === category).map(c => {
                 const p = playersRanking.find(pr => pr.name.toLowerCase().includes(c[2].toLowerCase()) || c[2].toLowerCase().includes(pr.name.toLowerCase()));
@@ -900,7 +859,21 @@ export default function Home() {
           if (isLarge) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds };
           } else {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds };
+             // Ajuste para 8 o 16
+             const sliceSize = isSmall ? 8 : 16;
+             rawData = { 
+                 r1: rows.map(r => r[0]).slice(0, sliceSize), 
+                 s1: rows.map(r => r[1]).slice(0, sliceSize), 
+                 r2: rows.map(r => r[2]).slice(0, sliceSize/2), 
+                 s2: rows.map(r => r[3]).slice(0, sliceSize/2), 
+                 r3: rows.map(r => r[4]).slice(0, sliceSize/4), 
+                 s3: rows.map(r => r[5]).slice(0, sliceSize/4), 
+                 winner: rows[0][6] || "", 
+                 isLarge: false, 
+                 hasData: true, 
+                 canGenerate: false, 
+                 seeds 
+             };
           }
           
           // APLICAR AUTO-AVANCE
@@ -910,7 +883,7 @@ export default function Home() {
       } else {
           const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
           // Cambio a PROXY
-          const resInsc = await fetch(PROXY + encodeURIComponent(urlInscriptos));
+          const resInsc = await fetch(PROXY_URL + encodeURIComponent(urlInscriptos));
           const rowsInsc = parseCSV(await resInsc.text());
           const count = rowsInsc.filter(r => r[0] === tournamentShort && r[1] === category).length;
           setBracketData({ hasData: false, canGenerate: count >= 4 });
@@ -948,6 +921,16 @@ export default function Home() {
           </div>
       </div>
   );
+
+  // --- ALTURA DINÁMICA DEL CUADRO ---
+  const getContainerHeight = () => {
+      // isLarge = 32 jugadores (16 partidos R1) -> 1600px
+      if (bracketData.isLarge) return "min-h-[1600px]";
+      // !isLarge puede ser 16 (8 partidos) o 8 (4 partidos)
+      // Chequeamos longitud de r1
+      if (bracketData.r1.length > 8) return "min-h-[800px]"; // 16 jugadores
+      return "min-h-[500px]"; // 8 jugadores
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
@@ -1107,8 +1090,8 @@ export default function Home() {
             {bracketData.hasData ? (
               <div className="flex flex-row items-center justify-between min-w-[1300px] py-2 relative text-center">
                 {bracketData.isLarge && (
-                  <div className="flex flex-col justify-around h-auto min-h-[600px] w-80 relative text-left">
-                    {/* 16avos */}
+                  <div className={`flex flex-col justify-around h-auto ${getContainerHeight()} w-80 relative text-left`}>
+                    {/* 16avos - 16 Partidos */}
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
@@ -1140,8 +1123,8 @@ export default function Home() {
                     })}
                   </div>
                 )}
-                {/* Octavos */}
-                <div className={`flex flex-col justify-around h-auto min-h-[600px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
+                {/* Octavos - 8 Partidos */}
+                <div className={`flex flex-col justify-around h-auto ${getContainerHeight()} w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
                   {Array.from({length: 8}, (_, i) => i * 2).map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                     const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
@@ -1153,16 +1136,19 @@ export default function Home() {
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
+                    // Ajuste de espaciado vertical
+                    const spaceY = bracketData.isLarge ? 'space-y-36' : 'space-y-12';
+
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-12 mb-8">
-                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                      <div key={idx} className={`relative flex flex-col ${spaceY} mb-8`}>
+                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-left`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
                                 {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
-                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white text-left`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
                                 {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
@@ -1175,7 +1161,7 @@ export default function Home() {
                     );
                   })}
                 </div>
-                {/* Cuartos */}
+                {/* Cuartos - 4 Partidos */}
                 <div className="flex flex-col justify-around h-auto min-h-[600px] w-80 ml-32 relative text-left">
                   {Array.from({length: 4}, (_, i) => i * 2).map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
@@ -1187,9 +1173,11 @@ export default function Home() {
                     
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+                    
+                    const spaceY = bracketData.isLarge ? 'space-y-[26rem]' : 'space-y-32';
 
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-32 mb-16">
+                      <div key={idx} className={`relative flex flex-col ${spaceY} mb-16`}>
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
                                 {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
@@ -1230,7 +1218,7 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+              <div className="py-20 flex flex-col items-center justify-center text-slate-400 text-center">
                 <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
                 <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
                 
