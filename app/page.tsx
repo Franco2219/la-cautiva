@@ -5,23 +5,793 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, CheckCircle, Loader2, Send, AlertCircle, Shuffle, Calculator, X, Copy } from "lucide-react"
 
-// --- CONFIGURACIÓN DE DATOS ---
-const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
-const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
-const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
-const MI_TELEFONO = "5491150568353"; 
+// ==============================================================================
+// BASE DE DATOS OFFLINE (Cargada desde tus CSVs)
+// ==============================================================================
+const OFFLINE_DATA: any = {
+  // --- RANKINGS 2025 ---
+  "A 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Roland Garros,Wimbledon,Us Open,Masters,TOTAL,,,,,,,,
+1,Palmero Thiago,400,1000,400,400,1300,800,,4300,,,,,,,,
+2,Martin Fernandez,1300,,,2000,,,,3300,,,,,,,,
+3,Cristian Orso,100,,200,200,2000,800,,3300,,,,,,,,
+4,Mauri Di giacomo,,,1000,800,,1300,,3100,,,,,,,,
+5,Juan Cruz Recalde,800,,650,,800,,,2250,,,,,,,,
+6,Di Lullo,2000,,,,,,,2000,,,,,,,,.
+7,Maxi Tucci,800,400,100,,400,200,,1900,,,,,,,,
+8,Juampi Doffigny,400,650,100,200,200,200,,1750,,,,,,,,
+9,Juampi Lois,400,,200,800,,200,,1600,,,,,,,,
+10,Benja Gunzelman,,,,1300,,,,1300,,,,,,,,
+11,Luis Cobas,200,,400,200,100,400,,1300,,,,,,,,
+12,Martin Olivera,200,,200,400,100,400,,1300,,,,,,,,
+13,Alan Santamaria,,,,,,100,800,900,,,,,,,,
+14,Tomi Olguin,,,,800,,,100,900,,,,,,,,
+15,Diego Fronza,50,,50,100,100,400,,700,,,,,,,,
+16,Mauri Ramos,200,200,100,100,,,50,650,,,,,,,,
+17,Nico Palmero,,,50,50,200,200,,500,,,,,,,,
+18,Juan carrizo,100,100,50,50,100,100,,500,,,,,,,,
+19,Acosta Lisandro,,,,,400,,,400,,,,,,,,
+20,Diego zelarrayan,,,100,100,200,,,400,,,,,,,,
+21,Leandro Bernal,200,200,,,,,0,400,,,,,,,,
+22,Nico Dicuzzo,,,200,,100,100,,400,,,,,,,,
+23,Pablo De Tina,,,50,100,100,100,,350,,,,,,,,
+24,Ayala Martin,,,,,100,200,,300,,,,,,,,
+25,Melchiori,,,50,,200,,,250,,,,,,,,
+26,"Chade, Lautaro",,,200,50,,,0,250,,,,,,,,
+27,Videla Gabriel,,,100,,100,,,200,,,,,,,,
+28,Schuldt Adolfo,,,50,50,100,,,200,,,,,,,,
+29,Julian Rinaldi,100,,,,100,,,200,,,,,,,,
+30,Alejandro Verio,,,50,50,100,,,200,,,,,,,,
+31,Charly Valenzuela,,,200,,,,,200,,,,,,,,
+32,Ezequiel Ramos,,,,,200,,,200,,,,,,,,
+33,Mariano Juarez,50,,,100,,,,150,,,,,,,,
+34,Jony Alvarez,,,100,,,,,100,,,,,,,,
+35,Mariano Piola,,,,100,,,,100,,,,,,,,
+36,Mauri C,50,,50,,,,,100,,,,,,,,
+37,Ale Antelo,,,50,50,,,,100,,,,,,,,
+38,Migue Otero,,,50,50,,,,100,,,,,,,,
+39,Agus Lening,,,100,,,,,100,,,,,,,,
+40,Seba Suarez,,,50,,50,,,100,,,,,,,,
+41,Mauri Di giacomo Padre,,,100,,,,,100,,,,,,,,
+42,Seba Mendez,,,100,,,,,100,,,,,,,,
+43,Tamburrino,100,,,,,,,100,,,,,,,,
+44,Rojas Lucas,,,100,,,,,100,,,,,,,,
+45,"Souto, Lean",,,,,100,,,100,,,,,,,,
+46,"Fernandez, Tomás ",,,,,100,,,100,,,,,,,,
+47,"Alvarez, M",,,,,,100,,100,,,,,,,,
+48,Cabrera Martin,,,50,,,,,50,,,,,,,,
+49,Barbero D,,,50,,,,,50,,,,,,,,
+50,Gomez Sergio,,,50,,,,,50,,,,,,,,
+51,Gimenez A,,,,50,,,,50,,,,,,,,
+52,Rinaudo Joaquin,,,,50,,,,50,,,,,,,,
+53,Gomez Matu,,,,50,,,,50,,,,,,,,`,
 
-const tournaments = [
-  { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
-  { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
-  { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
-  { id: "ao", name: "Australian Open", short: "AO", type: "full" }, 
-  { id: "iw", name: "Indian Wells", short: "IW", type: "full" },
-  { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
-  { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
-  { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
-  { id: "us", name: "US Open", short: "US", type: "direct" },
-]
+  "B1 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Rolan Garros,Wimbledon,Us Open,Masters,TOTAL
+1,"Castro, Ariel",800,,400,800,1300,2000,400,5700
+2,"Capurro, Martin",800,,650,200,200,100,800,2750
+3,"Fernandez, Tomi",200,,1000,10,200,800,200,2410
+4,Nico Palmero,2000,,,,,,400,2400
+5,Rezilo H,100,,,400,1300,,400,2200
+6,"Medina, Mati",400,,50,100,200,1300,,2050
+7,"Vega, Fer",50,,,400,400,400,800,2050
+8,Alvarez Martin,,,,2000,10,,,2010
+9,Borelo Fabio,200,,100,1300,100,,0,1700
+10,"Melgarejo, Juan M",,650,100,100,200,400,200,1650
+11,"Scagliola, Gonza",400,,,,400,800,,1600
+12,"De tina, Pablo",200,200,100,200,100,400,200,1400
+13,"Chade, L",1300,,,,,,,1300
+14,"Romero, A",,100,200,100,800,100,,1300
+15,"Guerra, Facu",400,400,50,200,100,100,0,1250
+16,"Verio, Ale",100,100,100,100,400,400,0,1200
+17,Mariano Juarez,400,,400,200,,,200,1200
+18,"Lodico, G",100,100,50,200,200,400,0,1050
+19,Sepulveda Pablo,,1000,,,,,1000
+20,"Toso, Marcel",50,,50,200,400,200,,900
+21,Gil G,,,100,100,200,400,,800
+22,Videla Gabriel,100,100,100,100,200,100,,700
+23,Petrillo Ale,,,200,50,200,200,,650
+24,Gafni Edgardo,100,200,100,100,100,,0,600
+25,Rinaudo Joaquin,100,200,100,100,100,,,600
+26,Acosta Lisandro,200,,200,100,100,,,600
+27,Ale Gimenez,,,,200,400,,,600
+28,Gabaldon Seba,,,400,50,100,,,550
+29,Curti Rama,,,50,50,200,200,,500
+30,Arevalo Ariel,,,200,50,,200,,450
+31,Milito Fede,,,50,100,100,200,,450
+32,Fede Fernandez,,400,,,,,400
+33,Julian Rinaldi,,400,,,,,400
+34,Barbero Diego,,,200,100,100,,,400
+35,"Rizzo, Edu",100,100,100,100,,,,400
+36,Ruhl Alberto,,,100,50,50,100,,300
+37,Gianni Fer,,,100,50,50,100,,300
+38,"Lerro, Pablo",50,50,50,50,50,50,,300
+39,Matu Gomez,,,200,100,,,300
+40,Seba Mendez,,,50,200,,,250
+41,Juli Buriano,,,50,50,100,,,200
+42,Seba Suarez,,,50,50,100,,,200
+43,Martin Cabrera,,,100,100,,,200
+44,Agus Lening,,,100,,100,,200
+45,Sergio Gomez,,,200,,,,200
+46,Santi Iacovino,,,,200,,,200
+47,Ferro Fran,,,,200,,,200
+48,Fer Femenia,200,,,,,,200
+49,Mauri C,,,100,50,,,150
+50,Valenzuela Charly,100,,,,,50,150
+51,Mauri Di giacomo Padre,,,100,50,,,150
+52,Migue Otero,,,50,100,,,150
+53,Ale Antelo,,,50,100,,,150
+54,Daniel Calvo,,,,100,,50,150
+55,Fer Cutone,,100,,,,,100
+56,Diego Magaldi,,100,,,,,100
+57,Leo Heredia,,,50,,50,,100
+58,Oliva Fer,,,,,100,,100
+59,Vazquez Nahuel,,,,,100,,100
+60,Zupancic,,,,,100,,100
+61,Ramos Ruben,,,,,100,,100
+62,Ramos Ezequiel,,,,,100,,100
+63,Tules Matias,,,,,100,,100`,
+
+  "B2 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Roland Garros,Wimbledon,Us Open,Masters,TOTAL
+1,"Andria, Emiliano",10,,400,2000,1300,,0,3710
+2,"Augusto, Ale",200,,200,1300,,400,1500,3600
+3,Rizzo Edu,200,,50,200,800,1300,800,3350
+4,"Rezilo, Hernan",400,,650,400,1300,,,2750
+5,"Baldino, Augusto",400,,100,,400,1300,400,2600
+6,"Gandolfo, Gerarado",10,650,650,400,200,400,200,2510
+7,Pose Cris,400,,100,800,400,400,,2100
+8,Peroti Ezequiel,100,100,50,800,200,400,400,2050
+9,"Melgarejo, J",2000,,,,,,,2000
+10,"Lardapide, Facu",800,200,200,200,100,,400,1900
+11,"Eiriz, Esteban",200,400,50,200,400,400,200,1850
+12,"Perropato, Pablo",800,200,50,100,200,200,200,1750
+13,Oliva Fer,400,100,50,200,400,200,200,1550
+14,"Barraza, Gerardo",200,100,200,400,200,200,200,1500
+15,"Vazquez, Nahuel",400,100,100,200,200,200,200,1400
+16,"Ramos, Ruben",200,100,100,200,100,400,200,1300
+17,"Zupancic, Cris",100,100,200,100,200,400,200,1300
+18,"Tules, Matias",200,100,100,200,200,400,0,1200
+19,Juan Macri,,,200,400,200,,200,1000
+20,"Ramos, Ezequiel",200,100,100,100,200,200,0,900
+21,Daniel Calvo,200,,200,200,200,100,0,900
+22,Fede Lois,100,200,100,100,200,200,0,900
+23,Lening Agus,100,,50,50,200,400,,800
+24,Martin S,100,100,200,100,200,,,700
+25,Peralta Gaston,,1000,,,,,,1000
+26,"Gatti, Pablo",,,100,100,100,200,,500
+27,"Porciuncula, Pablo",,,50,50,200,200,,500
+28,Rodriguez H,,400,,,,,,400
+29,Molina David,50,100,50,100,100,,,400
+30,Verdiani,,,100,50,100,100,,350
+31,Lean Souto,,,100,50,200,,,350
+32,Suarez Roman,,,100,200,,,,300
+33,Pautaso Lean,,100,100,100,,,,300
+34,Moulins Seba,,,50,50,200,,,300
+35,Sampaolesi,,,,,100,200,,300
+36,Ferro Fran,,,100,200,,,,300
+37,Javier Q,,,50,100,100,,,250
+38,Gaston Dieser,,,100,100,,,,200
+39,Gustavo Ponce,,,100,100,,,,200
+40,Seba Mendez,,200,,,,,,200
+41,Gelabert L,,,,,200,,,200
+42,Ger Romanach,,,,,100,100,,200
+43,Capuya Ali,,,,,100,100,,200
+44,Leo Sandoval,,,50,50,50,,,150
+45,Siri,,,,,,100,,100
+46,Ferreyra Oscar,,,,,,100,,100
+47,Caruso Jorge,,,,,,100,,100
+48,Giani F,,,,100,,,,100
+49,Valenzuela Charly,,,,100,,,,100
+50,Fede Fernandez,,,,100,,,,100
+51,Javier Fuseneco,,,,100,,,,100
+52,Pablo Sepulveda,,,,100,,,,100
+53,Santi Iacovino,,,,100,,,,100
+54,Daniel Torrico,,100,,,,,,100
+55,Uchima E,,100,,,,,,100
+56,Torres German,,,50,50,,,,100
+57,Fede Agüero,,,100,,,,,100
+58,Catalini,,,,,,,50,50`,
+
+  "C 2025": `POSICION,NOMBRE,Australian Open,Indian Wells,Monte Carlo,Roland Garros,Wimbledon,Us Open,Masters,TOTAL
+1,"Ferro, Fran",800,,,200,2000,,200,3200
+2,Guardia Jony,,,100,200,100,1300,1300,3000
+3,Juan Baleis,50,200,650,800,800,,200,2700
+4,"Alonso, Ricky",200,400,200,400,1300,,200,2700
+5,Hornos Lean,,,,2000,,,400,2400
+6,"Caruso, Jorge",,,50,50,400,800,1000,2300
+7,"Ferreyra, Oscar",400,650,100,100,400,400,0,2050
+8,Franco Sabatino,2000,,,,,,,2000
+9,Meijomil R,800,,200,400,200,,400,2000
+10,Tito Rizzo,200,1000,400,200,,,,1800
+11,"Pautaso, Lean",200,200,100,100,200,400,,1200
+12,Ruben Dimilta,,,100,100,800,200,,1200
+13,Claudio Catalini,,,100,100,200,800,,1200
+14,"Molina, David",,400,100,100,400,200,,1200
+15,"Candia, David",100,100,100,100,400,400,,1200
+16,Pena Fausto,400,200,50,100,200,200,,1150
+17,Pizzuti Nico,200,100,50,100,200,400,,1050
+18,"Topa, Federico",400,200,50,100,200,100,,1050
+19,Lopes Rito A,,100,100,100,200,400,,900
+20,"Rodriguez, Hector",,200,,650,,,850
+21,Siri V,200,100,100,100,200,100,,800
+22,Godoy D,,,1000,,,,1000
+23,Barreto R,,,,1300,,,,1300
+24,Martin Picallo,400,100,200,100,,,800
+25,Coloseti M,,,100,100,100,400,,700
+26,Colito A,,,,,,400,,400
+27,Atadia A,,200,,100,50,,,350
+28,Orellana A,100,100,,100,,,300
+29,Eberle A,,200,,,,,200
+30,Cornejo C,,200,,,,,200
+31,Nieto N,,100,,,,,100
+32,Pantaneti F,,100,,,,,100
+33,Riquelme J,,100,,,,,100
+34,Joel,,100,,,,,100`,
+
+  // --- RANKINGS 2026 ---
+  "A 2026": `POSICION,NOMBRE,Adelaide,AO,IW,,,,,,,TOTAL
+1,Palmero Thiago,,,,,,,,,,0
+2,Martin Fernandez,,,,,,,,,,0
+3,Cristian Orso,,,,,,,,,,0
+4,Mauri Di giacomo,,,,,,,,,,0
+5,Juan Cruz Recalde,,,,,,,,,,0
+6,Di Lullo,,,,,,,,,,0
+7,Maxi Tucci,,,,,,,,,,0
+8,Juampi Doffigny,,,,,,,,,,0
+9,Juampi Lois,,,,,,,,,,0
+10,Benja Gunzelman,,,,,,,,,,0
+11,Luis Cobas,,,,,,,,,,0
+12,Martin Olivera,,,,,,,,,,0
+13,Mariano Juarez,,,,,,,,,,0
+14,Santamaria Alan,,,,,,,,,,0
+15,Tomi Olguin,,,,,,,,,,0
+16,Diego Fronza,,,,,,,,,,0
+17,Mauri Ramos,,,,,,,,,,0
+18,Nico Palmero,,,,,,,,,,0
+19,Juan carrizo,,,,,,,,,,0
+20,Acosta Lisandro,,,,,,,,,,0
+21,Diego zelarrayan,,,,,,,,,,0
+22,Leandro Bernal,,,,,,,,,,0
+23,Nico Dicuzzo,,,,,,,,,,0
+24,Pablo De Tina,,,,,,,,,,0
+25,Ayala Martin,,,,,,,,,,0
+26,Melchiori,,,,,,,,,,0
+27,"Chade, Lautaro",,,,,,,,,,0
+28,Videla Gabriel,,,,,,,,,,0
+29,Schuldt Adolfo,,,,,,,,,,0
+30,Julian Rinaldi,,,,,,,,,,0
+31,Alejandro Verio,,,,,,,,,,0
+32,Charly Valenzuela,,,,,,,,,,0
+33,Ezequiel Ramos,,,,,,,,,,0
+34,Jony Alvarez,,,,,,,,,,0
+35,Mariano Piola,,,,,,,,,,0
+36,Mauri C,,,,,,,,,,0
+37,Ale Antelo,,,,,,,,,,0
+38,Migue Otero,,,,,,,,,,0
+39,Agus Lening,,,,,,,,,,0
+40,Seba Suarez,,,,,,,,,,0
+41,Mauri Di giacomo Padre,,,,,,,,,,0
+42,Seba Mendez,,,,,,,,,,0
+43,Tamburrino,,,,,,,,,,0
+44,Rojas Lucas,,,,,,,,,,0
+45,"Souto, Lean",,,,,,,,,,0
+46,"Fernandez, Tomás ",,,,,,,,,,0
+47,"Alvarez, M",,,,,,,,,,0
+48,Cabrera Martin,,,,,,,,,,0
+49,Barbero D,,,,,,,,,,0
+50,Gomez Sergio,,,,,,,,,,0
+51,Gimenez A,,,,,,,,,,0
+52,Rinaudo Joaquin,,,,,,,,,,0
+53,Gomez Matu,,,,,,,,,,0
+54,Agustin Purita,,,,,,,,,,0
+55,Alberto Ruhl,,,,,,,,,,0
+56,Aldo Perez,,,,,,,,,,0
+57,Ale Fenzi,,,,,,,,,,0
+58,Ale Gimenez,,,,,,,,,,0
+59,Axel Ochoa,,,,,,,,,,0
+60,Bartolomeo,,,,,,,,,,0
+61,Damian Vergani,,,,,,,,,,0
+62,Diego Fracchia,,,,,,,,,,0
+63,Diego Magaldi,,,,,,,,,,0
+64,Esteban Ceolin,,,,,,,,,,0
+65,Facu sarmiento,,,,,,,,,,0
+66,Facundo Tumio,,,,,,,,,,0
+67,Fede Agüero,,,,,,,,,,0
+68,Federico Mendez,,,,,,,,,,0
+69,Fran Ferro,,,,,,,,,,0
+70,Gabriel Videla,,,,,,,,,,0
+71,Gerar Dicuzzo,,,,,,,,,,0
+72,H Bach,,,,,,,,,,0
+73,Iader Orfeo,,,,,,,,,,0
+74,Jonatan Perez,,,,,,,,,,0
+75,Jose Lucero,,,,,,,,,,0
+76,Juli Buriano,,,,,,,,,,0
+77,Matias Roces,,,,,,,,,,0
+78,Nico Bartolomeo,,,,,,,,,,0
+79,Nicolas Megno,,,,,,,,,,0
+80,Pablo Lerro,,,,,,,,,,0
+81,Pablo Sepulveda,,,,,,,,,,0
+82,Santi Iacovino,,,,,,,,,,0
+83,Siamana Matias,,,,,,,,,,0
+84,Tomas Gunzelman,,,,,,,,,,0`,
+
+  "B1 2026": `POSICION,NOMBRE,Super 8/500,Super 8/250,Adelaide,AO,IW,,,,,TOTAL
+1,"Toso, Marcel",500,,,,,,,,,500
+2,Curti Rama,330,,,,,,,,,330
+3,"Lerro, P",,250,,,,,,,,250
+4,"Verio, Ale",200,,,,,,,,,200
+5,"Rinaudo, Joaquin",200,,,,,,,,,200
+6,"Guerra, facu",,165,,,,,,,,165
+7,Gafni Edgardo,100,,,,,,,,,100
+8,"Gil, G",100,,,,,,,,,100
+9,Pablo Sepulveda,100,,,,,,,,,100
+10,Petrilo Ale,100,,,,,,,,,100\
+11,Arevalo Ariel,,100,,,,,,,,100
+12,"Lodico, G",,100,,,,,,,,100
+13,"Romero, A",,50,,,,,,,,50
+14,Milito Fede,,50,,,,,,,,50
+15,Ruhl Alberto,,50,,,,,,,,50
+16,"Gianni, Fer",,50,,,,,,,,50
+17,"Castro, Ariel",,,,,,,,,,0
+18,"Capurro, Martin",,,,,,,,,,0
+19,"Fernandez, Tomi",,,,,,,,,,0
+20,Nico Palmero,,,,,,,,,,0
+21,Rezilo H,,,,,,,,,,0
+22,"Medina, Mati",,,,,,,,,,0
+23,"Vega, Fer",,,,,,,,,,0
+24,Alvarez Martin,,,,,,,,,,0
+25,Borelo Fabio,,,,,,,,,,0
+26,"Melgarejo, Juan M",,,,,,,,,,0
+27,"Scagliola, Gonza",,,,,,,,,,0
+28,"De tina, Pablo",,,,,,,,,,0
+29,"Chade, L",,,,,,,,,,0
+30,"Guerra, Facu",,,,,,,,,,0
+31,Mariano Juarez,,,,,,,,,,0
+32,Videla Gabriel,,,,,,,,,,0
+33,Acosta Lisandro,,,,,,,,,,0
+34,Ale Gimenez,,,,,,,,,,0
+35,Gabaldon Seba,,,,,,,,,,0
+36,Fede Fernandez,,,,,,,,,,0
+37,Julian Rinaldi,,,,,,,,,,0
+38,Barbero Diego,,,,,,,,,,0
+39,"Rizzo, Edu",,,,,,,,,,0
+40,Matu Gomez,,,,,,,,,,0
+41,Seba Mendez,,,,,,,,,,0
+42,Juli Buriano,,,,,,,,,,0
+43,Seba Suarez,,,,,,,,,,0
+44,Martin Cabrera,,,,,,,,,,0
+45,Agus Lening,,,,,,,,,,0
+46,Sergio Gomez,,,,,,,,,,0
+47,Santi Iacovino,,,,,,,,,,0
+48,Ferro Fran,,,,,,,,,,0
+49,Fer Femenia,,,,,,,,,,0
+50,Mauri C,,,,,,,,,,0
+51,Valenzuela Charly,,,,,,,,,,0
+52,Mauri Di giacomo Padre,,,,,,,,,,0
+53,Migue Otero,,,,,,,,,,0
+54,Ale Antelo,,,,,,,,,,0
+55,Daniel Calvo,,,,,,,,,,0
+56,Fer Cutone,,,,,,,,,,0
+57,Diego Magaldi,,,,,,,,,,0
+58,Leo Heredia,,,,,,,,,,0
+59,Oliva Fer,,,,,,,,,,0
+60,Vazquez Nahuel,,,,,,,,,,0
+61,Zupancic,,,,,,,,,,0
+62,Ramos Ruben,,,,,,,,,,0
+63,Ramos Ezequiel,,,,,,,,,,0
+64,Tules Matias,,,,,,,,,,0
+65,Agustin Purita,,,,,,,,,,0
+66,Alan Santamaria,,,,,,,,,,0
+67,Ale Fenzi,,,,,,,,,,0
+68,Alex Varela,,,,,,,,,,0
+69,Angel Rinaudo,,,,,,,,,,0
+70,Ariel Arpajou,,,,,,,,,,0
+71,Ariel De Luca,,,,,,,,,,0
+72,Ariel Diaz,,,,,,,,,,0
+73,Ariel Gago,,,,,,,,,,0
+74,Axel Ochoa,,,,,,,,,,0
+75,Bacha,,,,,,,,,,0
+76,Baldino,,,,,,,,,,0
+77,Bartolomeo,,,,,,,,,,0
+78,Benja Gunzelman,,,,,,,,,,0
+79,Blas Torales,,,,,,,,,,0
+80,Brian,,,,,,,,,,0
+81,C Rodriguez,,,,,,,,,,0
+82,Cabrera,,,,,,,,,,0
+83,Cesar Velozo,,,,,,,,,,0
+84,Claudio Catalini,,,,,,,,,,0
+85,Claudio Monti,,,,,,,,,,0
+86,Cobi,,,,,,,,,,0
+87,Colo Medina,,,,,,,,,,0
+88,Cristian Diaz,,,,,,,,,,0
+89,Cristian Orso,,,,,,,,,,0
+90,Damian Vergani,,,,,,,,,,0
+91,Dani Romero,,,,,,,,,,0
+92,Daniel Gonzalez,,,,,,,,,,0
+93,Dany,,,,,,,,,,0
+94,David Molina,,,,,,,,,,0
+95,Diego Fracchia,,,,,,,,,,0
+96,Diego Lorenzatti,,,,,,,,,,0
+97,Diego Rodriguez,,,,,,,,,,0
+98,E Perez,,,,,,,,,,0
+99,Edu Perez,,,,,,,,,,0
+100,Esteban Ceolin,,,,,,,,,,0`,
+
+  "B2 2026": `POSICION,NOMBRE,Super 8/500,Super 8/250,Adelaide,AO,IW,,,,,TOTAL
+1,"Oliva, Fer",500,,,,,,,,,500
+2,"Barraza, Gerardo",330,,,,,,,,,330
+3,"Lening, Agus",,250,,,,,,,,250
+4,Ramos Ruben,200,,,,,,,,,200
+5,"Zupancic, Cris",200,,,,,,,,,200
+6,"Ramos, Ezequiel",100,,,,,,,,,100
+7,"Tules, Matias",100,,,,,,,,,100
+8,"Calvo, Daniel",100,,,,,,,,,100
+9,"Vazquez, Nahuel",100,,,,,,,,,100
+10,"Porciuncula, Pablo",,100,,,,,,,,100
+11,"Sampaolesi, Juan p",,100,,,,,,,,100
+12,Gelabert Leandro,,50,,,,,,,,50
+13,"Lois, Fede",,50,,,,,,,,50
+14,Peralta Gaston,,50,,,,,,,,50
+15,"Capuya, Ali",,50,,,,,,,,50
+16,"Andria, Emiliano",,,,,,,,,,0
+17,"Augusto, Ale",,,,,,,,,,0
+18,Rizzo Edu,,,,,,,,,,0
+19,"Rezilo, Hernan",,,,,,,,,,0
+20,"Baldino, Augusto",,,,,,,,,,0
+21,"Gandolfo, Gerarado",,,,,,,,,,0
+22,Pose Cris,,,,,,,,,,0
+23,Peroti Ezequiel,,,,,,,,,,0
+24,"Melgarejo, J",,,,,,,,,,0
+25,"Lardapide, Facu",,,,,,,,,,0
+26,"Eiriz, Esteban",,,,,,,,,,0
+27,"Perropato, Pablo",,,,,,,,,,0
+28,Juan Macri,,,,,,,,,,0
+29,Martin S,,,,,,,,,,0
+30,"Gatti, Pablo",,,,,,,,,,0
+31,Rodriguez H,,,,,,,,,,0
+32,Molina David,,,,,,,,,,0
+33,Verdiani,,,,,,,,,,0
+34,Lean Souto,,,,,,,,,,0
+35,Suarez Roman,,,,,,,,,,0
+36,Pautaso Lean,,,,,,,,,,0
+37,Moulins Seba,,,,,,,,,,0
+38,Ferro Fran,,,,,,,,,,0
+39,Javier Q,,,,,,,,,,0
+40,Gaston Dieser,,,,,,,,,,0
+41,Gustavo Ponce,,,,,,,,,,0
+42,Seba Mendez,,,,,,,,,,0
+43,Ger Romanach,,,,,,,,,,0
+44,Leo Sandoval,,,,,,,,,,0
+45,Siri,,,,,,,,,,0
+46,Ferreyra Oscar,,,,,,,,,,0
+47,Caruso Jorge,,,,,,,,,,0
+48,Giani F,,,,,,,,,,0
+49,Valenzuela Charly,,,,,,,,,,0
+50,Fede Fernandez,,,,,,,,,,0
+51,Javier Fuseneco,,,,,,,,,,0
+52,Pablo Sepulveda,,,,,,,,,,0
+53,Santi Iacovino,,,,,,,,,,0
+54,Daniel Torrico,,,,,,,,,,0
+55,Uchima E,,,,,,,,,,0
+56,Torres German,,,,,,,,,,0
+57,Fede Agüero,,,,,,,,,,0
+58,Catalini,,,,,,,,,,0
+59,A Mastrogiovanni,,,,,,,,,,0
+60,Adrian Ledesma,,,,,,,,,,0
+61,Adrian Orellana,,,,,,,,,,0
+62,Adrian Ortiz,,,,,,,,,,0
+63,Agustin Alvarez,,,,,,,,,,0
+64,Agustin Canapino,,,,,,,,,,0
+65,Agustin Purita,,,,,,,,,,0
+66,Alberto Ruhl,,,,,,,,,,0
+67,Ale Fenzi,,,,,,,,,,0
+68,Alejandro Verio,,,,,,,,,,0
+69,Alex Varela,,,,,,,,,,0
+70,Angel Rinaudo,,,,,,,,,,0
+71,Ariel Arpajou,,,,,,,,,,0
+72,Ariel Castro,,,,,,,,,,0
+73,Ariel De Luca,,,,,,,,,,0
+74,Ariel Diaz,,,,,,,,,,0
+75,Ariel Gago,,,,,,,,,,0
+76,Axel Ochoa,,,,,,,,,,0
+77,Bacha,,,,,,,,,,0
+78,Bartolomeo,,,,,,,,,,0
+79,Benja Gunzelman,,,,,,,,,,0
+80,Blas Torales,,,,,,,,,,0
+81,Brian,,,,,,,,,,0
+82,C Rodriguez,,,,,,,,,,0
+83,Cabrera,,,,,,,,,,0
+84,Carlos Ruiz,,,,,,,,,,0
+85,Cesar Velozo,,,,,,,,,,0
+86,Claudio Monti,,,,,,,,,,0
+87,Cobi,,,,,,,,,,0
+88,Colo Medina,,,,,,,,,,0
+89,Cristian Diaz,,,,,,,,,,0
+90,Cristian Fuentes,,,,,,,,,,0
+91,Cristian Orso,,,,,,,,,,0
+92,Damian Vergani,,,,,,,,,,0
+93,Dani Romero,,,,,,,,,,0
+94,Daniel Gonzalez,,,,,,,,,,0
+95,Dany,,,,,,,,,,0
+96,Diego Fracchia,,,,,,,,,,0
+97,Diego Lorenzatti,,,,,,,,,,0
+98,Diego Magaldi,,,,,,,,,,0
+99,Diego Rodriguez,,,,,,,,,,0
+100,E Perez,,,,,,,,,,0`,
+
+  "C 2026": `POSICION,NOMBRE,Super 8 / 500,Adelaide,AO,IW,,,,,,TOTAL
+1,"Pautaso, Lean",500,,,,,,,,,500
+2,"Molina, David",330,,,,,,,,,330
+3,Eberle A,200,,,,,,,,,200
+4,"Perropato, Pablo",200,,,,,,,,,200
+5,"Rodriguez, Hector",100,,,,,,,,,100
+6,"Catalini, Claudio",100,,,,,,,,,100
+7,"Dimilta, Ruben",100,,,,,,,,,100
+8,Verdiani,100,,,,,,,,,100
+9,"Ferro, Fran",,,,,,,,,,0
+10,Guardia Jony,,,,,,,,,,0
+11,Juan Baleis,,,,,,,,,,0
+12,"Alonso, Ricky",,,,,,,,,,0
+13,Hornos Lean,,,,,,,,,,0
+14,"Caruso, Jorge",,,,,,,,,,0
+15,"Ferreyra, Oscar",,,,,,,,,,0
+16,Franco Sabatino,,,,,,,,,,0
+17,Meijomil R,,,,,,,,,,0
+18,Tito Rizzo,,,,,,,,,,0
+19,Lucas Riquelme,,,,,,,,,,0
+20,"Candia, David",,,,,,,,,,0
+21,Pena Fausto,,,,,,,,,,0
+22,Pizzuti Nico,,,,,,,,,,0
+23,"Topa, Federico",,,,,,,,,,0
+24,"Lopes Rito, A",,,,,,,,,,0
+25,Siri V,,,,,,,,,,0
+26,Godoy D,,,,,,,,,,0
+27,Barreto R,,,,,,,,,,0
+28,Martin Picallo,,,,,,,,,,0
+29,Coloseti M,,,,,,,,,,0
+30,Colito A,,,,,,,,,,0
+31,Atadia A,,,,,,,,,,0
+32,Orellana A,,,,,,,,,,0
+33,Cornejo C,,,,,,,,,,0
+34,Nieto N,,,,,,,,,,0
+35,Pantaneti F,,,,,,,,,,0
+36,Joel,,,,,,,,,,0
+37,A Mastrogiovanni,,,,,,,,,,0
+38,Adrian Ledesma,,,,,,,,,,0
+39,Adrian Ortiz,,,,,,,,,,0
+40,Agustin Alvarez,,,,,,,,,,0
+41,Agustin Canapino,,,,,,,,,,0
+42,Agustin Purita,,,,,,,,,,0
+43,Alan Santamaria,,,,,,,,,,0
+44,Alberto Ruhl,,,,,,,,,,0
+45,Aldo Perez,,,,,,,,,,0
+46,Ale Fenzi,,,,,,,,,,0
+47,Ale Gimenez,,,,,,,,,,0
+48,Alex Varela,,,,,,,,,,0
+49,Angel Rinaudo,,,,,,,,,,0
+50,Ariel Arpajou,,,,,,,,,,0
+51,Ariel Castro,,,,,,,,,,0
+52,Ariel De Luca,,,,,,,,,,0
+53,Ariel Diaz,,,,,,,,,,0
+54,Ariel Gago,,,,,,,,,,0
+55,Augusto Ale,,,,,,,,,,0
+56,Axel Ochoa,,,,,,,,,,0
+57,Bacha,,,,,,,,,,0
+58,Baldino,,,,,,,,,,0
+59,Bartolomeo,,,,,,,,,,0
+60,Benja Gunzelman,,,,,,,,,,0
+61,Blas Torales,,,,,,,,,,0
+62,Brian,,,,,,,,,,0
+63,C Rodriguez,,,,,,,,,,0
+64,Cabrera,,,,,,,,,,0
+65,Carlos Ruiz,,,,,,,,,,0
+66,Cesar Velozo,,,,,,,,,,0
+67,Chris suarez,,,,,,,,,,0
+68,Cisterna,,,,,,,,,,0
+69,Claudio Monti,,,,,,,,,,0
+70,Cobi,,,,,,,,,,0
+71,Colo Medina,,,,,,,,,,0
+72,Cristian Diaz,,,,,,,,,,0
+73,Cristian Fuentes,,,,,,,,,,0
+74,Cristian Orso,,,,,,,,,,0
+75,Damian Vergani,,,,,,,,,,0
+76,Dani Romero,,,,,,,,,,0
+77,Daniel Gonzalez,,,,,,,,,,0
+78,Daniel Torrico,,,,,,,,,,0
+79,Dany,,,,,,,,,,0
+80,Denis Larrivey,,,,,,,,,,0
+81,Diego Fracchia,,,,,,,,,,0
+82,Diego Lorenzatti,,,,,,,,,,0
+83,Diego Magaldi,,,,,,,,,,0
+84,Diego Rodriguez,,,,,,,,,,0
+85,E Perez,,,,,,,,,,0`,
+
+  // --- INSCRIPTOS ---
+  "Inscriptos": `Torneo,Categoria,Jugador,,,,,,
+AO,B1,"Toso, Marcel",,,,,,
+AO,B1,Curti Rama,,,,,,
+AO,B1,"Lerro, P",,,,,,Siglas para los torneos:
+AO,B1,"Verio, Ale",,,,,,"AO, Adelaide, S8 500, S8 250, IW, MC, RG, W, US)."
+AO,B1,"Rinaudo, Joaquin",,,,,,
+AO,B1,"Guerra, facu",,,,,,
+AO,B1,Gafni Edgardo,,,,,,
+AO,B1,"Gil, G",,,,,,
+AO,B1,"Lodico, G",,,,,,
+AO,B1,"Romero, A",,,,,,
+AO,B1,Milito Fede,,,,,,
+AO,B1,Ruhl Alberto,,,,,,
+AO,B1,"Gianni, Fer",,,,,,
+AO,B1,"Castro, Ariel",,,,,,
+AO,B1,"Chade, L",,,,,,
+AO,B1,"Gabaldon, Seba",,,,,,
+AO,B1,Ferro Fran,,,,,,
+AO,B2,"Oliva, Fer",,,,,,
+AO,B2,Ramos Ruben,,,,,,
+AO,B2,"Zupancic, Cris",,,,,,
+AO,B2,"Ramos, Ezequiel",,,,,,
+AO,B2,"Tules, Matias",,,,,,
+AO,B2,"Calvo, Daniel",,,,,,
+AO,B2,"Vazquez, Nahuel",,,,,,
+AO,B2,"Lois, Fede",,,,,,
+AO,B2,Peralta Gaston,,,,,,
+AO,B2,"Capuya, Ali",,,,,,
+AO,B2,Moulins Seba ,,,,,,
+AO,B2,"Suarez, Roman",,,,,,
+AO,B2,"Ferro, Fran",,,,,,
+AO,B2,"Pautaso, Lean",,,,,,
+AO,B2,"Molina, David",,,,,,
+AO,B2,"Barraza, Gerardo",,,,,,
+AO,B2,"Lening, Agus",,,,,,
+US,C,"Pautaso, Lean",,,,,,
+US,C,"Molina, David",,,,,,
+US,C,Eberle A,,,,,,
+US,C,"Dimilta, Ruben",,,,,,
+US,C,"Rodriguez, Hector",,,,,,
+US,C,"Perropato, Pablo",,,,,,
+US,C,"Picallo, Martin",,,,,,
+US,C,"Catalini, Claudio",,,,,,
+US,C,Verdiani,,,,,,
+US,C,"Pantanetti, Franco",,,,,,
+US,C,"Colosetti, Matias",,,,,,
+US,C,"Atadia, Ariel",,,,,,
+US,C,"Ferreyra, Oscar",,,,,,`,
+
+  // --- BRACKETS (CUADROS) ---
+  "A Adelaide": `"Orso, C",,"Orso, C",6/1 - 6/2,"Orso, C"
+BYE,,"Olivera, M",,Cobas
+BYE,,"Bernal, L",,
+"Olivera, M",,Cobas,,
+"Bernal, L",,Dofigny,,
+"Castro, A",,Chade,,
+BYE,,"Tucci, M",,
+Cobas,,"Palmero, T",,
+Dofigny,,,,
+BYE,,,,
+Chade,,,,
+Carrizo,,,,
+"Tucci, M",,,,
+BYE,,,,
+BYE,,,,
+"Palmero, T",,,,`,
+
+  "C Adelaide": `"Caruso, J",,"Caruso, J"
+"Barreto, R",,"Godoy, D"
+"Godoy, D",,"Coloseti, M"
+"Rodriguez, H",,"Molina, D"
+"Coloseti, M",,"Pautaso, L"
+"Riquelme, J",,"Eberle, A"
+"Colito, A",,"Atadia, A"
+"Molina, D",,"Ferreyra, O"
+"Pautaso, L",,
+"Cornejo, C",,
+Joel,,
+"Eberle, A",,
+"Atadia, A",,
+"Pantaneti, F",,
+"Nieto, N",,
+"Ferreyra, O",,`,
+
+  "B1 S8 500": `"Toso, M",6/3 6/1,"Toso, M",,"Toso, M",,"Toso, M"
+Petrillo,,Rinaudo,,Curti,,
+Sepulveda,,Curti,,,,
+Rinaudo,,"Verio, A",,,,
+Curti,,,,,,
+Gil,,,,,,
+Gafni,,,,,,
+"Verio, A",,,,,,`,
+
+  "B2 S8 500": `"Oliva, F",6/3 6/1,"Oliva, F",,"Oliva, F",,"Oliva, F"
+"Calvo, D",,Zupancic,,"Barraza, G",,
+Zupancic,,"Ramos, R",,,,
+"Tules, M",,"Barraza, G",,,,
+"Ramos, R",,,,,,
+"Vazquez, N",,,,,,
+"Barraza, G",,,,,,
+"Ramos, E",,,,,,`,
+
+  "C S8 500": `"Pautaso, L",6/3 6/1,"Pautaso, L",,"Pautaso, L",,"Pautaso, L"
+"Picallo, M",,"Perropato, P",,"Molina, D",,
+"Perropato, P",,"Eberle, A",,,,
+"Rodriguez, H",,"Molina, D",,,,
+"Eberle, A",,,,,,
+"Catalini, A",,,,,,
+"Dimilita, R",,,,,,
+"Molina, D",,,,,,`,
+
+  "B1 S8 250": `"Romero, A",6/3 6/1,"Arevalo, A",,"Lerro, P",,"Lerro, P"
+"Arevalo, A",,"Lerro, P",,"Guerra, F",,
+"Lerro, P",,"Lodico, G",,,,
+"Giani, F",,"Guerra, F",,,,
+"Ruhl, A",,,,,,
+"Lodico, G",,,,,,
+"Guerra, F",,,,,,
+"Milito, F",,,,,,`,
+
+  "B2 S8 250": `"Lening, A",6/3 6/1,"Lening, A",,"Lening, A",,"Lening, A"
+"Capuya, A",,Sampaolesi,,De Souza,,
+"Lois, F",,De Souza,,,
+Sampaolesi,,Porciuncula,,,
+"Gelabert, L",,,,,,
+De Souza,,,,,,
+"Peralta, G",,,,,,
+Porciuncula,,,,,,`,
+
+  // --- GRUPOS Y FORMATOS ---
+  "Grupos AO B1": `Zona 1,"Toso, Marcel","Romero, A","Lodico, G",Posicion,"Toso, Marcel","Romero, A",,,Puntaje matematico para la posicion
+"Toso, Marcel",,6/4 6/1,6/2 1/6 6/4,1°,Curti Rama,Gafni Edgardo,,,20408
+"Romero, A",4/6 1/6,,6/3 1/6 6/4,2°,"Lerro, P","Castro, Ariel",,,10200
+"Lodico, G",2/6 6/1 4/6,3/6 6/1 4/6,,3°,"Verio, Ale\",\"Chade, L",,,100
+Zona 2,Curti Rama,"Gil, G",Gafni Edgardo,,Ferro Fran,"Rinaudo, Joaquin",,,0
+Curti Rama,,,,1°,"Guerra, Facu","Gianni, Fer",,,0
+"Gil, G",,,,1°,,,,,0
+Gafni Edgardo,,,,1°,,,,,0
+Zona 3,"Lerro, P","Castro, Ariel",-,,,,,,0
+"Lerro, P",,,,1°,,,,,0
+"Castro, Ariel",,,,1°,,,,,0
+-,,,,1°,,,,,0
+Zona 4,"Verio, Ale","Chade, L",Ruhl Alberto,,,,,,0
+"Verio, Ale",,,,1°,,,,,0
+"Chade, L",,,,1°,,,,,0
+Ruhl Alberto,,,,1°,,,,,0
+Zona ...`,
+
+  "Formatos Grupos": `Formatos,Columna A (Nombres),Columna B (Res),Columna C (Res),Columna D (Res),Posicion,,
+1,Zona 1,,,,,,
+2,Jugador 1,-,6-4 6-2,6-1 6-1,,,
+3,Jugador 2,4-6 2-6,-,7-5 6-2,,,
+4,Jugador 3,1-6 1-6,5-7 2-6,-,,,
+5,Zona 2,,,,,,
+6,Jugador A,-,...,...,,,
+7,...,...,...,...,,,
+,,,,,,,
+Grupo [Torneo] [letra de categoria],,,,,,,
+"si el grupo es de 2, dejar la fila siguiente con un -",,,,,,,
+Columnas F y G para primeros y segundos de cada zona,,,,,,,
+,,,,,,,
+Fila 14 para determinar si es eliminacion directa o si es fase de grupos,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,Puntajes en orden:
+,,,,,,,Ganador
+,,,,,,,Finalista
+,,,,,,,Semifinalistas
+,,,,,,,Cuartos de final
+,,,,,,,Octavos de final
+,,,,,,,Dieciseisavos de final
+,,,,,,,1 partido en el grupo
+,,,,,,,
+,,,,,,,
+,,,,,,,
+Puntajes Torneos,,,,,,,
+,,,,,,,
+,,,,,,,
+AO,RG,Adelaide,S8 250,S8 500,,,
+,,,2...`
+};
 
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
@@ -39,14 +809,15 @@ export default function Home() {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
+  // PARSER MODIFICADO PARA LEER DE VARIABLE LOCAL
   const parseCSV = (text: string) => {
     if (!text) return [];
-    return text.split('\n').map(row => 
+    return text.trim().split('\n').map(row => 
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
     );
   };
 
-  // --- LOGICA DE CALCULO DE RANKING ---
+  // --- LOGICA DE CALCULO DE RANKING (MODIFICADA OFFLINE) ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
@@ -61,24 +832,35 @@ export default function Home() {
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
-        const res = await fetch(urlBaremo);
-        const txt = await res.text();
+        // LEER DE VARIABLE OFFLINE
+        const txt = OFFLINE_DATA["Formatos Grupos"];
         const rows = parseCSV(txt);
 
         if (rows.length < 2) throw new Error("No se encontraron datos en Formatos Grupos");
 
-        const headerRow = rows[0]; 
-        const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
+        // (La lógica de cálculo se mantiene igual, solo cambia el origen de los datos)
+        // Buscamos fila 37 aprox en el CSV original, aqui puede variar por el recorte.
+        // Asumimos que la tabla de puntos está al final del CSV recortado.
+        // Haremos una búsqueda dinámica mejor.
         
-        let colIndex = -1;
-        for(let i=0; i<headerRow.length; i++) {
-            if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) {
-                colIndex = i;
+        let startRowIndex = -1;
+        for(let i=0; i<rows.length; i++) {
+            if (rows[i] && rows[i].join("").includes("Puntajes Torneos")) {
+                startRowIndex = i + 3; // +3 filas abajo suelen estar los headers
                 break;
             }
         }
-        if (colIndex === -1) {
+        
+        if (startRowIndex === -1) {
+             // Fallback a lógica fija si no se encuentra
+             startRowIndex = rows.length - 2; 
+        }
+
+        const headerRow = rows[startRowIndex]; 
+        const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
+        
+        let colIndex = -1;
+        if(headerRow) {
             for(let i=0; i<headerRow.length; i++) {
                 if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) {
                     colIndex = i;
@@ -87,15 +869,9 @@ export default function Home() {
             }
         }
 
-        if (colIndex === -1) {
-            alert(`No se encontró la configuración de puntos para "${navState.tournamentShort}" en la fila 37 de Formatos Grupos.`);
-            setIsLoading(false);
-            return;
-        }
-
-        const getPoints = (rowIndex: number) => {
-            if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0;
-            const val = parseInt(rows[rowIndex][colIndex]);
+        const getPoints = (offset: number) => {
+            if (colIndex === -1 || !rows[startRowIndex + offset]) return 0;
+            const val = parseInt(rows[startRowIndex + offset][colIndex]);
             return isNaN(val) ? 0 : val;
         };
 
@@ -109,6 +885,7 @@ export default function Home() {
             groupWin: getPoints(7)    
         };
 
+        // ... (resto de lógica de cálculo igual) ...
         const playerScores: any = {};
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
@@ -123,7 +900,6 @@ export default function Home() {
             
             if (winner) addScore(winner, pts.champion);
 
-            // Logica adaptativa segun tamaño
             let finalists = [], semis = [], cuartos = [], octavos = [];
 
             if (bracketSize === 32) {
@@ -153,31 +929,30 @@ export default function Home() {
 
     } catch (e) {
         console.error(e);
-        alert("Error calculando ranking. Verificá la hoja Formatos Grupos.");
+        alert("Error calculando ranking.");
     } finally {
         setIsLoading(false);
     }
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (ESTRICTO ATP BALANCEADO) ---
+  // --- MOTOR DE SORTEO DIRECTO (MODIFICADO OFFLINE) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
     setIsFixedData(false);
     
     try {
-        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-        const rankRes = await fetch(rankUrl);
-        const rankCsv = await rankRes.text();
+        // LEER RANKING OFFLINE
+        const rankKey = `${categoryShort} 2026`;
+        const rankCsv = OFFLINE_DATA[rankKey] || "";
         const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
           name: row[1] || "",
-          total: row[11] ? parseInt(row[11]) : 0
+          total: row[row.length-1] ? parseInt(row[row.length-1]) : 0
         })).filter(p => p.name !== "");
 
-        const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-        const inscRes = await fetch(inscUrl);
-        const inscCsv = await inscRes.text();
+        // LEER INSCRIPTOS OFFLINE
+        const inscCsv = OFFLINE_DATA["Inscriptos"];
         const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
           cols[0] === tournamentShort && cols[1] === categoryShort
         ).map(cols => cols[2]);
@@ -205,7 +980,6 @@ export default function Home() {
         let pos1 = 0;
         let pos2 = bracketSize - 1;
         let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
-        
         let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
@@ -332,29 +1106,26 @@ export default function Home() {
     }
   }
 
-  // --- MOTOR DE SORTEO ATP (GRUPOS) ---
+  // --- MOTOR DE SORTEO ATP (GRUPOS - MODIFICADO OFFLINE) ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setIsSorteoConfirmado(false);
     setIsFixedData(false);
     try {
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      const rankRes = await fetch(rankUrl);
-      const rankCsv = await rankRes.text();
+      const rankKey = `${categoryShort} 2026`;
+      const rankCsv = OFFLINE_DATA[rankKey] || "";
       const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
         name: row[1] || "",
-        total: row[11] ? parseInt(row[11]) : 0
+        total: row[row.length-1] ? parseInt(row[row.length-1]) : 0
       })).filter(p => p.name !== "");
 
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      const inscRes = await fetch(inscUrl);
-      const inscCsv = await inscRes.text();
+      const inscCsv = OFFLINE_DATA["Inscriptos"];
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
         cols[0] === tournamentShort && cols[1] === categoryShort
       ).map(cols => cols[2]);
 
       if (filteredInscriptos.length === 0) {
-        alert(`No hay inscriptos para ${tournamentShort} (${categoryShort}) en la pestaña Inscriptos.`);
+        alert(`No hay inscriptos para ${tournamentShort} (${categoryShort}).`);
         setIsLoading(false);
         return;
       }
@@ -417,21 +1188,22 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  // --- LECTURA DE GRUPOS FIJOS ---
+  // --- LECTURA DE GRUPOS FIJOS (MODIFICADO OFFLINE) ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGroupData([]);
     setIsSorteoConfirmado(false);
     setIsFixedData(false);
     try {
+      // Simular delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
-      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      const res = await fetch(url);
-      const csvText = await res.text();
+      const csvText = OFFLINE_DATA[sheetName] || "";
       
       let foundGroups = false;
 
-      if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
+      if (csvText && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
         for (let i = 0; i < rows.length; i += 4) {
@@ -693,11 +1465,9 @@ export default function Home() {
       setGeneratedBracket([]);
       
       const sheetName = `Grupos ${tournamentShort} ${category}`;
-      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+      const csvText = OFFLINE_DATA[sheetName] || "";
       
       try {
-          const response = await fetch(url);
-          const csvText = await response.text();
           const rows = parseCSV(csvText);
           
           let qualifiers = [];
@@ -723,7 +1493,7 @@ export default function Home() {
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
           } else {
-             alert(`Solo se encontraron ${qualifiers.length} clasificados en las columnas F y G de la pestaña ${sheetName}. Verifica los datos.`);
+             alert(`Solo se encontraron ${qualifiers.length} clasificados. Verifica la hoja ${sheetName}.`);
           }
 
       } catch (e) {
@@ -749,111 +1519,61 @@ export default function Home() {
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
-  // --- RANKING ---
+  // --- RANKING (MODIFICADO OFFLINE) ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
-    const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
+    
     try {
-      const response = await fetch(url);
-      const csvText = await response.text();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const key = `${categoryShort} ${year}`;
+      const csvText = OFFLINE_DATA[key] || "";
       const rows = parseCSV(csvText);
+      
       if (rows.length > 0) {
         setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
         setRankingData(rows.slice(1).map(row => ({
           name: row[1],
           points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
-          total: year === "2025" ? (parseInt(row[9]) || 0) : (parseInt(row[11]) || 0)
+          total: row[row.length - 1] ? (parseInt(row[row.length - 1]) || 0) : 0
         })).filter(p => p.name).sort((a, b) => b.total - a.total));
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- BRACKETS ---
+  // --- BRACKETS (MODIFICADO OFFLINE) ---
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
-    
-    const checkCanGenerate = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const bracketKey = `${category} ${tournamentShort}`;
+      const csvText = OFFLINE_DATA[bracketKey] || "";
+      const rows = parseCSV(csvText);
+      
+      const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
         if (isDirect) {
-            const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-            try {
-                const res = await fetch(urlInscriptos);
-                const txt = await res.text();
-                const rows = parseCSV(txt);
-                const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
-                setBracketData({ hasData: false, canGenerate: count >= 4 });
-            } catch (e) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
+            const inscCsv = OFFLINE_DATA["Inscriptos"];
+            const r = parseCSV(inscCsv);
+            const count = r.filter(x => x[0] === tournamentShort && x[1] === category).length;
+            setBracketData({ hasData: false, canGenerate: count >= 4 });
         } else {
             const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
-            const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
-            try {
-                const resGroups = await fetch(urlGroups);
-                const txtGroups = await resGroups.text();
-                const rowsGroups = parseCSV(txtGroups);
-                let foundQualifiers = false;
-                for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
-                        foundQualifiers = true;
-                        break;
-                    }
-                }
-                setBracketData({ hasData: false, canGenerate: foundQualifiers });
-            } catch(err2) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
-        }
-    };
-
-    // --- FUNCION AUTO-AVANCE ---
-    const processByes = (data: any) => {
-        const { r1, r2, r3, r4, bracketSize } = data;
-        const newR2 = [...r2];
-        const newR3 = [...r3];
-        
-        // Auto-Avance para 16avos -> Octavos (Solo si Size=32)
-        if (bracketSize === 32) {
-            for (let i = 0; i < r1.length; i += 2) {
-                const p1 = r1[i]; const p2 = r1[i+1];
-                const targetIdx = Math.floor(i / 2);
-                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
-                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
+            const groupCsv = OFFLINE_DATA[sheetNameGroups] || "";
+            const gRows = parseCSV(groupCsv);
+            let foundQualifiers = false;
+            for(let i=0; i<Math.min(gRows.length, 50); i++) {
+                if (gRows[i] && gRows[i].length > 5 && gRows[i][5]) {
+                    foundQualifiers = true;
+                    break;
                 }
             }
-            data.r2 = newR2;
+            setBracketData({ hasData: false, canGenerate: foundQualifiers });
         }
+      };
 
-        // Auto-Avance siguiente ronda (Octavos -> Cuartos)
-        const roundPrev = bracketSize === 32 ? newR2 : r1;
-        const roundNext = bracketSize === 32 ? newR3 : r2; // Destino Cuartos
-        
-        for (let i = 0; i < roundPrev.length; i += 2) {
-             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
-             const targetIdx = Math.floor(i / 2);
-             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
-                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
-             }
-        }
-        
-        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
-        return data;
-    }
-
-    try {
-      const response = await fetch(urlBracket);
-      const csvText = await response.text();
-      const rows = parseCSV(csvText);
-      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
-      const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
-      const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
-      const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
+      const hasContent = rows.length > 0 && rows[0][0] && rows[0][0] !== "";
 
       if (hasContent) {
           // *** DETECCIÓN DE TAMAÑO (SUPER 8 vs OCTAVOS vs 32) ***
@@ -865,18 +1585,15 @@ export default function Home() {
 
           let seeds = {};
           try {
-             const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-             const rankRes = await fetch(rankUrl);
-             const rankTxt = await rankRes.text();
-             const playersRanking = parseCSV(rankTxt).slice(1).map(row => ({
+             const rankKey = `${category} 2026`;
+             const rankCsv = OFFLINE_DATA[rankKey] || "";
+             const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
                name: row[1] || "",
-               total: row[11] ? parseInt(row[11]) : 0
+               total: row[row.length-1] ? parseInt(row[row.length-1]) : 0
              })).filter(p => p.name !== "");
 
-             const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-             const inscRes = await fetch(inscUrl);
-             const inscTxt = await inscRes.text();
-             const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
+             const inscCsv = OFFLINE_DATA["Inscriptos"];
+             const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
                cols[0] === tournamentShort && cols[1] === category
              ).map(cols => cols[2]);
 
@@ -906,7 +1623,7 @@ export default function Home() {
 
       } else { await checkCanGenerate(); }
 
-    } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
+    } catch (error) { console.log(error); } finally { setIsLoading(false); }
   }
 
   const goBack = () => {
@@ -1101,16 +1818,16 @@ export default function Home() {
                       return (
                         <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                           <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx]}</span>
                           </div>
                           <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx+1]}</span>
                           </div>
                         </div>
                       )
@@ -1136,16 +1853,16 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
                         </div>
                       </div>
                     );
@@ -1170,16 +1887,16 @@ export default function Home() {
                     return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
                         </div>
                       </div>
                     );
@@ -1202,16 +1919,16 @@ export default function Home() {
                      return (
                       <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
                         <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                         </div>
                         <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
-                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
                         </div>
                       </div>
                      )
