@@ -1086,7 +1086,7 @@ export default function Home() {
             </div>
             
             {bracketData.hasData ? (
-              <div className="flex flex-row items-center justify-center gap-20 min-w-max py-8 px-4 relative text-center">
+              <div className="flex flex-row items-center justify-center gap-16 min-w-max py-8 px-4 relative text-center">
                 
                 {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
@@ -1219,13 +1219,51 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-base ml-2">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
+                        <div className={`absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] ${w1 || w2 ? 'bg-[#b35a38]' : 'bg-slate-300'}`} />
                       </div>
                      )
                   })}
                 </div>
 
-                {/* FINAL (Siempre) */}
+                {/* FINAL MATCH (Nuevo) */}
+                <div className="flex flex-col justify-center h-auto min-h-[600px] w-96 relative text-left">
+                    {[0].map((idx) => {
+                        let rSemis, sSemis;
+                        if (bracketData.bracketSize === 32) { rSemis = bracketData.r4; sSemis = bracketData.s4; }
+                        else if (bracketData.bracketSize === 16) { rSemis = bracketData.r3; sSemis = bracketData.s3; }
+                        else { rSemis = bracketData.r2; sSemis = bracketData.s2; }
+
+                        // Deduce finalists based on who is the ultimate winner or BYE status in semis.
+                        // This is a display hack as the data structure doesn't explicitly have a "Final" round array.
+                        const f1 = rSemis[0] === bracketData.winner || rSemis[1] === "BYE" ? rSemis[0] : (rSemis[1] === bracketData.winner || rSemis[0] === "BYE" ? rSemis[1] : (sSemis[0] && sSemis[1] ? (sSemis[0]>sSemis[1]?rSemis[0]:rSemis[1]) : "TBD"));
+                        const f2 = rSemis[2] === bracketData.winner || rSemis[3] === "BYE" ? rSemis[2] : (rSemis[3] === bracketData.winner || rSemis[2] === "BYE" ? rSemis[3] : (sSemis[2] && sSemis[3] ? (sSemis[2]>sSemis[3]?rSemis[2]:rSemis[3]) : "TBD"));
+
+                        const w1 = f1 && f1 === bracketData.winner;
+                        const w2 = f2 && f2 === bracketData.winner;
+                        const seed1 = bracketData.seeds ? bracketData.seeds[f1] : null;
+                        const seed2 = bracketData.seeds ? bracketData.seeds[f2] : null;
+
+                        return (
+                          <div key={idx} className="relative flex flex-col space-y-2 mb-0">
+                            <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                                <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>
+                                    {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}{f1 || ""}
+                                </span>
+                                <span className="text-[#b35a38] font-black text-base ml-2"></span>
+                            </div>
+                            <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                                <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>
+                                    {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}{f2 || ""}
+                                </span>
+                                <span className="text-[#b35a38] font-black text-base ml-2"></span>
+                            </div>
+                            <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-[#b35a38]" />
+                          </div>
+                        )
+                    })}
+                </div>
+
+                {/* CAMPEON TROPHY COLUMN */}
                 <div className="flex flex-col justify-center h-auto min-h-[600px] items-center w-96 relative text-center">
                   <Trophy className="w-20 h-20 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
                   <div className="flex flex-col items-center">
