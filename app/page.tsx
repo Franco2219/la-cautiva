@@ -1086,11 +1086,11 @@ export default function Home() {
             </div>
             
             {bracketData.hasData ? (
-              <div className="flex flex-row items-center justify-center gap-12 min-w-max py-8 px-4 relative text-center">
+              <div className="flex flex-row items-center justify-center gap-20 min-w-max py-8 px-4 relative text-center">
                 
                 {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
-                  <div className="flex flex-col justify-around h-auto min-h-[800px] w-64 relative text-left">
+                  <div className="flex flex-col justify-around h-auto min-h-[800px] w-80 relative text-left">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
@@ -1112,7 +1112,7 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx+1]}</span>
                           </div>
-                          <div className="absolute top-1/2 -translate-y-1/2 -right-[24px] w-[24px] h-[2px] bg-slate-300" />
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
                       )
                     })}
@@ -1121,7 +1121,7 @@ export default function Home() {
 
                 {/* OCTAVOS (Si es > 8) */}
                 {bracketData.bracketSize >= 16 && (
-                <div className="flex flex-col justify-around h-auto min-h-[800px] w-64 relative text-left">
+                <div className="flex flex-col justify-around h-auto min-h-[800px] w-80 relative text-left">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
                     // Si es 32, Octavos es R2. Si es 16, Octavos es R1.
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
@@ -1149,7 +1149,7 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[24px] w-[24px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
@@ -1157,7 +1157,7 @@ export default function Home() {
                 )}
 
                 {/* CUARTOS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[800px] w-64 relative text-left">
+                <div className="flex flex-col justify-around h-auto min-h-[800px] w-80 relative text-left">
                   {[0, 2, 4, 6].map((idx) => {
                     // 32: r3, 16: r2, 8: r1
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
@@ -1185,14 +1185,14 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[24px] w-[24px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
                 </div>
 
                 {/* SEMIS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[800px] w-64 relative text-left">
+                <div className="flex flex-col justify-around h-auto min-h-[800px] w-80 relative text-left">
                   {[0, 2].map((idx) => {
                      // 32: r4, 16: r3, 8: r2
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1219,14 +1219,14 @@ export default function Home() {
                             </span>
                             <span className="text-[#b35a38] font-black text-base ml-2">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[24px] w-[24px] h-[2px] bg-slate-300" />
+                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                      )
                   })}
                 </div>
 
                 {/* FINAL (Siempre) */}
-                <div className="flex flex-col justify-center h-auto min-h-[800px] items-center w-64 relative text-center">
+                <div className="flex flex-col justify-center h-auto min-h-[800px] items-center w-80 relative text-center">
                   <Trophy className="w-20 h-20 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
                   <div className="flex flex-col items-center">
                      <span className="text-[#b35a38]/70 font-black text-sm uppercase tracking-[0.2em] mb-2">CAMPEÓN</span>
