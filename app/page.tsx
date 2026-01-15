@@ -11,6 +11,9 @@ const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw';
 const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
 const MI_TELEFONO = "5491150568353"; 
 
+// --- CONFIGURACIÓN DE PROXY (CÓDIGO PARCHE) ---
+const PROXY = "https://api.allorigins.win/raw?url=";
+
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
@@ -62,7 +65,8 @@ export default function Home() {
     setIsLoading(true);
     try {
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
-        const res = await fetch(urlBaremo);
+        // Cambio a PROXY
+        const res = await fetch(PROXY + encodeURIComponent(urlBaremo));
         const txt = await res.text();
         const rows = parseCSV(txt);
 
@@ -162,7 +166,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (ESTRICTO ATP BALANCEADO) ---
+  // --- MOTOR DE SORTEO DIRECTO ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -170,7 +174,8 @@ export default function Home() {
     
     try {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-        const rankRes = await fetch(rankUrl);
+        // Cambio a PROXY
+        const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
         const rankCsv = await rankRes.text();
         const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
           name: row[1] || "",
@@ -178,7 +183,8 @@ export default function Home() {
         })).filter(p => p.name !== "");
 
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-        const inscRes = await fetch(inscUrl);
+        // Cambio a PROXY
+        const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
         const inscCsv = await inscRes.text();
         const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
           cols[0] === tournamentShort && cols[1] === categoryShort
@@ -371,7 +377,8 @@ export default function Home() {
     setIsFixedData(false);
     try {
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      const rankRes = await fetch(rankUrl);
+      // Cambio a PROXY
+      const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
       const rankCsv = await rankRes.text();
       const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
         name: row[1] || "",
@@ -379,7 +386,8 @@ export default function Home() {
       })).filter(p => p.name !== "");
 
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      const inscRes = await fetch(inscUrl);
+      // Cambio a PROXY
+      const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
       const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
         cols[0] === tournamentShort && cols[1] === categoryShort
@@ -458,7 +466,8 @@ export default function Home() {
     try {
       const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      const res = await fetch(url);
+      // Cambio a PROXY
+      const res = await fetch(PROXY + encodeURIComponent(url));
       const csvText = await res.text();
       
       let foundGroups = false;
@@ -728,7 +737,8 @@ export default function Home() {
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       
       try {
-          const response = await fetch(url);
+          // Cambio a PROXY
+          const response = await fetch(PROXY + encodeURIComponent(url));
           const csvText = await response.text();
           const rows = parseCSV(csvText);
           
@@ -787,7 +797,8 @@ export default function Home() {
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
     try {
-      const response = await fetch(url);
+      // Cambio a PROXY
+      const response = await fetch(PROXY + encodeURIComponent(url));
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       if (rows.length > 0) {
@@ -806,58 +817,13 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", isLarge: false, hasData: false, canGenerate: false, seeds: {} });
     
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
-    
-    // Función auxiliar para verificar si se puede generar sorteo (FALLBACK)
-    const checkCanGenerate = async () => {
-        // Detectar tipo de torneo
-        const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
-        
-        if (isDirect) {
-            // Si es DIRECTO -> Buscamos en "Inscriptos" del Excel General
-            const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-            try {
-                const res = await fetch(urlInscriptos);
-                const txt = await res.text();
-                const rows = parseCSV(txt);
-                // Filtramos por torneo y categoría
-                const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
-                setBracketData({ hasData: false, canGenerate: count >= 4 });
-            } catch (e) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
-        } else {
-            // Si es FULL (Grupos) -> Buscamos en la hoja de "Grupos" del Excel Torneos
-            const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
-            const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
-            try {
-                const resGroups = await fetch(urlGroups);
-                const txtGroups = await resGroups.text();
-                const rowsGroups = parseCSV(txtGroups);
-                let foundQualifiers = false;
-                for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
-                        foundQualifiers = true;
-                        break;
-                    }
-                }
-                setBracketData({ hasData: false, canGenerate: foundQualifiers });
-            } catch(err2) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
-        }
-    };
-
-    // --- FUNCION AUTO-AVANCE: MUEVE JUGADORES VS BYE A SIGUIENTE RONDA ---
+    // FUNCION AUTO-AVANCE: MUEVE JUGADORES VS BYE A SIGUIENTE RONDA
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, isLarge } = data;
         const newR2 = [...r2];
         const newR3 = [...r3];
         
         // --- 1. SOLO PARA EL CASO "LARGE" (32 -> 16) ---
-        // Iteramos los partidos de la Ronda 1 (indices 0..15 en newR1, pero aqui usamos r1)
-        // r1 tiene [p1_m0, p2_m0, p1_m1, p2_m1...]
-        // Si hay 16avos (isLarge), r1 tiene 32 slots (16 matches)
         if (isLarge) {
             for (let i = 0; i < r1.length; i += 2) {
                 const p1 = r1[i];
@@ -875,7 +841,6 @@ export default function Home() {
         }
 
         // --- 2. PARA LA SIGUIENTE RONDA (16 -> 8) ---
-        // Si es Large, pasamos de R2 a R3. Si es Normal, de R1 a R2.
         const roundPrev = isLarge ? newR2 : r1;
         const roundNext = isLarge ? newR3 : r2; // Destino
         
@@ -895,9 +860,10 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch(urlBracket);
-      const csvText = await response.text();
-      const rows = parseCSV(csvText);
+      const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+      // Cambio a PROXY
+      const res = await fetch(PROXY + encodeURIComponent(urlBracket));
+      const rows = parseCSV(await res.text());
       
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
@@ -906,10 +872,12 @@ export default function Home() {
 
       if (hasContent) {
           const isLarge = rows.length > 8 && rows[8] && rows[8][0] !== "";
+
           let seeds = {};
           try {
+             // Proxy para Seeds tmb
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-             const rankRes = await fetch(rankUrl);
+             const rankRes = await fetch(PROXY + encodeURIComponent(rankUrl));
              const rankTxt = await rankRes.text();
              const playersRanking = parseCSV(rankTxt).slice(1).map(row => ({
                name: row[1] || "",
@@ -917,23 +885,15 @@ export default function Home() {
              })).filter(p => p.name !== "");
 
              const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-             const inscRes = await fetch(inscUrl);
+             const inscRes = await fetch(PROXY + encodeURIComponent(inscUrl));
              const inscTxt = await inscRes.text();
-             const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
-               cols[0] === tournamentShort && cols[1] === category
-             ).map(cols => cols[2]);
-
-             const entryList = filteredInscriptos.map(n => {
-                 const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
-                 return { name: n, points: p ? p.total : 0 };
+             const entry = parseCSV(inscTxt).slice(1).filter(c => c[0] === tournamentShort && c[1] === category).map(c => {
+                const p = playersRanking.find(pr => pr.name.toLowerCase().includes(c[2].toLowerCase()) || c[2].toLowerCase().includes(pr.name.toLowerCase()));
+                return { name: c[2], points: p ? p.total : 0 };
              }).sort((a, b) => b.points - a.points);
 
-             const top8 = entryList.slice(0, 8);
-             const seedMap: any = {};
-             top8.forEach((p, i) => {
-                 if (p.name) seedMap[p.name] = i + 1;
-             });
-             seeds = seedMap;
+             entry.slice(0, 8).forEach((p, i) => { if (p.name) seeds[p.name] = i + 1; });
+
           } catch(e) { console.log("Error fetching seeds", e); }
 
           let rawData: any = {};
@@ -948,11 +908,16 @@ export default function Home() {
           setBracketData(processedData);
 
       } else {
-          await checkCanGenerate();
+          const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
+          // Cambio a PROXY
+          const resInsc = await fetch(PROXY + encodeURIComponent(urlInscriptos));
+          const rowsInsc = parseCSV(await resInsc.text());
+          const count = rowsInsc.filter(r => r[0] === tournamentShort && r[1] === category).length;
+          setBracketData({ hasData: false, canGenerate: count >= 4 });
       }
 
     } catch (error) { 
-        await checkCanGenerate();
+        await checkCanGenerate(); // Fallback si falla
     } finally { 
         setIsLoading(false); 
     }
@@ -1135,7 +1100,7 @@ export default function Home() {
 
         {navState.level === "direct-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl overflow-x-auto text-center">
-            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0">
+            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0 text-center">
               <h2 className="text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
             
@@ -1177,7 +1142,7 @@ export default function Home() {
                 )}
                 {/* Octavos */}
                 <div className={`flex flex-col justify-around h-auto min-h-[600px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
-                  {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
+                  {Array.from({length: 8}, (_, i) => i * 2).map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                     const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r3.includes(p1) : bracketData.r2.includes(p1));
@@ -1192,14 +1157,14 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-12 mb-8">
                         <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s1}</span>
                         </div>
                         <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
                             <span className="text-[#b35a38] font-black text-sm ml-3">{s2}</span>
@@ -1212,7 +1177,7 @@ export default function Home() {
                 </div>
                 {/* Cuartos */}
                 <div className="flex flex-col justify-around h-auto min-h-[600px] w-80 ml-32 relative text-left">
-                  {[0, 2, 4, 6].map((idx) => {
+                  {Array.from({length: 4}, (_, i) => i * 2).map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
                     const p2 = bracketData.isLarge ? bracketData.r3[idx+1] : bracketData.r2[idx+1];
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r4.includes(p1) : bracketData.r3.includes(p1));
@@ -1227,17 +1192,17 @@ export default function Home() {
                       <div key={idx} className="relative flex flex-col space-y-32 mb-16">
                         <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}
+                                {seed1 ? <span className="text-xl text-orange-600 font-black mr-1">{seed1}.</span> : null}
                                 {p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s1}</span>
                         </div>
                         <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
                             <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}
+                                {seed2 ? <span className="text-xl text-orange-600 font-black mr-1">{seed2}.</span> : null}
                                 {p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-4">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-lg ml-4">{s2}</span>
                         </div>
                         {/* Middle Line */}
                         <div className="absolute top-1/2 -translate-y-1/2 -right-[140px] w-[40px] h-[2px] bg-slate-300" />
@@ -1273,11 +1238,11 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
+                           <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         ) : (
-                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
+                           <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-green-600 text-white font-bold px-8 shadow-lg">
                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
                            </Button>
                         )}
