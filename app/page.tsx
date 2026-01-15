@@ -1319,16 +1319,6 @@ export default function Home() {
                 )}
               </div>
             )}
-            
-            {/* Botón Lista de Partidos en Vista de Cuadro */}
-            {bracketData.hasData && (
-                <div className="mt-8 flex justify-center pb-4">
-                   <Button onClick={enviarPartidosWhatsApp} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
-                        <MessageSquare className="mr-2" /> ENVIAR LISTA DE PARTIDOS POR WHATSAPP
-                   </Button>
-                </div>
-            )}
-
           </div>
         )}
 
@@ -1375,7 +1365,6 @@ export default function Home() {
                         
                         <Button onClick={() => {
                             let mensaje = `*RANKING CALCULADO - ${navState.tournamentShort}*\n\n`;
-                            // Enviamos ordenado como está en el estado (Global Rank)
                             calculatedRanking.forEach(p => {
                                 mensaje += `${p.name}: ${p.points}\n`;
                             });
