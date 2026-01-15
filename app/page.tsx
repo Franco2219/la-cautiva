@@ -162,7 +162,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (REGLAS ATP EXACTAS) ---
+  // --- MOTOR DE SORTEO DIRECTO (ESTRICTO ATP BALANCEADO) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -190,7 +190,7 @@ export default function Home() {
             return;
         }
 
-        // 1. Ordenar Entry List por Ranking
+        // 1. Ranking y Clasificación
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
@@ -217,7 +217,7 @@ export default function Home() {
         
         // Calcular posiciones para 5-8
         let pos58: number[] = [];
-        if (bracketSize === 16) pos58 = [2, 5, 10, 13]; // Aprox
+        if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
         
         const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
@@ -232,14 +232,11 @@ export default function Home() {
             slots[pos34[0]] = group34[0]; // Cierra mitad arriba
             slots[pos34[1]] = group34[1]; // Abre mitad abajo
         } else if (seeds[2]) {
-             // Si solo hay 3, va a uno de los dos
              slots[pos34[Math.floor(Math.random()*2)]] = seeds[2];
         }
 
         // Asignar 5 a 8 (2 arriba, 2 abajo)
         if (seeds.length >= 8 && pos58.length === 4) {
-            // Dividir posiciones en Top (0,1) y Bottom (2,3) del array pos58
-            // En 32: 7, 8 son Top. 23, 24 son Bottom.
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
             
             // Tomamos 2 seeds para arriba y 2 para abajo
@@ -277,24 +274,17 @@ export default function Home() {
             }
         }
 
-        // 2. Si sobran BYEs (Caso 17 jugadores), repartir en PARTIDOS VACÍOS
-        // Esto garantiza que NO haya BYE vs BYE.
-        // Buscamos pares (0,1), (2,3)... donde ambos sean NULL.
-        // Ponemos 1 BYE en cada par vacío hasta agotar stock.
-        
-        // Identificar pares vacíos
-        let emptyPairsIndices = []; // Guardamos el índice par (0, 2, 4...)
+        // 2. Si sobran BYEs, repartir en PARTIDOS VACÍOS
+        let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
              if (slots[i] === null && slots[i+1] === null) {
                  emptyPairsIndices.push(i);
              }
         }
         
-        // Mezclar pares para aleatoriedad, pero manteniendo balance Top/Bottom
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2);
         let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
         
-        // Función para sacar un par balanceado
         const popBalancedPair = () => {
             if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) {
                  const randIdx = Math.floor(Math.random() * topPairs.length);
@@ -309,15 +299,11 @@ export default function Home() {
         while (byesRemaining > 0) {
             const pairIdx = popBalancedPair();
             if (pairIdx !== -1) {
-                // Asignamos BYE a uno de los dos slots (random) del par vacío
-                // El otro slot quedará NULL y será llenado por un jugador después.
                 const slotOffset = Math.random() > 0.5 ? 0 : 1;
                 slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 };
                 byesRemaining--;
             } else {
-                // No hay más pares vacíos puros. Raro en un draw normal, pero posible.
-                // Asignar a cualquier hueco disponible que no tenga rival BYE
-                 break; // Salir y dejar que el resto se llene
+                 break; 
             }
         }
         
@@ -325,40 +311,33 @@ export default function Home() {
         const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
         nonSeeds.sort(() => Math.random() - 0.5); // Mezclar
 
-        // Contar carga actual para balancear
         let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
         let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
         
-        // Recolectar indices vacios globales
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         
         // Llenar slots
         for (const player of nonSeeds) {
-             // Filtrar vacios disponibles en Top y Bottom
              const emptyTop = emptySlots.filter(i => i < bracketSize/2);
              const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
-             
              let targetIdx = -1;
 
-             // Lógica de balanceo estricto
              if (countTop <= countBot && emptyTop.length > 0) {
                   targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
              } else if (emptyBot.length > 0) {
                   targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-             } else if (emptyTop.length > 0) { // Fallback
+             } else if (emptyTop.length > 0) { 
                   targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
              }
 
              if (targetIdx !== -1) {
                  slots[targetIdx] = player;
-                 // Actualizar contadores
                  if (targetIdx < bracketSize/2) countTop++; else countBot++;
-                 // Remover de lista de vacios
                  emptySlots = emptySlots.filter(i => i !== targetIdx);
              }
         }
 
-        // 4. Limpieza final: Si sobraron slots (imposible si la matemática cuadra), son BYEs
+        // 4. Limpieza final
         for (let i = 0; i < slots.length; i++) {
             if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 };
         }
@@ -368,8 +347,7 @@ export default function Home() {
         for (let i = 0; i < bracketSize; i += 2) {
             let p1 = slots[i];
             let p2 = slots[i+1];
-            
-            // Visual: Si P1 es BYE y P2 Jugador, invertir
+            // Visual: BYE a P2
             if (p1?.name === "BYE" && p2?.name !== "BYE") {
                 let temp = p1; p1 = p2; p2 = temp;
             }
@@ -725,7 +703,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "TBD", rank: 0 };
                 }
             }
         } else {
@@ -876,29 +854,39 @@ export default function Home() {
         const newR2 = [...r2];
         const newR3 = [...r3];
         
+        // --- 1. SOLO PARA EL CASO "LARGE" (32 -> 16) ---
+        // Iteramos los partidos de la Ronda 1 (indices 0..15 en newR1, pero aqui usamos r1)
+        // r1 tiene [p1_m0, p2_m0, p1_m1, p2_m1...]
+        // Si hay 16avos (isLarge), r1 tiene 32 slots (16 matches)
         if (isLarge) {
             for (let i = 0; i < r1.length; i += 2) {
                 const p1 = r1[i];
                 const p2 = r1[i+1];
-                const targetIdx = Math.floor(i / 2);
+                const targetIdx = Math.floor(i / 2); // Indice en Ronda 2
+                
+                // Si la celda destino en R2 esta vacia, intentamos auto-avanzar
                 if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    if (p1 && (!p2 || p2 === "BYE" || p2 === "")) newR2[targetIdx] = p1;
-                    else if (p2 && (!p1 || p1 === "BYE" || p1 === "")) newR2[targetIdx] = p2;
+                    // REGLA DE ORO: SOLO AVANZAR SI EL RIVAL ES LITERALMENTE "BYE"
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
+                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
                 }
             }
             data.r2 = newR2;
         }
 
+        // --- 2. PARA LA SIGUIENTE RONDA (16 -> 8) ---
+        // Si es Large, pasamos de R2 a R3. Si es Normal, de R1 a R2.
         const roundPrev = isLarge ? newR2 : r1;
-        const roundNext = isLarge ? newR3 : r2; 
+        const roundNext = isLarge ? newR3 : r2; // Destino
         
         for (let i = 0; i < roundPrev.length; i += 2) {
              const p1 = roundPrev[i];
              const p2 = roundPrev[i+1];
              const targetIdx = Math.floor(i / 2);
+             
              if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 if (p1 && (!p2 || p2 === "BYE" || p2 === "")) roundNext[targetIdx] = p1;
-                 else if (p2 && (!p1 || p1 === "BYE" || p1 === "")) roundNext[targetIdx] = p2;
+                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
+                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
              }
         }
         
@@ -950,9 +938,9 @@ export default function Home() {
 
           let rawData: any = {};
           if (isLarge) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: rows.map(r => r[6]).slice(0, 2), s4: rows.map(r => r[7]).slice(0, 2), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: rows[0][8] || "", isLarge: true, hasData: true, canGenerate: false, seeds: seeds };
           } else {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: rows.map(r => r[4]).slice(0, 2), s3: rows.map(r => r[5]).slice(0, 2), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), winner: rows[0][6] || "", isLarge: false, hasData: true, canGenerate: false, seeds: seeds };
           }
           
           // APLICAR AUTO-AVANCE
@@ -978,6 +966,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
+  // COMPONENTE VISUAL MEJORADO (LISTA VERTICAL)
   const GeneratedMatch = ({ match }: { match: any }) => (
       <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
           <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
@@ -1155,12 +1144,11 @@ export default function Home() {
                 {bracketData.isLarge && (
                   <div className="flex flex-col justify-around h-auto min-h-[600px] w-80 relative text-left">
                     {/* 16avos */}
-                    {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
+                    {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
                       const w2 = p2 && bracketData.r2.includes(p2);
                       
-                      // LOGICA PRECLASIFICADO
                       const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                       const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
@@ -1189,7 +1177,7 @@ export default function Home() {
                 )}
                 {/* Octavos */}
                 <div className={`flex flex-col justify-around h-auto min-h-[600px] w-80 relative ${bracketData.isLarge ? 'ml-24' : ''} text-left`}>
-                  {[0, 2, 4, 6].map((idx) => {
+                  {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r2[idx] : bracketData.r1[idx];
                     const p2 = bracketData.isLarge ? bracketData.r2[idx+1] : bracketData.r1[idx+1];
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r3.includes(p1) : bracketData.r2.includes(p1));
@@ -1224,7 +1212,7 @@ export default function Home() {
                 </div>
                 {/* Cuartos */}
                 <div className="flex flex-col justify-around h-auto min-h-[600px] w-80 ml-32 relative text-left">
-                  {[0, 2].map((idx) => {
+                  {[0, 2, 4, 6].map((idx) => {
                     const p1 = bracketData.isLarge ? bracketData.r3[idx] : bracketData.r2[idx];
                     const p2 = bracketData.isLarge ? bracketData.r3[idx+1] : bracketData.r2[idx+1];
                     const w1 = p1 && (bracketData.isLarge ? bracketData.r4.includes(p1) : bracketData.r3.includes(p1));
