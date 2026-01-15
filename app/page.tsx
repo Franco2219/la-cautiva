@@ -10,7 +10,7 @@ const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t';
 const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
 const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
 const MI_TELEFONO = "5491150568353"; 
-const TELEFONO_PARTIDOS = "5491123965949"; // Nuevo número para lista de partidos
+const TELEFONO_PARTIDOS = "5491123965949"; 
 
 const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
@@ -35,7 +35,6 @@ export default function Home() {
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
   
-  // Estados para el calculador de Ranking Oculto
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
@@ -47,17 +46,14 @@ export default function Home() {
     );
   };
 
-  // --- NUEVA FUNCION: Enviar lista de partidos ---
   const enviarPartidosWhatsApp = () => {
     let mensaje = `*PARTIDOS PENDIENTES - ${navState.tournamentShort || navState.currentTour}*\n\n`;
     
     if (navState.level === "group-phase") {
         groupData.forEach(group => {
             const players = group.players;
-            // Generar cruces únicos
             for (let i = 0; i < players.length; i++) {
                 for (let j = i + 1; j < players.length; j++) {
-                    // Verificar si ya se jugó (tiene resultado)
                     const res = group.results[i] && group.results[i][j] ? group.results[i][j] : "-";
                     if (!res || res === "-" || res === "") {
                         mensaje += `${players[i]} vs ${players[j]}\n`;
@@ -66,30 +62,26 @@ export default function Home() {
             }
         });
     } else if (generatedBracket.length > 0) {
-        // Si estamos en la vista de generación
          generatedBracket.forEach(m => {
              if (m.p1 && m.p2 && m.p2.name !== "BYE") {
                  mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
              }
          });
     } else if (bracketData.hasData) {
-        // Si estamos en el cuadro visualizando
-        // Recorremos r1, r2, r3, etc buscando huecos donde hay jugadores pero no score
-        const { r1, s1, bracketSize } = bracketData;
-        // Ejemplo simple con r1 (se puede extender a r2, r3)
-        for(let i=0; i<r1.length; i+=2) {
-            if (r1[i] && r1[i+1] && r1[i+1] !== "BYE" && r1[i] !== "BYE") {
-                 if (!s1[i] || s1[i] === "") { // Si no hay resultado
-                     mensaje += `${r1[i]} vs ${r1[i+1]}\n`;
-                 }
+        const { r1, s1 } = bracketData;
+        if (r1 && s1) {
+            for(let i=0; i<r1.length; i+=2) {
+                if (r1[i] && r1[i+1] && r1[i+1] !== "BYE" && r1[i] !== "BYE") {
+                     if (!s1[i] || s1[i] === "") { 
+                         mensaje += `${r1[i]} vs ${r1[i+1]}\n`;
+                     }
+                }
             }
         }
     }
-
     window.open(`https://wa.me/${TELEFONO_PARTIDOS}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // --- LOGICA DE CALCULO DE RANKING (MODIFICADA PUNTO 5) ---
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
           const newCount = footerClicks + 1;
@@ -104,13 +96,11 @@ export default function Home() {
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        // 1. Obtener puntos del torneo actual (Baremo)
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        // 2. Obtener Ranking 2026 Global para ordenamiento (PUNTO 5)
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
@@ -166,7 +156,6 @@ export default function Home() {
         const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
             const cleanName = name.trim();
-            // Asigna el mayor puntaje alcanzado (ej: si está en cuartos, suma cuartos, no acumula octavos+cuartos, usualmente es el valor de la ronda alcanzada)
             if (!playerScores[cleanName] || score > playerScores[cleanName]) {
                 playerScores[cleanName] = score;
             }
@@ -178,11 +167,11 @@ export default function Home() {
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
 
             if (bracketSize === 32) {
-                semis = r4; cuartos = r3; octavos = r2; dieciseis = r1;
+                semis = r4 || []; cuartos = r3 || []; octavos = r2 || []; dieciseis = r1 || [];
             } else if (bracketSize === 16) {
-                semis = r3; cuartos = r2; octavos = r1;
+                semis = r3 || []; cuartos = r2 || []; octavos = r1 || [];
             } else { 
-                semis = r2; cuartos = r1;
+                semis = r2 || []; cuartos = r1 || [];
             }
 
             if (bracketSize === 32) dieciseis.forEach((p: string) => addScore(p, pts.dieciseis));
@@ -195,22 +184,18 @@ export default function Home() {
             if (winner) addScore(winner, pts.champion);
         }
 
-        // Crear array y ordenar usando el Ranking Global 2026 para la visualización
-        const rankingArray = Object.keys(playerScores).map(key => {
-            const globalPoints = globalRankingMap[key.toLowerCase()] || 0;
-            return {
-                name: key,
-                points: playerScores[key], // Puntos que suma ESTE torneo
-                globalRank: globalPoints   // Puntos totales del año (para ordenar)
-            };
-        }).sort((a, b) => b.globalRank - a.globalRank); // Ordenar por Ranking 2026
+        const rankingArray = Object.keys(playerScores).map(key => ({
+            name: key,
+            points: playerScores[key],
+            globalRank: globalRankingMap[key.toLowerCase()] || 0
+        })).sort((a, b) => b.globalRank - a.globalRank);
 
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
 
     } catch (e) {
         console.error(e);
-        alert("Error calculando ranking. Verificá la hoja Formatos Grupos.");
+        alert("Error calculando ranking.");
     } finally {
         setIsLoading(false);
     }
@@ -237,7 +222,7 @@ export default function Home() {
         ).map(cols => cols[2]);
 
         if (filteredInscriptos.length < 4) {
-            alert("Mínimo 4 jugadores para armar un cuadro.");
+            alert("Mínimo 4 jugadores.");
             setIsLoading(false);
             return;
         }
@@ -259,7 +244,6 @@ export default function Home() {
         let pos1 = 0;
         let pos2 = bracketSize - 1;
         let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
-        
         let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
@@ -307,9 +291,7 @@ export default function Home() {
 
         let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
-             if (slots[i] === null && slots[i+1] === null) {
-                 emptyPairsIndices.push(i);
-             }
+             if (slots[i] === null && slots[i+1] === null) emptyPairsIndices.push(i);
         }
         
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2);
@@ -346,14 +328,9 @@ export default function Home() {
              const emptyTop = emptySlots.filter(i => i < bracketSize/2);
              const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
              let targetIdx = -1;
-
-             if (countTop <= countBot && emptyTop.length > 0) {
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             } else if (emptyBot.length > 0) {
-                  targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-             } else if (emptyTop.length > 0) { 
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             }
+             if (countTop <= countBot && emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
+             else if (emptyBot.length > 0) targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
+             else if (emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
 
              if (targetIdx !== -1) {
                  slots[targetIdx] = player;
@@ -370,9 +347,7 @@ export default function Home() {
         for (let i = 0; i < bracketSize; i += 2) {
             let p1 = slots[i];
             let p2 = slots[i+1];
-            if (p1?.name === "BYE" && p2?.name !== "BYE") {
-                let temp = p1; p1 = p2; p2 = temp;
-            }
+            if (p1?.name === "BYE" && p2?.name !== "BYE") { let temp = p1; p1 = p2; p2 = temp; }
             matches.push({ p1, p2 });
         }
 
@@ -381,9 +356,7 @@ export default function Home() {
 
     } catch (e) {
         alert("Error al generar sorteo directo.");
-    } finally {
-        setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   }
 
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
@@ -407,7 +380,7 @@ export default function Home() {
       ).map(cols => cols[2]);
 
       if (filteredInscriptos.length === 0) {
-        alert(`No hay inscriptos para ${tournamentShort} (${categoryShort}) en la pestaña Inscriptos.`);
+        alert("No hay inscriptos.");
         setIsLoading(false);
         return;
       }
@@ -420,24 +393,15 @@ export default function Home() {
       const totalPlayers = entryList.length;
       if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
 
-      let groupsOf3 = 0;
-      let groupsOf2 = 0;
+      let groupsOf3 = 0, groupsOf2 = 0;
       const remainder = totalPlayers % 3;
-
-      if (remainder === 0) {
-        groupsOf3 = totalPlayers / 3;
-      } else if (remainder === 1) {
-        groupsOf2 = 2;
-        groupsOf3 = (totalPlayers - 4) / 3;
-      } else if (remainder === 2) {
-        groupsOf2 = 1;
-        groupsOf3 = (totalPlayers - 2) / 3;
-      }
+      if (remainder === 0) groupsOf3 = totalPlayers / 3;
+      else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; }
+      else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; }
 
       let capacities = [];
       for(let i=0; i<groupsOf3; i++) capacities.push(3);
       for(let i=0; i<groupsOf2; i++) capacities.push(2);
-      
       capacities = capacities.sort(() => Math.random() - 0.5);
 
       const numGroups = capacities.length;
@@ -449,10 +413,7 @@ export default function Home() {
         positions: ["-", "-", "-"]
       }));
 
-      for (let i = 0; i < numGroups; i++) {
-        if (entryList[i]) groups[i].players.push(entryList[i].name);
-      }
-
+      for (let i = 0; i < numGroups; i++) if (entryList[i]) groups[i].players.push(entryList[i].name);
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       
       let pIdx = 0;
@@ -516,12 +477,7 @@ export default function Home() {
                 results.push(rowResults);
             }
 
-            parsedGroups.push({
-              groupName: rows[i][0],
-              players: players,
-              results: results,
-              positions: positions
-            });
+            parsedGroups.push({ groupName: rows[i][0], players: players, results: results, positions: positions });
           }
         }
         
@@ -530,34 +486,12 @@ export default function Home() {
           setIsSorteoConfirmado(true);
           setIsFixedData(true);
           foundGroups = true;
-          setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort,
-            hasGroups: true 
-          });
+          setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: true });
         }
       } 
-      
-      if (!foundGroups) {
-        setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort,
-            hasGroups: false 
-        });
-      }
-
+      if (!foundGroups) setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
     } catch (e) {
-        setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort,
-            hasGroups: false 
-        });
+        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
     } finally { setIsLoading(false); }
   }
 
@@ -584,7 +518,6 @@ export default function Home() {
         if (isComplete) break;
     }
 
-    // PUNTO 6: Calcular Puntos y Diferencia de Sets
     const calculateStats = (playerIdx: number) => {
         let matchesWon = 0;
         let setsWon = 0;
@@ -592,28 +525,25 @@ export default function Home() {
 
         for (let j = 0; j < totalPlayers; j++) {
             if (playerIdx === j) continue;
-            const res = group.results[playerIdx][j];
-            if (res && res.length > 2) {
-                // Parse score: "6/4 6/1"
+            // SAFE ACCESS: Optional chaining and type check
+            const res = group.results[playerIdx]?.[j];
+            
+            if (res && typeof res === 'string' && res.trim().length > 2) {
                 const sets = res.trim().split(" ");
                 let pWon = 0; 
                 let pLost = 0;
                 sets.forEach((s: string) => {
                     if (s.includes("/")) {
-                        const [myGames, theirGames] = s.split("/").map(Number);
-                        if (!isNaN(myGames) && !isNaN(theirGames)) {
-                            if (myGames > theirGames) { setsWon++; pWon++; }
+                        const parts = s.split("/").map(Number);
+                        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                            if (parts[0] > parts[1]) { setsWon++; pWon++; }
                             else { setsLost++; pLost++; }
                         }
                     } else {
-                        // Posible Super Tie Break o formato raro
-                        const val = parseInt(s);
-                        // Lógica básica: Si es un número solo y se asume STB ganado
-                        if (!isNaN(val)) {
-                           // Aquí es difícil saber quien ganó sin formato "10/8". 
-                           // Asumimos que si está en la celda es parte del score. 
-                           // Si la celda es desde la perspectiva del playerIdx, y ganó el partido, se debería reflejar.
-                           // Por simplicidad en React, contamos match win si ganó más sets.
+                        // Tie break simple logic
+                        if (s.trim().length > 0) {
+                             // Asumir que si está escrito desde la perspectiva del jugador, lo ganó o perdió
+                             // Simplificación visual
                         }
                     }
                 });
@@ -627,13 +557,8 @@ export default function Home() {
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
       <style jsx>{`
-        .hide-scroll::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scroll {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       <div className="overflow-x-auto w-full hide-scroll">
           <table className="w-max min-w-full text-[11px] md:text-xs">
@@ -644,16 +569,11 @@ export default function Home() {
                   let shortName = p;
                   if (p) {
                       const clean = p.replace(/,/g, "").trim().split(/\s+/);
-                      if (clean.length > 1) {
-                          shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
-                      } else {
-                          shortName = clean[0];
-                      }
+                      if (clean.length > 1) shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                      else shortName = clean[0];
                   }
                   return (
-                    <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px] whitespace-nowrap">
-                        {shortName}
-                    </th>
+                    <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px] whitespace-nowrap">{shortName}</th>
                   )
                 })}
                 {isComplete && (
@@ -696,7 +616,6 @@ export default function Home() {
     );
   };
 
-  // ... (generatePlayoffBracket, fetchQualifiersAndDraw se mantienen igual) ...
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
@@ -771,20 +690,12 @@ export default function Home() {
             if (playersWithBye.has(match.p1.name)) {
                 match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             } else {
-                if (pool.length > 0) {
-                    match.p2 = pool.pop();
-                } else {
-                    match.p2 = { name: "", rank: 0 }; // Removed TBD
-                }
+                if (pool.length > 0) match.p2 = pool.pop();
+                else match.p2 = { name: "", rank: 0 };
             }
         } else {
-            if (pool.length >= 2) {
-                match.p1 = pool.pop();
-                match.p2 = pool.pop();
-            } else if (pool.length === 1) {
-                match.p1 = pool.pop();
-                match.p2 = { name: "BYE", rank: 0 };
-            }
+            if (pool.length >= 2) { match.p1 = pool.pop(); match.p2 = pool.pop(); } 
+            else if (pool.length === 1) { match.p1 = pool.pop(); match.p2 = { name: "BYE", rank: 0 }; }
         }
     });
 
@@ -794,22 +705,18 @@ export default function Home() {
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
       setIsLoading(true);
       setGeneratedBracket([]);
-      
       const sheetName = `Grupos ${tournamentShort} ${category}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      
       try {
           const response = await fetch(url);
           const csvText = await response.text();
           const rows = parseCSV(csvText);
-          
           let qualifiers = [];
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
                   const winnerName = rows[i][5]; 
                   const runnerName = rows[i].length > 6 ? rows[i][6] : null; 
-                  
                   if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
                       qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
                   }
@@ -825,31 +732,19 @@ export default function Home() {
                  setGeneratedBracket(result.matches);
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
-          } else {
-             alert(`Solo se encontraron ${qualifiers.length} clasificados en las columnas F y G de la pestaña ${sheetName}. Verifica los datos.`);
-          }
+          } else { alert(`No se encontraron clasificados.`); }
 
-      } catch (e) {
-          console.error(e);
-          alert("Error leyendo los clasificados.");
-      } finally {
-          setIsLoading(false);
-      }
+      } catch (e) { alert("Error leyendo clasificados."); } finally { setIsLoading(false); }
   }
-  // ... (Fin de funciones existentes)
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
-    
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
         const p2Name = match.p2 ? match.p2.name : "TBD"; 
-        
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
-    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
@@ -912,23 +807,25 @@ export default function Home() {
         }
     };
 
-    // PUNTO 1: LOGICA STRICTA DE BYE (processByes modificado)
+    // FUNCIÓN BLINDADA CONTRA ERRORES
     const processByes = (data: any) => {
-        const { r1, r2, r3, r4, bracketSize } = data;
-        // Clonamos para no mutar directamente mientras iteramos mal
-        const newR2 = [...r2];
-        const newR3 = [...r3];
+        if (!data) return data;
+        const { r1 = [], r2 = [], r3 = [], r4 = [], bracketSize } = data;
+        
+        // Copias seguras con default a array vacio
+        const newR2 = [...(r2 || [])];
+        const newR3 = [...(r3 || [])];
         
         if (bracketSize === 32) {
-            for (let i = 0; i < r1.length; i += 2) {
-                const p1 = r1[i]; const p2 = r1[i+1];
-                const targetIdx = Math.floor(i / 2);
-                
-                // IMPORTANTE: Solo avanzamos si NO hay nadie ya (data entry manual mata lógica automática)
-                // Y si el rival es EXPLICITAMENTE "BYE"
-                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
-                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
+            if (r1 && r1.length > 0) {
+                for (let i = 0; i < r1.length; i += 2) {
+                    const p1 = r1[i]; const p2 = r1[i+1];
+                    const targetIdx = Math.floor(i / 2);
+                    // Acceso seguro a newR2
+                    if (!newR2[targetIdx] || newR2[targetIdx] === "") {
+                        if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
+                        else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
+                    }
                 }
             }
             data.r2 = newR2;
@@ -937,16 +834,20 @@ export default function Home() {
         const roundPrev = bracketSize === 32 ? newR2 : r1;
         const roundNext = bracketSize === 32 ? newR3 : r2; 
         
-        for (let i = 0; i < roundPrev.length; i += 2) {
-             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
-             const targetIdx = Math.floor(i / 2);
-             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
-                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
-             }
+        if (roundPrev && roundPrev.length > 0) {
+            for (let i = 0; i < roundPrev.length; i += 2) {
+                const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
+                const targetIdx = Math.floor(i / 2);
+                if (roundNext && (!roundNext[targetIdx] || roundNext[targetIdx] === "")) {
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
+                    else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
+                }
+            }
         }
         
-        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
+        if (bracketSize === 32) { data.r3 = newR3; } 
+        else if (bracketSize === 16) { data.r2 = roundNext; }
+        
         return data;
     }
 
@@ -961,14 +862,12 @@ export default function Home() {
 
       if (hasContent) {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
-          
           let bracketSize = 16; 
           if (playersInCol1 > 16) bracketSize = 32;
           else if (playersInCol1 <= 8) bracketSize = 8; 
 
           let seeds = {};
           try {
-             // Fetch Ranking logic ... (sin cambios)
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
              const rankRes = await fetch(rankUrl);
              const rankTxt = await rankRes.text();
@@ -976,43 +875,38 @@ export default function Home() {
                name: row[1] || "",
                total: row[11] ? parseInt(row[11]) : 0
              })).filter(p => p.name !== "");
-
              const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
              const inscRes = await fetch(inscUrl);
              const inscTxt = await inscRes.text();
              const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
                cols[0] === tournamentShort && cols[1] === category
              ).map(cols => cols[2]);
-
              const entryList = filteredInscriptos.map(n => {
                  const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
                  return { name: n, points: p ? p.total : 0 };
              }).sort((a, b) => b.points - a.points);
-
              const top8 = entryList.slice(0, 8);
              const seedMap: any = {};
              top8.forEach((p, i) => { if (p.name) seedMap[p.name] = i + 1; });
              seeds = seedMap;
-          } catch(e) { console.log("Error fetching seeds", e); }
+          } catch(e) { console.log("Error seeds", e); }
 
           let rawData: any = {};
           const winner = rows[0][8] || rows[0][6] || rows[0][4] || "";
           const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
 
-          // Ajuste en las filas para asegurar lectura correcta
           if (bracketSize === 32) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner, runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds };
           } else if (bracketSize === 16) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner, runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds };
           } else {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner, runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds };
           }
           
           if (bracketSize !== 8) rawData = processByes(rawData); 
           setBracketData(rawData);
 
       } else { await checkCanGenerate(); }
-
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
 
@@ -1041,7 +935,6 @@ export default function Home() {
       </div>
   );
 
-  // Componente para el espacio intermedio
   const MiddleSpacer = () => (
     <div className="h-4 md:h-8 w-full relative">
         <div className="absolute left-0 top-1/2 w-full border-t-2 border-dotted border-slate-200/50"></div>
@@ -1144,7 +1037,6 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* PUNTO 2: Botón de lista de partidos (versión generación) */}
                 <Button onClick={enviarPartidosWhatsApp} className="bg-blue-500 text-white font-bold h-12 w-12 rounded-xl">
                     <List className="w-6 h-6" />
                 </Button>
@@ -1181,10 +1073,7 @@ export default function Home() {
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold"><Shuffle className="mr-2" /> SORTEAR</Button>
-                  
-                  {/* PUNTO 2: Botón de lista de partidos */}
                   <Button onClick={enviarPartidosWhatsApp} className="bg-blue-500 text-white font-bold"><List className="mr-2" /> LISTADO</Button>
-                  
                   <Button onClick={confirmarYEnviar} size="sm" className="bg-green-600 text-white font-bold px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} size="sm" variant="destructive" className="font-bold"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1194,7 +1083,6 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
               <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
             </div>
-            {/* PUNTO 6: Rediseño a 2 columnas (lg:grid-cols-2) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
@@ -1208,15 +1096,12 @@ export default function Home() {
             </div>
             
             {bracketData.hasData ? (
-              // Contenedor principal del cuadro: ajustado gaps y flex para que entre todo
               <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
                 
-                {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
                   <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
-                      // PUNTO 1: Lógica visual, mostrar si avanza solo si existe en r2 (controlado por backend o processByes)
                       const w1 = p1 && bracketData.r2.includes(p1);
                       const w2 = p2 && bracketData.r2.includes(p2);
                       const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
@@ -1239,7 +1124,6 @@ export default function Home() {
                             </div>
                             <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                           </div>
-                          {/* Espacio en el medio */}
                           {idx === 14 && <MiddleSpacer />}
                         </>
                       )
@@ -1247,7 +1131,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* OCTAVOS, CUARTOS, SEMIS... (Mantienen estructura, ajuste visual TBD) */}
                 {bracketData.bracketSize >= 16 && (
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
@@ -1286,7 +1169,6 @@ export default function Home() {
                 </div>
                 )}
 
-                {/* CUARTOS */}
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
@@ -1323,7 +1205,6 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* SEMIS */}
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2].map((idx, i) => {
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1359,14 +1240,13 @@ export default function Home() {
                   })}
                 </div>
 
-                 {/* FINAL (PUNTO 4: Sin TBD) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
                         const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
                         let topFinalistName = "";
                         let botFinalistName = "";
 
-                        if (bracketData.winner) {
+                        if (bracketData.winner && semisR) {
                              const topSemiPlayers = [semisR[0], semisR[1]];
                              const botSemiPlayers = [semisR[2], semisR[3]];
                              if (topSemiPlayers.includes(bracketData.winner)) {
@@ -1402,13 +1282,11 @@ export default function Home() {
                     })()}
                 </div>
 
-                {/* CAMPEON (PUNTO 4: Texto Grande) */}
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
                         <span className="text-[#b35a38]/70 font-black text-[10px] uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
-                        {/* Aumentado tamaño de texto del campeon */}
                         <span className="text-[#b35a38] font-black text-2xl md:text-4xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || "?"}</span>
                     </div>
                 </div>
@@ -1422,7 +1300,6 @@ export default function Home() {
                 {bracketData.canGenerate ? (
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
-                        {/* PUNTO 2: Botón de lista de partidos (versión generación) */}
                         <div className="flex gap-2 justify-center">
                             <Button onClick={enviarPartidosWhatsApp} className="bg-blue-500 text-white font-bold h-10 w-12 rounded-xl">
                                 <List className="w-5 h-5" />
@@ -1444,7 +1321,6 @@ export default function Home() {
               </div>
             )}
             
-            {/* BOTON LISTA DE PARTIDOS EN BRACKET VIEW (si hay datos) */}
             {bracketData.hasData && (
                 <div className="mt-8 flex justify-center pb-4">
                    <Button onClick={enviarPartidosWhatsApp} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
@@ -1499,7 +1375,6 @@ export default function Home() {
                         
                         <Button onClick={() => {
                             let mensaje = `*RANKING CALCULADO - ${navState.tournamentShort}*\n\n`;
-                            // PUNTO 5: Ya está ordenado por Global Rank en calculateAndShowRanking
                             calculatedRanking.forEach(p => {
                                 mensaje += `${p.name}: ${p.points}\n`;
                             });
