@@ -1080,17 +1080,17 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center">
-            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto sticky left-0">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center w-full">
+            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic min-w-[300px] md:min-w-[800px] mx-auto">
               <h2 className="text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
             </div>
             
             {bracketData.hasData ? (
-              <div className="flex flex-row items-center justify-center gap-16 min-w-max py-8 px-4 relative text-center">
+              <div className="flex flex-row items-stretch justify-between w-full h-full min-h-[600px] px-2 relative text-center">
                 
                 {/* 16AVOS (Solo si es de 32) */}
                 {bracketData.bracketSize === 32 && (
-                  <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                  <div className="flex flex-col justify-around flex-1 items-center relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
@@ -1099,20 +1099,19 @@ export default function Home() {
                       const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                       return (
-                        <div key={idx} className="relative flex flex-col space-y-4 mb-4">
-                          <div className={`h-8 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>
-                                {seed1 ? <span className="text-xs text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                        <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
+                          <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx]}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
                           </div>
-                          <div className={`h-8 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-xs uppercase truncate max-w-[200px]`}>
-                                {seed2 ? <span className="text-xs text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                          <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-xs ml-1">{bracketData.s1[idx+1]}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
                           </div>
-                          <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                         </div>
                       )
                     })}
@@ -1121,9 +1120,8 @@ export default function Home() {
 
                 {/* OCTAVOS (Si es > 8) */}
                 {bracketData.bracketSize >= 16 && (
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around flex-1 items-center relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx) => {
-                    // Si es 32, Octavos es R2. Si es 16, Octavos es R1.
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
                     const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r3 : bracketData.r2;
@@ -1136,20 +1134,19 @@ export default function Home() {
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-6 mb-4">
-                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
+                        <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
                         </div>
-                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
@@ -1157,9 +1154,8 @@ export default function Home() {
                 )}
 
                 {/* CUARTOS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around flex-1 items-center relative">
                   {[0, 2, 4, 6].map((idx) => {
-                    // 32: r3, 16: r2, 8: r1
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
                     const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
@@ -1172,29 +1168,27 @@ export default function Home() {
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                     return (
-                      <div key={idx} className="relative flex flex-col space-y-20 mb-8">
-                        <div className={`h-10 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase`}>
-                                {seed1 ? <span className="text-sm text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
+                        <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
                         </div>
-                        <div className={`h-10 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-sm uppercase`}>
-                                {seed2 ? <span className="text-sm text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-sm ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-slate-300" />
                       </div>
                     );
                   })}
                 </div>
 
                 {/* SEMIS (Siempre) */}
-                <div className="flex flex-col justify-around h-auto min-h-[600px] w-96 relative text-left">
+                <div className="flex flex-col justify-around flex-1 items-center relative">
                   {[0, 2].map((idx) => {
-                     // 32: r4, 16: r3, 8: r2
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
                      const s = bracketData.bracketSize === 32 ? bracketData.s4 : (bracketData.bracketSize === 16 ? bracketData.s3 : bracketData.s2);
                      
@@ -1206,70 +1200,31 @@ export default function Home() {
                      const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                      return (
-                      <div key={idx} className="relative flex flex-col space-y-36 mb-16">
-                        <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                      <div key={idx} className="relative flex flex-col w-full max-w-[140px] mb-2">
+                        <div className={`h-6 border-b-[1px] ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-2">{s1}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s1}</span>
                         </div>
-                        <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase`}>
-                                {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                        <div className={`h-6 border-b-[1px] ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                            <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-[10px] uppercase truncate w-full text-left`}>
+                                {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                             </span>
-                            <span className="text-[#b35a38] font-black text-base ml-2">{s2}</span>
+                            <span className="text-[#b35a38] font-black text-[10px] ml-1">{s2}</span>
                         </div>
-                        <div className={`absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] ${w1 || w2 ? 'bg-[#b35a38]' : 'bg-slate-300'}`} />
                       </div>
                      )
                   })}
                 </div>
 
-                {/* FINAL MATCH (Nuevo) */}
-                <div className="flex flex-col justify-center h-auto min-h-[600px] w-96 relative text-left">
-                    {[0].map((idx) => {
-                        let rSemis, sSemis;
-                        if (bracketData.bracketSize === 32) { rSemis = bracketData.r4; sSemis = bracketData.s4; }
-                        else if (bracketData.bracketSize === 16) { rSemis = bracketData.r3; sSemis = bracketData.s3; }
-                        else { rSemis = bracketData.r2; sSemis = bracketData.s2; }
-
-                        // Deduce finalists based on who is the ultimate winner or BYE status in semis.
-                        // This is a display hack as the data structure doesn't explicitly have a "Final" round array.
-                        const f1 = rSemis[0] === bracketData.winner || rSemis[1] === "BYE" ? rSemis[0] : (rSemis[1] === bracketData.winner || rSemis[0] === "BYE" ? rSemis[1] : (sSemis[0] && sSemis[1] ? (sSemis[0]>sSemis[1]?rSemis[0]:rSemis[1]) : "TBD"));
-                        const f2 = rSemis[2] === bracketData.winner || rSemis[3] === "BYE" ? rSemis[2] : (rSemis[3] === bracketData.winner || rSemis[2] === "BYE" ? rSemis[3] : (sSemis[2] && sSemis[3] ? (sSemis[2]>sSemis[3]?rSemis[2]:rSemis[3]) : "TBD"));
-
-                        const w1 = f1 && f1 === bracketData.winner;
-                        const w2 = f2 && f2 === bracketData.winner;
-                        const seed1 = bracketData.seeds ? bracketData.seeds[f1] : null;
-                        const seed2 = bracketData.seeds ? bracketData.seeds[f2] : null;
-
-                        return (
-                          <div key={idx} className="relative flex flex-col space-y-2 mb-0">
-                            <div className={`h-12 border-b-2 ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                                <span className={`${w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>
-                                    {seed1 ? <span className="text-base text-orange-600 font-black mr-1">{seed1}.</span> : null}{f1 || ""}
-                                </span>
-                                <span className="text-[#b35a38] font-black text-base ml-2"></span>
-                            </div>
-                            <div className={`h-12 border-b-2 ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                                <span className={`${w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold'} text-base uppercase truncate`}>
-                                    {seed2 ? <span className="text-base text-orange-600 font-black mr-1">{seed2}.</span> : null}{f2 || ""}
-                                </span>
-                                <span className="text-[#b35a38] font-black text-base ml-2"></span>
-                            </div>
-                            <div className="absolute top-1/2 -translate-y-1/2 -right-[40px] w-[40px] h-[2px] bg-[#b35a38]" />
-                          </div>
-                        )
-                    })}
-                </div>
-
-                {/* CAMPEON TROPHY COLUMN */}
-                <div className="flex flex-col justify-center h-auto min-h-[600px] items-center w-96 relative text-center">
-                  <Trophy className="w-20 h-20 text-orange-400 mb-6 mx-auto text-center animate-bounce" />
-                  <div className="flex flex-col items-center">
-                     <span className="text-[#b35a38]/70 font-black text-sm uppercase tracking-[0.2em] mb-2">CAMPEÓN</span>
-                     <span className="text-[#b35a38] font-black text-4xl italic uppercase text-center w-full block drop-shadow-sm">{bracketData.winner || ""}</span>
-                  </div>
+                {/* FINAL (Siempre) */}
+                <div className="flex flex-col justify-center flex-1 items-center relative">
+                    <Trophy className="w-16 h-16 text-orange-400 mb-2 mx-auto animate-bounce" />
+                    <div className="flex flex-col items-center w-full">
+                        <span className="text-[#b35a38]/70 font-black text-[10px] uppercase tracking-[0.2em] mb-1">CAMPEÓN</span>
+                        <span className="text-[#b35a38] font-black text-2xl italic uppercase text-center w-full block drop-shadow-sm truncate">{bracketData.winner || ""}</span>
+                    </div>
                 </div>
 
               </div>
