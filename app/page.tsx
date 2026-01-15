@@ -162,7 +162,7 @@ export default function Home() {
   };
 
 
-  // --- MOTOR DE SORTEO DIRECTO (ATP STRICT & SAFE) ---
+  // --- MOTOR DE SORTEO DIRECTO (REGLAS ATP EXACTAS) ---
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
@@ -190,7 +190,7 @@ export default function Home() {
             return;
         }
 
-        // 1. Ranking y Estructura
+        // 1. Ordenar Entry List por Ranking
         const entryList = filteredInscriptos.map(n => {
             const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
             return { name: n, points: p ? p.total : 0 };
@@ -204,125 +204,175 @@ export default function Home() {
 
         const byeCount = bracketSize - totalPlayers;
         
-        // Array plano de Slots (0 a bracketSize-1)
         let slots: any[] = Array(bracketSize).fill(null);
 
-        // --- DEFINICIÓN DE POSICIONES DE SEEDS ---
-        // Seed 1: Tope (0). Seed 2: Fondo (size-1).
-        // Seed 3 y 4: Final de mitad arriba (size/2 - 1) y Principio de mitad abajo (size/2).
+        // --- DEFINICIÓN DE POSICIONES DE SEEDS (ESTRICTA) ---
+        // 1 y 2: Extremos
+        // 3 y 4: Frontera media (para 32 es 15 y 16)
+        // 5 a 8: Fronteras de cuartos (para 32 son 7, 8, 23, 24)
         
-        let seedPos: any = {};
-        seedPos[1] = 0;
-        seedPos[2] = bracketSize - 1;
-        seedPos[3] = [(bracketSize / 2) - 1, bracketSize / 2]; // 3 y 4 van aca
-
-        // Para 5-8: Esparcirlos en los cuartos restantes
-        // En 32: Q1(0-7), Q2(8-15), Q3(16-23), Q4(24-31).
-        // 1 esta en 0. 2 esta en 31. 3/4 estan en 15/16.
-        // 5-8 deben ir a 8, 23 (Cabezas Q2/Q3) o 7, 24 (Fondos Q1/Q4).
-        // Simplificamos: 5-8 se sortean en posiciones libres estratégicas
-        if (bracketSize >= 16) {
-             // Definimos posiciones "libres" equidistantes
-             if (bracketSize === 16) seedPos[5] = [2, 5, 10, 13];
-             if (bracketSize === 32) seedPos[5] = [8, 23, 7, 24]; // Cabezas libres y fondos libres
-        }
-
-        // --- COLOCACIÓN DE SEEDS ---
+        let pos1 = 0;
+        let pos2 = bracketSize - 1;
+        let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
+        
+        // Calcular posiciones para 5-8
+        let pos58: number[] = [];
+        if (bracketSize === 16) pos58 = [2, 5, 10, 13]; // Aprox
+        else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
+        
         const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
         
-        // 1 y 2
-        if(seeds[0]) slots[seedPos[1]] = seeds[0]; 
-        if(seeds[1]) slots[seedPos[2]] = seeds[1]; 
+        // Asignar 1 y 2
+        if (seeds[0]) slots[pos1] = seeds[0];
+        if (seeds[1]) slots[pos2] = seeds[1];
 
-        // 3 y 4
+        // Asignar 3 y 4 (Sorteo arriba/abajo de la frontera)
         if (seeds[2] && seeds[3]) {
-            const pair34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
-            slots[seedPos[3][0]] = pair34[0];
-            slots[seedPos[3][1]] = pair34[1];
+            const group34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
+            slots[pos34[0]] = group34[0]; // Cierra mitad arriba
+            slots[pos34[1]] = group34[1]; // Abre mitad abajo
+        } else if (seeds[2]) {
+             // Si solo hay 3, va a uno de los dos
+             slots[pos34[Math.floor(Math.random()*2)]] = seeds[2];
         }
 
-        // 5 a 8
-        if (seeds.length >= 8 && seedPos[5]) {
+        // Asignar 5 a 8 (2 arriba, 2 abajo)
+        if (seeds.length >= 8 && pos58.length === 4) {
+            // Dividir posiciones en Top (0,1) y Bottom (2,3) del array pos58
+            // En 32: 7, 8 son Top. 23, 24 son Bottom.
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
-            for (let i = 0; i < 4; i++) {
-                if (seedPos[5][i] !== undefined) slots[seedPos[5][i]] = group58[i];
+            
+            // Tomamos 2 seeds para arriba y 2 para abajo
+            const seedsTop = group58.slice(0, 2);
+            const seedsBot = group58.slice(2, 4);
+
+            // Asignar a slots de arriba (random cual en cual)
+            const posTop = [pos58[0], pos58[1]].sort(() => Math.random() - 0.5);
+            slots[posTop[0]] = seedsTop[0];
+            slots[posTop[1]] = seedsTop[1];
+
+            // Asignar a slots de abajo
+            const posBot = [pos58[2], pos58[3]].sort(() => Math.random() - 0.5);
+            slots[posBot[0]] = seedsBot[0];
+            slots[posBot[1]] = seedsBot[1];
+        }
+
+        // --- ASIGNACIÓN DE BYES (PRIORIDAD + ANTI-BYE) ---
+        const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
+
+        let byesRemaining = byeCount;
+
+        // 1. Dar BYE a los Seeds 1-8 en orden (Si hay BYEs disponibles)
+        for (let r = 1; r <= 8; r++) {
+            if (byesRemaining > 0) {
+                const seedIdx = slots.findIndex(s => s && s.rank === r);
+                if (seedIdx !== -1) {
+                    const rivalIdx = getRivalIndex(seedIdx);
+                    // Solo asignamos si está vacío (seguridad)
+                    if (slots[rivalIdx] === null) {
+                        slots[rivalIdx] = { name: "BYE", rank: 0 };
+                        byesRemaining--;
+                    }
+                }
             }
         }
 
-        // --- ASIGNACIÓN DE JUGADORES NO PRECLASIFICADOS CON PRIORIDAD ANTI-BYE ---
-        const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
-        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar bolsa
+        // 2. Si sobran BYEs (Caso 17 jugadores), repartir en PARTIDOS VACÍOS
+        // Esto garantiza que NO haya BYE vs BYE.
+        // Buscamos pares (0,1), (2,3)... donde ambos sean NULL.
+        // Ponemos 1 BYE en cada par vacío hasta agotar stock.
         
-        // 1. Identificar PARTIDOS vacíos (donde faltan los 2 jugadores)
-        // Si hay un partido vacio, ES PRIORIDAD ponerle un jugador para evitar BYE vs BYE.
-        let emptyMatchesIndices: number[] = []; // Indices de slots que necesitan jugador urgente
-        
+        // Identificar pares vacíos
+        let emptyPairsIndices = []; // Guardamos el índice par (0, 2, 4...)
         for (let i = 0; i < bracketSize; i += 2) {
              if (slots[i] === null && slots[i+1] === null) {
-                 // Ambos vacios -> Necesitamos poner al menos 1 jugador aqui
-                 // Agregamos ambos slots a la lista de "Slots Disponibles para NonSeeds"
-                 // pero los marcaremos con prioridad alta?
+                 emptyPairsIndices.push(i);
              }
         }
         
-        // Vamos a llenar slot por slot buscando el mejor lugar
-        // Lista de todos los slots vacíos
+        // Mezclar pares para aleatoriedad, pero manteniendo balance Top/Bottom
+        let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2);
+        let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
+        
+        // Función para sacar un par balanceado
+        const popBalancedPair = () => {
+            if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) {
+                 const randIdx = Math.floor(Math.random() * topPairs.length);
+                 return topPairs.splice(randIdx, 1)[0];
+            } else if (botPairs.length > 0) {
+                 const randIdx = Math.floor(Math.random() * botPairs.length);
+                 return botPairs.splice(randIdx, 1)[0];
+            }
+            return -1;
+        };
+
+        while (byesRemaining > 0) {
+            const pairIdx = popBalancedPair();
+            if (pairIdx !== -1) {
+                // Asignamos BYE a uno de los dos slots (random) del par vacío
+                // El otro slot quedará NULL y será llenado por un jugador después.
+                const slotOffset = Math.random() > 0.5 ? 0 : 1;
+                slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 };
+                byesRemaining--;
+            } else {
+                // No hay más pares vacíos puros. Raro en un draw normal, pero posible.
+                // Asignar a cualquier hueco disponible que no tenga rival BYE
+                 break; // Salir y dejar que el resto se llene
+            }
+        }
+        
+        // 3. Rellenar huecos con Jugadores Restantes (Non-Seeds)
+        const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
+        nonSeeds.sort(() => Math.random() - 0.5); // Mezclar
+
+        // Contar carga actual para balancear
+        let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
+        let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
+        
+        // Recolectar indices vacios globales
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         
-        // ORDENAR HUECOS POR URGENCIA (Anti BYE vs BYE)
-        // Urgencia Alta: Mi rival es NULL (si no me llenan a mi, queda null vs null = bye vs bye error).
-        // Urgencia Media: Mi rival es un Non-Seed.
-        // Urgencia Baja: Mi rival es un Seed (podemos dejarle BYE).
-        
-        const getRival = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
-        
-        emptySlots.sort((a, b) => {
-             const rivalA = slots[getRival(a)];
-             const rivalB = slots[getRival(b)];
+        // Llenar slots
+        for (const player of nonSeeds) {
+             // Filtrar vacios disponibles en Top y Bottom
+             const emptyTop = emptySlots.filter(i => i < bracketSize/2);
+             const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
              
-             const score = (rival: any) => {
-                 if (rival === null) return 10; // Urgente! Rival vacío
-                 if (rival.rank === 0) return 5; // Normal
-                 return 1; // Seed, puede esperar (probablemente sea BYE)
-             };
-             
-             return score(rivalB) - score(rivalA);
-        });
-        
-        // Llenar con Non-Seeds en ese orden
-        nonSeeds.forEach(p => {
-             if (emptySlots.length > 0) {
-                 const idx = emptySlots.shift(); // Sacar el más urgente
-                 if (idx !== undefined) slots[idx] = p;
+             let targetIdx = -1;
+
+             // Lógica de balanceo estricto
+             if (countTop <= countBot && emptyTop.length > 0) {
+                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
+             } else if (emptyBot.length > 0) {
+                  targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
+             } else if (emptyTop.length > 0) { // Fallback
+                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
              }
-        });
-        
-        // --- LIMPIEZA FINAL ---
-        // Todo lo que quedó null es BYE (o hueco si no hay mas byes)
-        // Pero primero chequeo de seguridad BYE vs BYE
-        for(let i=0; i<bracketSize; i++) {
-             if (slots[i] === null) {
-                 // Es un BYE
-                 slots[i] = { name: "BYE", rank: 0 };
+
+             if (targetIdx !== -1) {
+                 slots[targetIdx] = player;
+                 // Actualizar contadores
+                 if (targetIdx < bracketSize/2) countTop++; else countBot++;
+                 // Remover de lista de vacios
+                 emptySlots = emptySlots.filter(i => i !== targetIdx);
              }
         }
-        
-        // Convertir a Partidos y Estética (Jugador siempre P1 si hay BYE)
+
+        // 4. Limpieza final: Si sobraron slots (imposible si la matemática cuadra), son BYEs
+        for (let i = 0; i < slots.length; i++) {
+            if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 };
+        }
+
+        // 5. Convertir a Partidos
         let matches = [];
         for (let i = 0; i < bracketSize; i += 2) {
             let p1 = slots[i];
             let p2 = slots[i+1];
             
-            // Si P1 es BYE y P2 Jugador -> Swap
-            if (p1?.name === "BYE" && p2?.name !== "BYE" && p2?.name !== "") {
+            // Visual: Si P1 es BYE y P2 Jugador, invertir
+            if (p1?.name === "BYE" && p2?.name !== "BYE") {
                 let temp = p1; p1 = p2; p2 = temp;
             }
-            // Si quedó BYE vs BYE (no debería con la lógica de urgencia), lo dejamos vacío
-            if (p1?.name === "BYE" && p2?.name === "BYE") {
-                p1 = { name: "", rank: 0 };
-                p2 = { name: "", rank: 0 };
-            }
-            
             matches.push({ p1, p2 });
         }
 
