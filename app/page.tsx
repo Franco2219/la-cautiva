@@ -24,12 +24,12 @@ const tournaments = [
   { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
-// Configuración de offsets (A=A1, B1=M1, B2=A30, C=M30)
+// Configuración EXACTA de offsets (A=A1, B1=M1, B2=A30, C=M30)
 const sheetConfig: any = {
     "Adelaide": {
         "A": [0, 0],    // A1
-        "B1": [0, 12],  // M1
-        "B2": [29, 0],  // A30
+        "B1": [0, 12],  // M1 (Col 12 = M)
+        "B2": [29, 0],  // A30 (Row 29 = 30)
         "C": [29, 12]   // M30
     },
     "S8 500": {
@@ -435,7 +435,9 @@ export default function Home() {
         capacity: cap,
         players: [],
         results: [["-","-","-"], ["-","-","-"], ["-","-","-"]],
-        positions: ["-", "-", "-"]
+        positions: ["-", "-", "-"],
+        points: ["", "", ""],
+        diff: ["", "", ""]
       }));
 
       for (let i = 0; i < numGroups; i++) {
@@ -922,17 +924,22 @@ export default function Home() {
       let rows = [];
       
       // LOGICA DE CORTE ESTRICTO
-      for (let i = startRow; i < allRows.length; i++) {
-          const row = allRows[i];
-          const cell = row && row[startCol] ? row[startCol].trim() : "";
-          
-          // Detectar fin de tabla: celda vacía, guión o título de siguiente sección
-          const isHeader = ["categoría", "categoria", "torneo", "zona", "grupo"].some(kw => cell.toLowerCase().includes(kw));
-          
-          if (!cell || cell === "" || cell === "-" || (i > startRow && isHeader)) {
-              break;
+      // Iteramos desde el inicio configurado hacia abajo
+      // Cortamos APENAS encontramos una celda vacia en la columna principal del cuadro
+      if (startRow < allRows.length) {
+          for (let i = startRow; i < allRows.length; i++) {
+              const row = allRows[i];
+              // Verificamos si existe la celda en la columna de inicio
+              const cellRaw = (row && row.length > startCol) ? row[startCol] : "";
+              const cell = cellRaw ? cellRaw.trim() : "";
+
+              // Si la celda está vacía o es un guión, detenemos la lectura del cuadro
+              if (cell === "" || cell === "-") {
+                  break;
+              }
+              // Agregamos la fila recortada desde la columna de inicio
+              rows.push(row.slice(startCol));
           }
-          rows.push(row.slice(startCol));
       }
 
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
