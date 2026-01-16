@@ -85,6 +85,7 @@ export default function Home() {
       }
   };
 
+  // --- LÓGICA DE RANKING (Orden Global + Puntos Torneo) ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -93,12 +94,14 @@ export default function Home() {
         const txt = await res.text();
         const rows = parseCSV(txt);
 
+        // --- FETCH GLOBAL RANKING PARA ORDENAMIENTO ---
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
-        const globalRankingMap: any = {};
-        parseCSV(rankCsv).slice(1).forEach(row => {
-            if(row[1]) globalRankingMap[row[1].trim().toLowerCase()] = row[11] ? parseInt(row[11]) : 0;
+        const globalRankOrder: any = {};
+        // Guardamos el ÍNDICE de la fila como posición (0 es el mejor)
+        parseCSV(rankCsv).slice(1).forEach((row, index) => {
+            if(row[1]) globalRankOrder[row[1].trim().toLowerCase()] = index;
         });
 
         const headerRow = rows[0]; 
@@ -227,11 +230,15 @@ export default function Home() {
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
+        // ORDENAR POR POSICIÓN EN EL RANKING GLOBAL (Menor índice = mejor ranking)
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
-            points: playerScores[key],
-            globalRank: globalRankingMap[key.toLowerCase()] || 0
-        })).sort((a, b) => b.globalRank - a.globalRank); 
+            points: playerScores[key]
+        })).sort((a, b) => {
+            const rankA = globalRankOrder[a.name.toLowerCase()] ?? 99999;
+            const rankB = globalRankOrder[b.name.toLowerCase()] ?? 99999;
+            return rankA - rankB; 
+        });
 
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
@@ -1024,31 +1031,32 @@ export default function Home() {
 
           let rawData: any = {};
           
-          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
           let winnerIdx = -1;
           if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
-          // Solo leemos si la columna exacta tiene datos
+          // Solo leemos GANADOR si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           
           // FIX ADELAIDE: Solo consideramos RunnerUp si YA HAY CAMPEÓN
           const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
-          // FIX CURTI: Lectura blindada con || ""
+          // Helper para leer columna limpiando vacios y guiones
+          const getColData = (colIdx: number, limit: number) => {
+              return rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
+          }
+          const getScoreData = (colIdx: number, limit: number) => {
+               return rows.map(r => r[colIdx] || "").slice(0, limit); // Scores keep empty strings for alignment
+          }
+
           if (bracketSize === 32) {
             rawData = { 
-                r1: rows.map(r => r[0] || "").slice(0, 32), 
-                s1: rows.map(r => r[1] || "").slice(0, 32), 
-                r2: rows.map(r => r[2] || "").slice(0, 16), 
-                s2: rows.map(r => r[3] || "").slice(0, 16), 
-                r3: rows.map(r => r[4] || "").slice(0, 8), 
-                s3: rows.map(r => r[5] || "").slice(0, 8), 
-                r4: rows.map(r => r[6] || "").slice(0, 4), 
-                s4: rows.map(r => r[7] || "").slice(0, 4), 
-                r5: rows.map(r => r[8] || "").slice(0, 2), 
-                s5: rows.map(r => r[9] || "").slice(0, 2),
+                r1: getColData(0, 32), s1: getScoreData(1, 32),
+                r2: getColData(2, 16), s2: getScoreData(3, 16),
+                r3: getColData(4, 8),  s3: getScoreData(5, 8),
+                r4: getColData(6, 4),  s4: getScoreData(7, 4),
+                r5: getColData(8, 2),  s5: getScoreData(9, 2), // Final (Col I)
                 winner: winner, 
                 runnerUp: runnerUp, 
                 bracketSize: 32, 
@@ -1058,14 +1066,10 @@ export default function Home() {
             };
           } else if (bracketSize === 16) {
             rawData = { 
-                r1: rows.map(r => r[0] || "").slice(0, 16), 
-                s1: rows.map(r => r[1] || "").slice(0, 16), 
-                r2: rows.map(r => r[2] || "").slice(0, 8), 
-                s2: rows.map(r => r[3] || "").slice(0, 8), 
-                r3: rows.map(r => r[4] || "").slice(0, 4), 
-                s3: rows.map(r => r[5] || "").slice(0, 4), 
-                r4: rows.map(r => r[6] || "").slice(0, 2), 
-                s4: rows.map(r => r[7] || "").slice(0, 2), 
+                r1: getColData(0, 16), s1: getScoreData(1, 16),
+                r2: getColData(2, 8),  s2: getScoreData(3, 8),
+                r3: getColData(4, 4),  s3: getScoreData(5, 4),
+                r4: getColData(6, 2),  s4: getScoreData(7, 2), // Final (Col G)
                 winner: winner, 
                 runnerUp: runnerUp, 
                 bracketSize: 16, 
@@ -1075,14 +1079,10 @@ export default function Home() {
             };
           } else {
             rawData = { 
-                r1: rows.map(r => r[0] || "").slice(0, 8), 
-                s1: rows.map(r => r[1] || "").slice(0, 8), 
-                r2: rows.map(r => r[2] || "").slice(0, 4), 
-                s2: rows.map(r => r[3] || "").slice(0, 4), 
-                r3: rows.map(r => r[4] || "").slice(0, 2), 
-                s3: rows.map(r => r[5] || "").slice(0, 2), 
-                r4: [], 
-                s4: [], 
+                r1: getColData(0, 8), s1: getScoreData(1, 8),
+                r2: getColData(2, 4), s2: getScoreData(3, 4),
+                r3: getColData(4, 2), s3: getScoreData(5, 2), // Final (Col E)
+                r4: [], s4: [],
                 winner: winner, 
                 runnerUp: runnerUp, 
                 bracketSize: 8, 
@@ -1448,6 +1448,11 @@ export default function Home() {
                             topFinalistName = bracketData.r5[0];
                             botFinalistName = bracketData.r5[1];
                         }
+                        // Si es bracket 8, leemos r3
+                        else if (bracketData.bracketSize === 8 && bracketData.r3 && bracketData.r3.length >= 2) {
+                            topFinalistName = bracketData.r3[0];
+                            botFinalistName = bracketData.r3[1];
+                        }
                         // Fallback lógica antigua para otros tamaños o si no hay datos
                         else {
                             const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
@@ -1499,6 +1504,7 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
+                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
