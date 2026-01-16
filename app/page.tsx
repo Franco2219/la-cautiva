@@ -24,11 +24,34 @@ const tournaments = [
   { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
+// Configuración de offsets para torneos unificados
+const sheetConfig: any = {
+    "Adelaide": {
+        "A": [0, 0],   // Fila 1, Col A
+        "B1": [0, 8],  // Fila 1, Col I
+        "B2": [24, 0], // Fila 25, Col A
+        "C": [24, 8]   // Fila 25, Col I
+    },
+    "S8 500": {
+        "A": [0, 0],   // Asumo A en standard si existiera
+        "B1": [0, 0],  // Tu pedido: B1 en A1
+        "B2": [0, 8],  // Tu pedido: B2 en I1
+        "C": [24, 0]   // Tu pedido: C en A25
+    },
+    "S8 250": {
+        "A": [0, 0],
+        "B1": [0, 8],
+        "B2": [24, 0],
+        "C": [24, 8]
+    }
+};
+
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+  // Agregamos r5/s5 para soporte extra si fuera necesario, y r4/s4 en bracket 16
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -715,7 +738,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 }; 
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -748,6 +771,7 @@ export default function Home() {
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
+                  // M (12) y N (13)
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
                   
@@ -816,7 +840,19 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+    // --- LÓGICA DE UNIFICACIÓN DE PESTAÑAS ---
+    // Buscar configuración si el torneo está en la lista unificada
+    const config = sheetConfig[tournamentShort];
+    let sheetName = `${category} ${tournamentShort}`; // Default original
+    let startRow = 0;
+    let startCol = 0;
+
+    if (config && config[category]) {
+        sheetName = config[category].sheetName || tournamentShort; // Nombre del torneo (o override)
+        [startRow, startCol] = config[category];
+    }
+
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
     
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -888,7 +924,12 @@ export default function Home() {
     try {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
-      const rows = parseCSV(csvText);
+      // Recortamos las filas y columnas segun el offset
+      let allRows = parseCSV(csvText);
+      
+      // Aplicar offset
+      const rows = allRows.slice(startRow).map(r => r.slice(startCol));
+
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
       const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
@@ -903,6 +944,7 @@ export default function Home() {
 
           let seeds = {};
           try {
+             // ... Ranking fetching remains same ...
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
              const rankRes = await fetch(rankUrl);
              const rankTxt = await rankRes.text();
@@ -942,7 +984,24 @@ export default function Home() {
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
+            // FIX ADELAIDE A: Leemos r4 (finalistas) de columnas 6(G) y 7(H)
+            rawData = { 
+                r1: rows.map(r => r[0]).slice(0, 16), 
+                s1: rows.map(r => r[1]).slice(0, 16), 
+                r2: rows.map(r => r[2]).slice(0, 8), 
+                s2: rows.map(r => r[3]).slice(0, 8), 
+                r3: rows.map(r => r[4]).slice(0, 4), 
+                s3: rows.map(r => r[5]).slice(0, 4), 
+                // Lectura explícita de Final
+                r4: rows.map(r => r[6]).slice(0, 2), 
+                s4: rows.map(r => r[7]).slice(0, 2), 
+                winner: winner, 
+                runnerUp: runnerUp, 
+                bracketSize: 16, 
+                hasData: true, 
+                canGenerate: false, 
+                seeds: seeds 
+            };
           } else {
             rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
           }
@@ -1118,10 +1177,7 @@ export default function Home() {
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
-                  
-                  {/* Botón Lista Basti: Solo visible si NO está confirmado */}
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
-                  
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1288,27 +1344,27 @@ export default function Home() {
                   })}
                 </div>
 
+                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
-                        const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
-                        
                         let topFinalistName = "";
                         let botFinalistName = "";
 
-                        if (bracketData.winner) {
-                             const topSemiPlayers = [semisR[0], semisR[1]];
-                             const botSemiPlayers = [semisR[2], semisR[3]];
-                             
-                             if (topSemiPlayers.includes(bracketData.winner)) {
-                                 topFinalistName = bracketData.winner;
+                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
+                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
+                            topFinalistName = bracketData.r4[0];
+                            botFinalistName = bracketData.r4[1];
+                        } 
+                        // Fallback lógica antigua para otros tamaños o si no hay datos
+                        else {
+                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
+                            // Nota: bracket 32 semis es r4. bracket 8 semis es r2. 
+                            
+                            if (bracketData.winner) {
+                                 // Simple logic for fallback
+                                 topFinalistName = bracketData.winner; 
                                  botFinalistName = bracketData.runnerUp;
-                             } else if (botSemiPlayers.includes(bracketData.winner)) {
-                                 botFinalistName = bracketData.winner;
-                                 topFinalistName = bracketData.runnerUp;
-                             } else {
-                                 topFinalistName = bracketData.winner;
-                                 botFinalistName = bracketData.runnerUp;
-                             }
+                            }
                         }
 
                         const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
@@ -1337,8 +1393,7 @@ export default function Home() {
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
-                        {/* Palabra CAMPEÓN agrandada */}
-                        <span className="text-[#b35a38]/70 font-black text-xs md:text-sm uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
+                        <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
@@ -1353,7 +1408,6 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
@@ -1370,6 +1424,16 @@ export default function Home() {
                 )}
               </div>
             )}
+            
+            {/* Botón Lista Basti SOLO si hay datos del cuadro */}
+            {bracketData.hasData && (
+                <div className="mt-8 flex justify-center pb-4">
+                   <Button onClick={enviarListaBasti} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
+                        <List className="mr-2" /> ENVIAR LISTA BASTI
+                   </Button>
+                </div>
+            )}
+
           </div>
         )}
 
