@@ -1032,22 +1032,22 @@ export default function Home() {
           // Solo leemos GANADOR si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           
-          // FIX: Solo leemos SUBCAMPEÓN si hay un GANADOR definido
+          // FIX ADELAIDE: RunnerUp solo existe si hay Winner
           const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
+          // FIX LLAVES SUPER 8 (Curti): Se agrega || "" para que no se rompa la lectura
           if (bracketSize === 32) {
             rawData = { 
-                r1: rows.map(r => r[0]).slice(0, 32), 
-                s1: rows.map(r => r[1]).slice(0, 32), 
-                r2: rows.map(r => r[2]).slice(0, 16), 
-                s2: rows.map(r => r[3]).slice(0, 16), 
-                r3: rows.map(r => r[4]).slice(0, 8), 
-                s3: rows.map(r => r[5]).slice(0, 8), 
-                r4: rows.map(r => r[6]).slice(0, 4), 
-                s4: rows.map(r => r[7]).slice(0, 4), 
-                // Lectura explícita de Finalistas (Cols I, J -> index 8, 9)
-                r5: rows.map(r => r[8]).slice(0, 2), 
-                s5: rows.map(r => r[9]).slice(0, 2),
+                r1: rows.map(r => r[0] || "").slice(0, 32), 
+                s1: rows.map(r => r[1] || "").slice(0, 32), 
+                r2: rows.map(r => r[2] || "").slice(0, 16), 
+                s2: rows.map(r => r[3] || "").slice(0, 16), 
+                r3: rows.map(r => r[4] || "").slice(0, 8), 
+                s3: rows.map(r => r[5] || "").slice(0, 8), 
+                r4: rows.map(r => r[6] || "").slice(0, 4), 
+                s4: rows.map(r => r[7] || "").slice(0, 4), 
+                r5: rows.map(r => r[8] || "").slice(0, 2), 
+                s5: rows.map(r => r[9] || "").slice(0, 2),
                 winner: winner, 
                 runnerUp: runnerUp, 
                 bracketSize: 32, 
@@ -1057,14 +1057,14 @@ export default function Home() {
             };
           } else if (bracketSize === 16) {
             rawData = { 
-                r1: rows.map(r => r[0]).slice(0, 16), 
-                s1: rows.map(r => r[1]).slice(0, 16), 
-                r2: rows.map(r => r[2]).slice(0, 8), 
-                s2: rows.map(r => r[3]).slice(0, 8), 
-                r3: rows.map(r => r[4]).slice(0, 4), 
-                s3: rows.map(r => r[5]).slice(0, 4), 
-                r4: rows.map(r => r[6]).slice(0, 2), 
-                s4: rows.map(r => r[7]).slice(0, 2), 
+                r1: rows.map(r => r[0] || "").slice(0, 16), 
+                s1: rows.map(r => r[1] || "").slice(0, 16), 
+                r2: rows.map(r => r[2] || "").slice(0, 8), 
+                s2: rows.map(r => r[3] || "").slice(0, 8), 
+                r3: rows.map(r => r[4] || "").slice(0, 4), 
+                s3: rows.map(r => r[5] || "").slice(0, 4), 
+                r4: rows.map(r => r[6] || "").slice(0, 2), 
+                s4: rows.map(r => r[7] || "").slice(0, 2), 
                 winner: winner, 
                 runnerUp: runnerUp, 
                 bracketSize: 16, 
@@ -1074,12 +1074,12 @@ export default function Home() {
             };
           } else {
             rawData = { 
-                r1: rows.map(r => r[0]).slice(0, 8), 
-                s1: rows.map(r => r[1]).slice(0, 8), 
-                r2: rows.map(r => r[2]).slice(0, 4), 
-                s2: rows.map(r => r[3]).slice(0, 4), 
-                r3: rows.map(r => r[4]).slice(0, 2), 
-                s3: rows.map(r => r[5]).slice(0, 2), 
+                r1: rows.map(r => r[0] || "").slice(0, 8), 
+                s1: rows.map(r => r[1] || "").slice(0, 8), 
+                r2: rows.map(r => r[2] || "").slice(0, 4), 
+                s2: rows.map(r => r[3] || "").slice(0, 4), 
+                r3: rows.map(r => r[4] || "").slice(0, 2), 
+                s3: rows.map(r => r[5] || "").slice(0, 2), 
                 r4: [], 
                 s4: [], 
                 winner: winner, 
@@ -1515,6 +1515,9 @@ export default function Home() {
                 )}
               </div>
             )}
+            
+            {/* Botón Lista Basti REMOVED from here */}
+
           </div>
         )}
 
