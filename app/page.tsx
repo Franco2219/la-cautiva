@@ -24,28 +24,6 @@ const tournaments = [
   { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
-// Configuración EXACTA de offsets (A=A1, B1=M1, B2=A30, C=M30)
-const sheetConfig: any = {
-    "Adelaide": {
-        "A": [0, 0],    // A1
-        "B1": [0, 12],  // M1 (Col 12 = M)
-        "B2": [29, 0],  // A30 (Row 29 = 30)
-        "C": [29, 12]   // M30
-    },
-    "S8 500": {
-        "A": [0, 0],
-        "B1": [0, 12],
-        "B2": [29, 0],
-        "C": [29, 12]
-    },
-    "S8 250": {
-        "A": [0, 0],
-        "B1": [0, 12],
-        "B2": [29, 0],
-        "C": [29, 12]
-    }
-};
-
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
@@ -838,17 +816,7 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
-    const config = sheetConfig[tournamentShort];
-    let sheetName = `${category} ${tournamentShort}`; 
-    let startRow = 0;
-    let startCol = 0;
-
-    if (config && config[category]) {
-        sheetName = config[category].sheetName || tournamentShort; 
-        [startRow, startCol] = config[category];
-    }
-
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -920,28 +888,7 @@ export default function Home() {
     try {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
-      let allRows = parseCSV(csvText);
-      let rows = [];
-      
-      // LOGICA DE CORTE ESTRICTO
-      // Iteramos desde el inicio configurado hacia abajo
-      // Cortamos APENAS encontramos una celda vacia en la columna principal del cuadro
-      if (startRow < allRows.length) {
-          for (let i = startRow; i < allRows.length; i++) {
-              const row = allRows[i];
-              // Verificamos si existe la celda en la columna de inicio
-              const cellRaw = (row && row.length > startCol) ? row[startCol] : "";
-              const cell = cellRaw ? cellRaw.trim() : "";
-
-              // Si la celda está vacía o es un guión, detenemos la lectura del cuadro
-              if (cell === "" || cell === "-") {
-                  break;
-              }
-              // Agregamos la fila recortada desde la columna de inicio
-              rows.push(row.slice(startCol));
-          }
-      }
-
+      const rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
       const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
