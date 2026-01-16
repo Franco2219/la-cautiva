@@ -85,17 +85,17 @@ export default function Home() {
       }
   };
 
-  // --- LÓGICA DE RANKING RESTAURADA (Orden Global) ---
+  // --- LÓGICA DE RANKING (Full Support + Global Sort) ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        // 1. Obtener puntos del torneo actual (Baremo)
+        // 1. Obtener puntos del torneo actual (Baremo A37:Z50 para incluir filas 44-46)
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z50`;
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        // 2. Obtener Ranking 2026 Global para ordenamiento (RESTAURADO)
+        // 2. Obtener Ranking Global 2026 para ORDENAR
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
@@ -143,9 +143,9 @@ export default function Home() {
             quarters: getPoints(4),   
             octavos: getPoints(5),    
             dieciseis: getPoints(6),
-            groupWin1: getPoints(7), 
-            groupWin2: getPoints(8), 
-            groupWin3: getPoints(9) 
+            groupWin1: getPoints(7), // Fila 44
+            groupWin2: getPoints(8), // Fila 45
+            groupWin3: getPoints(9)  // Fila 46
         };
 
         const playerScores: any = {};
@@ -158,7 +158,7 @@ export default function Home() {
             }
         };
 
-        // 3. Calcular puntos de CUADRO (Bracket)
+        // 3. Puntos de Cuadro
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, winner, runnerUp, bracketSize } = bracketData;
             
@@ -232,12 +232,12 @@ export default function Home() {
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
-        // 5. Crear Array y Ordenar por Ranking Global 2026
+        // 5. Ordenar por Ranking Global (RESTAURADO)
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
             points: playerScores[key],
             globalRank: globalRankingMap[key.toLowerCase()] || 0
-        })).sort((a, b) => b.globalRank - a.globalRank); // ORDEN POR RANKING GLOBAL
+        })).sort((a, b) => b.globalRank - a.globalRank); 
 
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
@@ -454,30 +454,22 @@ export default function Home() {
       const totalPlayers = entryList.length;
       if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
 
-      // --- LOGICA DE GRUPOS MODIFICADA PARA MASTERS ---
-      let groupsOf4 = 0; // Solo para Masters
+      let groupsOf4 = 0; // Masters
       let groupsOf3 = 0;
       let groupsOf2 = 0;
       let capacities = [];
 
       if (tournamentShort === "Masters") {
-          // Obligación de armar zonas de 4
           groupsOf4 = Math.floor(totalPlayers / 4);
           const remainder = totalPlayers % 4;
-          
           for(let i=0; i<groupsOf4; i++) capacities.push(4);
-          
           if (remainder === 3) capacities.push(3);
           else if (remainder === 2) capacities.push(2);
           else if (remainder === 1) {
-              if (capacities.length > 0) {
-                  capacities[capacities.length - 1] += 1; // Zona de 5
-              } else {
-                  capacities.push(1); // Caso borde
-              }
+              if (capacities.length > 0) capacities[capacities.length - 1] += 1; // 5
+              else capacities.push(1);
           }
       } else {
-          // Lógica Standard ATP (3 y 2)
           const remainder = totalPlayers % 3;
           if (remainder === 0) {
             groupsOf3 = totalPlayers / 3;
@@ -499,7 +491,7 @@ export default function Home() {
         groupName: `Zona ${i + 1}`,
         capacity: cap,
         players: [],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], // Soporte 4 rows
+        results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]],
         positions: ["-", "-", "-", "-"],
         points: ["", "", "", ""],
         diff: ["", "", "", ""]
@@ -545,7 +537,6 @@ export default function Home() {
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            // Detectar 4to jugador para Masters
             const p4 = rows[i+4] && rows[i+4][0] && rows[i+4][0] !== "-" ? rows[i+4] : null;
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
             if (p4) playersRaw.push(p4);
@@ -856,7 +847,6 @@ export default function Home() {
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
-                  // M (12) y N (13)
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
                   
@@ -1040,13 +1030,15 @@ export default function Home() {
 
           let rawData: any = {};
           
+          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
           let winnerIdx = -1;
-          if (bracketSize === 32) winnerIdx = 10; 
-          else if (bracketSize === 16) winnerIdx = 8; 
-          else if (bracketSize === 8) winnerIdx = 6; 
+          if (bracketSize === 32) winnerIdx = 10; // K
+          else if (bracketSize === 16) winnerIdx = 8; // I
+          else if (bracketSize === 8) winnerIdx = 6; // G
           
+          // Solo leemos si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
-          const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
+          const runnerUp = (winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
@@ -1058,6 +1050,7 @@ export default function Home() {
                 s2: rows.map(r => r[3]).slice(0, 8), 
                 r3: rows.map(r => r[4]).slice(0, 4), 
                 s3: rows.map(r => r[5]).slice(0, 4), 
+                // Lectura explícita de Final (G/H)
                 r4: rows.map(r => r[6]).slice(0, 2), 
                 s4: rows.map(r => r[7]).slice(0, 2), 
                 winner: winner, 
