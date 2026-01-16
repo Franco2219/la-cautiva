@@ -715,7 +715,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 };
+                    match.p2 = { name: "", rank: 0 }; 
                 }
             }
         } else {
@@ -942,22 +942,7 @@ export default function Home() {
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
-            rawData = { 
-                r1: rows.map(r => r[0]).slice(0, 16), 
-                s1: rows.map(r => r[1]).slice(0, 16), 
-                r2: rows.map(r => r[2]).slice(0, 8), 
-                s2: rows.map(r => r[3]).slice(0, 8), 
-                r3: rows.map(r => r[4]).slice(0, 4), 
-                s3: rows.map(r => r[5]).slice(0, 4), 
-                r4: rows.map(r => r[6]).slice(0, 2), 
-                s4: rows.map(r => r[7]).slice(0, 2), 
-                winner: winner, 
-                runnerUp: runnerUp, 
-                bracketSize: 16, 
-                hasData: true, 
-                canGenerate: false, 
-                seeds: seeds 
-            };
+            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
           } else {
             rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
           }
@@ -1133,7 +1118,10 @@ export default function Home() {
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
+                  
+                  {/* Botón Lista Basti: Solo visible si NO está confirmado */}
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
+                  
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1300,25 +1288,27 @@ export default function Home() {
                   })}
                 </div>
 
-                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
+                        const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
+                        
                         let topFinalistName = "";
                         let botFinalistName = "";
 
-                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
-                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
-                            topFinalistName = bracketData.r4[0];
-                            botFinalistName = bracketData.r4[1];
-                        } 
-                        // Fallback lógica antigua para otros tamaños o si no hay datos
-                        else {
-                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
-                            
-                            if (bracketData.winner) {
-                                 topFinalistName = bracketData.winner; 
+                        if (bracketData.winner) {
+                             const topSemiPlayers = [semisR[0], semisR[1]];
+                             const botSemiPlayers = [semisR[2], semisR[3]];
+                             
+                             if (topSemiPlayers.includes(bracketData.winner)) {
+                                 topFinalistName = bracketData.winner;
                                  botFinalistName = bracketData.runnerUp;
-                            }
+                             } else if (botSemiPlayers.includes(bracketData.winner)) {
+                                 botFinalistName = bracketData.winner;
+                                 topFinalistName = bracketData.runnerUp;
+                             } else {
+                                 topFinalistName = bracketData.winner;
+                                 botFinalistName = bracketData.runnerUp;
+                             }
                         }
 
                         const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
@@ -1347,7 +1337,8 @@ export default function Home() {
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
-                        <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
+                        {/* Palabra CAMPEÓN agrandada */}
+                        <span className="text-[#b35a38]/70 font-black text-xs md:text-sm uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
@@ -1362,6 +1353,7 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
+                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
