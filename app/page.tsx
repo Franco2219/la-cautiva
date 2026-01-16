@@ -95,14 +95,28 @@ export default function Home() {
         const rows = parseCSV(txt);
 
         // --- FETCH GLOBAL RANKING PARA ORDENAMIENTO ---
-        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
+        // Usamos la categoría corta si es posible para asegurar que coincida con el nombre de la hoja (ej "A 2026")
+        const catName = navState.category || navState.selectedCategory;
+        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${catName} 2026`)}`;
+        
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
-        const globalRankOrder: any = {};
-        // Guardamos el ÍNDICE de la fila como posición (0 es el mejor)
-        parseCSV(rankCsv).slice(1).forEach((row, index) => {
-            if(row[1]) globalRankOrder[row[1].trim().toLowerCase()] = index;
-        });
+        
+        // Guardamos las filas del ranking para buscar la posición exacta
+        const rankRows = parseCSV(rankCsv).slice(1);
+        
+        // Función helper para buscar el índice de ranking (mejorado para coincidir con la lógica de inscripción)
+        const getRankIndex = (name: string) => {
+            if (!name) return 99999;
+            const n = name.toLowerCase().trim();
+            // 1. Intento exacto
+            let idx = rankRows.findIndex(row => row[1] && row[1].trim().toLowerCase() === n);
+            // 2. Intento parcial (como en el sorteo)
+            if (idx === -1) {
+                idx = rankRows.findIndex(row => row[1] && (row[1].trim().toLowerCase().includes(n) || n.includes(row[1].trim().toLowerCase())));
+            }
+            return idx === -1 ? 99999 : idx;
+        };
 
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
@@ -159,16 +173,21 @@ export default function Home() {
         };
 
         if (bracketData.hasData) {
-            const { r1, r2, r3, r4, winner, runnerUp, bracketSize } = bracketData;
+            const { r1, r2, r3, r4, r5, winner, bracketSize } = bracketData;
             
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
+            // Arrays para finalistas
+            let finalists: string[] = [];
 
             if (bracketSize === 32) {
                 semis = r4; cuartos = r3; octavos = r2; dieciseis = r1;
+                finalists = r5 || [];
             } else if (bracketSize === 16) {
                 semis = r3; cuartos = r2; octavos = r1;
+                finalists = r4 || [];
             } else { 
                 semis = r2; cuartos = r1;
+                finalists = r3 || []; // size 8
             }
 
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
@@ -177,8 +196,22 @@ export default function Home() {
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
             semis.forEach((p: string) => addRoundScore(p, pts.semi));
             
-            if (runnerUp) addRoundScore(runnerUp, pts.finalist);
-            if (winner) addRoundScore(winner, pts.champion);
+            // CORRECCIÓN: Lógica para asignar puntos de Finalista y Campeón
+            // Iteramos sobre el array de la final para asegurar que el perdedor (RunnerUp) reciba sus puntos
+            // aunque no esté en la celda específica de 'RunnerUp'.
+            const winnerName = winner ? winner.trim().toLowerCase() : "";
+
+            finalists.forEach((p: string) => {
+                if (p && p !== "BYE" && p !== "") {
+                    const pClean = p.trim();
+                    if (winnerName && pClean.toLowerCase() === winnerName) {
+                        addRoundScore(pClean, pts.champion);
+                    } else {
+                        // Si está en la final y no es el ganador, es finalista (o al menos llegó a la final)
+                        addRoundScore(pClean, pts.finalist);
+                    }
+                }
+            });
         }
 
         if (tourType === "full") {
@@ -230,13 +263,14 @@ export default function Home() {
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
-        // ORDENAR POR POSICIÓN EN EL RANKING GLOBAL (Menor índice = mejor ranking)
+        // ORDENAR POR POSICIÓN EN EL RANKING GLOBAL 2026 (Menor índice = mejor ranking)
+        // Usamos la función getRankIndex corregida
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
             points: playerScores[key]
         })).sort((a, b) => {
-            const rankA = globalRankOrder[a.name.toLowerCase()] ?? 99999;
-            const rankB = globalRankOrder[b.name.toLowerCase()] ?? 99999;
+            const rankA = getRankIndex(a.name);
+            const rankB = getRankIndex(b.name);
             return rankA - rankB; 
         });
 
@@ -617,7 +651,7 @@ export default function Home() {
             ...navState, 
             level: "tournament-phases", 
             currentCat: categoryShort, 
-            currentTour: tournamentShort,
+            currentTour: tournamentShort, 
             hasGroups: false 
         });
       }
