@@ -95,26 +95,34 @@ export default function Home() {
         const rows = parseCSV(txt);
 
         // --- FETCH GLOBAL RANKING PARA ORDENAMIENTO ---
-        // Usamos la categoría corta si es posible para asegurar que coincida con el nombre de la hoja (ej "A 2026")
         const catName = navState.category || navState.selectedCategory;
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${catName} 2026`)}`;
         
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
         
-        // Guardamos las filas del ranking para buscar la posición exacta
-        const rankRows = parseCSV(rankCsv).slice(1);
+        // Guardamos los nombres exactos del ranking en orden (índice 0 = top 1)
+        const rankNames = parseCSV(rankCsv).slice(1).map(row => row[1] ? row[1].trim().toLowerCase() : "");
         
-        // Función helper para buscar el índice de ranking (mejorado para coincidir con la lógica de inscripción)
+        // Helper mejorado para buscar el índice de ranking
         const getRankIndex = (name: string) => {
             if (!name) return 99999;
             const n = name.toLowerCase().trim();
-            // 1. Intento exacto
-            let idx = rankRows.findIndex(row => row[1] && row[1].trim().toLowerCase() === n);
-            // 2. Intento parcial (como en el sorteo)
-            if (idx === -1) {
-                idx = rankRows.findIndex(row => row[1] && (row[1].trim().toLowerCase().includes(n) || n.includes(row[1].trim().toLowerCase())));
+            
+            // 1. Búsqueda exacta
+            let idx = rankNames.indexOf(n);
+            if (idx !== -1) return idx;
+
+            // 2. Normalización de nombre tipo "Apellido, N" -> "Apellido N" o "N Apellido"
+            // Ej: "Palmero, T" -> busca "palmero"
+            const parts = n.replace(/,/g, "").split(" ").filter(p => p.length > 2); // Filtramos iniciales cortas
+            
+            if (parts.length > 0) {
+                 // Buscamos si alguna parte del apellido está contenida en el nombre del ranking
+                 // Priorizamos el apellido principal
+                 idx = rankNames.findIndex(rankName => rankName.includes(parts[0]));
             }
+
             return idx === -1 ? 99999 : idx;
         };
 
@@ -176,7 +184,6 @@ export default function Home() {
             const { r1, r2, r3, r4, r5, winner, bracketSize } = bracketData;
             
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
-            // Arrays para finalistas
             let finalists: string[] = [];
 
             if (bracketSize === 32) {
@@ -187,7 +194,7 @@ export default function Home() {
                 finalists = r4 || [];
             } else { 
                 semis = r2; cuartos = r1;
-                finalists = r3 || []; // size 8
+                finalists = r3 || []; 
             }
 
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
@@ -196,9 +203,6 @@ export default function Home() {
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
             semis.forEach((p: string) => addRoundScore(p, pts.semi));
             
-            // CORRECCIÓN: Lógica para asignar puntos de Finalista y Campeón
-            // Iteramos sobre el array de la final para asegurar que el perdedor (RunnerUp) reciba sus puntos
-            // aunque no esté en la celda específica de 'RunnerUp'.
             const winnerName = winner ? winner.trim().toLowerCase() : "";
 
             finalists.forEach((p: string) => {
@@ -207,7 +211,6 @@ export default function Home() {
                     if (winnerName && pClean.toLowerCase() === winnerName) {
                         addRoundScore(pClean, pts.champion);
                     } else {
-                        // Si está en la final y no es el ganador, es finalista (o al menos llegó a la final)
                         addRoundScore(pClean, pts.finalist);
                     }
                 }
@@ -264,13 +267,17 @@ export default function Home() {
         }
 
         // ORDENAR POR POSICIÓN EN EL RANKING GLOBAL 2026 (Menor índice = mejor ranking)
-        // Usamos la función getRankIndex corregida
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
             points: playerScores[key]
         })).sort((a, b) => {
             const rankA = getRankIndex(a.name);
             const rankB = getRankIndex(b.name);
+            
+            // Si tienen el mismo ranking (o no están, 99999), desempatamos por puntos del torneo
+            if (rankA === rankB) {
+                return b.points - a.points;
+            }
             return rankA - rankB; 
         });
 
