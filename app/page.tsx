@@ -24,12 +24,12 @@ const tournaments = [
   { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
-// Configuración de offsets CORREGIDA (A=A1, B1=M1, B2=A30, C=M30)
+// Configuración de offsets (A=A1, B1=M1, B2=A30, C=M30)
 const sheetConfig: any = {
     "Adelaide": {
         "A": [0, 0],    // A1
-        "B1": [0, 12],  // M1 (Col index 12)
-        "B2": [29, 0],  // A30 (Row index 29)
+        "B1": [0, 12],  // M1
+        "B2": [29, 0],  // A30
         "C": [29, 12]   // M30
     },
     "S8 500": {
@@ -921,7 +921,14 @@ export default function Home() {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
       let allRows = parseCSV(csvText);
-      const rows = allRows.slice(startRow).map(r => r.slice(startCol));
+      let rows = [];
+      
+      // LOGICA DE CORTE: Leer desde startRow hacia abajo y frenar al encontrar celda vacía
+      for (let i = startRow; i < allRows.length; i++) {
+          const cell = allRows[i] && allRows[i][startCol] ? allRows[i][startCol].trim() : "";
+          if (!cell || cell === "") break; 
+          rows.push(allRows[i].slice(startCol));
+      }
 
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
       const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
@@ -1334,6 +1341,48 @@ export default function Home() {
                   })}
                 </div>
 
+                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
+                <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
+                    {(() => {
+                        let topFinalistName = "";
+                        let botFinalistName = "";
+
+                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
+                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
+                            topFinalistName = bracketData.r4[0];
+                            botFinalistName = bracketData.r4[1];
+                        } 
+                        // Fallback lógica antigua para otros tamaños o si no hay datos
+                        else {
+                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
+                            
+                            if (bracketData.winner) {
+                                 topFinalistName = bracketData.winner; 
+                                 botFinalistName = bracketData.runnerUp;
+                            }
+                        }
+
+                        const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
+                        const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
+
+                        return (
+                            <div className="relative flex flex-col space-y-2">
+                                <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                        {topFinalistName || ""}
+                                    </span>
+                                </div>
+                                <div className={`h-8 border-b ${isBotWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                        {botFinalistName || ""}
+                                    </span>
+                                </div>
+                                <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                            </div>
+                        );
+                    })()}
+                </div>
+
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
@@ -1370,15 +1419,6 @@ export default function Home() {
                 )}
               </div>
             )}
-            
-            {bracketData.hasData && (
-                <div className="mt-8 flex justify-center pb-4">
-                   <Button onClick={enviarListaBasti} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
-                        <List className="mr-2" /> ENVIAR LISTA BASTI
-                   </Button>
-                </div>
-            )}
-
           </div>
         )}
 
