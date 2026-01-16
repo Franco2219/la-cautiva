@@ -24,25 +24,25 @@ const tournaments = [
   { id: "us", name: "US Open", short: "US", type: "direct" },
 ]
 
-// Configuración de offsets para torneos unificados
+// Configuración de offsets CORREGIDA (A=A1, B1=M1, B2=A30, C=M30)
 const sheetConfig: any = {
     "Adelaide": {
-        "A": [0, 0],   // Fila 1, Col A
-        "B1": [0, 8],  // Fila 1, Col I
-        "B2": [24, 0], // Fila 25, Col A
-        "C": [24, 8]   // Fila 25, Col I
+        "A": [0, 0],    // A1
+        "B1": [0, 12],  // M1 (Col index 12)
+        "B2": [29, 0],  // A30 (Row index 29)
+        "C": [29, 12]   // M30
     },
     "S8 500": {
-        "A": [0, 0],   // Asumo A en standard si existiera
-        "B1": [0, 0],  // Tu pedido: B1 en A1
-        "B2": [0, 8],  // Tu pedido: B2 en I1
-        "C": [24, 0]   // Tu pedido: C en A25
+        "A": [0, 0],
+        "B1": [0, 12],
+        "B2": [29, 0],
+        "C": [29, 12]
     },
     "S8 250": {
         "A": [0, 0],
-        "B1": [0, 8],
-        "B2": [24, 0],
-        "C": [24, 8]
+        "B1": [0, 12],
+        "B2": [29, 0],
+        "C": [29, 12]
     }
 };
 
@@ -50,8 +50,7 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  // Agregamos r5/s5 para soporte extra si fuera necesario, y r4/s4 en bracket 16
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -771,7 +770,6 @@ export default function Home() {
           
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
-                  // M (12) y N (13)
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
                   
@@ -840,15 +838,13 @@ export default function Home() {
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
-    // --- LÓGICA DE UNIFICACIÓN DE PESTAÑAS ---
-    // Buscar configuración si el torneo está en la lista unificada
     const config = sheetConfig[tournamentShort];
-    let sheetName = `${category} ${tournamentShort}`; // Default original
+    let sheetName = `${category} ${tournamentShort}`; 
     let startRow = 0;
     let startCol = 0;
 
     if (config && config[category]) {
-        sheetName = config[category].sheetName || tournamentShort; // Nombre del torneo (o override)
+        sheetName = config[category].sheetName || tournamentShort; 
         [startRow, startCol] = config[category];
     }
 
@@ -924,10 +920,7 @@ export default function Home() {
     try {
       const response = await fetch(urlBracket);
       const csvText = await response.text();
-      // Recortamos las filas y columnas segun el offset
       let allRows = parseCSV(csvText);
-      
-      // Aplicar offset
       const rows = allRows.slice(startRow).map(r => r.slice(startCol));
 
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
@@ -944,7 +937,6 @@ export default function Home() {
 
           let seeds = {};
           try {
-             // ... Ranking fetching remains same ...
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
              const rankRes = await fetch(rankUrl);
              const rankTxt = await rankRes.text();
@@ -984,7 +976,6 @@ export default function Home() {
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
-            // FIX ADELAIDE A: Leemos r4 (finalistas) de columnas 6(G) y 7(H)
             rawData = { 
                 r1: rows.map(r => r[0]).slice(0, 16), 
                 s1: rows.map(r => r[1]).slice(0, 16), 
@@ -992,7 +983,6 @@ export default function Home() {
                 s2: rows.map(r => r[3]).slice(0, 8), 
                 r3: rows.map(r => r[4]).slice(0, 4), 
                 s3: rows.map(r => r[5]).slice(0, 4), 
-                // Lectura explícita de Final
                 r4: rows.map(r => r[6]).slice(0, 2), 
                 s4: rows.map(r => r[7]).slice(0, 2), 
                 winner: winner, 
@@ -1344,50 +1334,6 @@ export default function Home() {
                   })}
                 </div>
 
-                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
-                <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
-                    {(() => {
-                        let topFinalistName = "";
-                        let botFinalistName = "";
-
-                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
-                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
-                            topFinalistName = bracketData.r4[0];
-                            botFinalistName = bracketData.r4[1];
-                        } 
-                        // Fallback lógica antigua para otros tamaños o si no hay datos
-                        else {
-                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
-                            // Nota: bracket 32 semis es r4. bracket 8 semis es r2. 
-                            
-                            if (bracketData.winner) {
-                                 // Simple logic for fallback
-                                 topFinalistName = bracketData.winner; 
-                                 botFinalistName = bracketData.runnerUp;
-                            }
-                        }
-
-                        const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
-                        const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
-
-                        return (
-                            <div className="relative flex flex-col space-y-2">
-                                <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                        {topFinalistName || ""}
-                                    </span>
-                                </div>
-                                <div className={`h-8 border-b ${isBotWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                        {botFinalistName || ""}
-                                    </span>
-                                </div>
-                                <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                            </div>
-                        );
-                    })()}
-                </div>
-
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
@@ -1425,7 +1371,6 @@ export default function Home() {
               </div>
             )}
             
-            {/* Botón Lista Basti SOLO si hay datos del cuadro */}
             {bracketData.hasData && (
                 <div className="mt-8 flex justify-center pb-4">
                    <Button onClick={enviarListaBasti} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
