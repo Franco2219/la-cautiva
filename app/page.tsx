@@ -29,7 +29,7 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -1024,18 +1024,19 @@ export default function Home() {
 
           let rawData: any = {};
           
+          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
           let winnerIdx = -1;
           if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
-          // Solo leemos GANADOR si la columna exacta tiene datos
+          // Solo leemos si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           
-          // FIX ADELAIDE: RunnerUp solo existe si hay Winner
+          // FIX ADELAIDE: Solo consideramos RunnerUp si YA HAY CAMPEÓN
           const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
-          // FIX LLAVES SUPER 8 (Curti): Se agrega || "" para que no se rompa la lectura
+          // FIX CURTI: Lectura blindada con || ""
           if (bracketSize === 32) {
             rawData = { 
                 r1: rows.map(r => r[0] || "").slice(0, 32), 
@@ -1498,7 +1499,6 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
@@ -1515,9 +1515,6 @@ export default function Home() {
                 )}
               </div>
             )}
-            
-            {/* Botón Lista Basti REMOVED from here */}
-
           </div>
         )}
 
