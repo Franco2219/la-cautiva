@@ -464,6 +464,7 @@ export default function Home() {
             const positions = [];
             const points = [];
             const diff = [];
+            const gamesDiff = []; // Nueva columna H (Games)
 
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
@@ -480,6 +481,11 @@ export default function Home() {
                     let rawDif = row[6] || "";
                     if (rawDif.startsWith("#")) rawDif = "";
                     diff.push(rawDif);
+
+                    // Leer columna H (index 7) para Games Diff
+                    let rawGames = row[7] || "";
+                    if (rawGames.startsWith("#")) rawGames = "";
+                    gamesDiff.push(rawGames);
 
                     validPlayersIndices.push(index); 
                 }
@@ -503,7 +509,8 @@ export default function Home() {
               results: results,
               positions: positions,
               points: points,
-              diff: diff
+              diff: diff,
+              gamesDiff: gamesDiff
             });
           }
         }
@@ -567,6 +574,17 @@ export default function Home() {
         if (isComplete) break;
     }
 
+    // Lógica para mostrar columna GAMES solo si hay empate en PUNTOS y SETS
+    const hasTies = () => {
+        if (!group.points || !group.diff) return false;
+        // Creamos firmas "puntos|sets" y buscamos duplicados
+        const signatures = group.points.map((p: any, i: number) => `${p}|${group.diff[i]}`);
+        const unique = new Set(signatures);
+        return unique.size !== signatures.length; // Si hay menos unicos que total, hay empate
+    };
+    
+    const showGames = hasTies();
+
     return (
     <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden">
       <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
@@ -603,7 +621,8 @@ export default function Home() {
                 {isComplete && (
                     <>
                         <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">PTS</th>
-                        <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">DIF</th>
+                        <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">SETS</th>
+                        {showGames && <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">GAMES</th>}
                         <th className="p-3 text-center font-black text-black bg-slate-100 w-12 whitespace-nowrap">POS</th>
                     </>
                 )}
@@ -622,6 +641,7 @@ export default function Home() {
                       <>
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.points ? group.points[i] : "-"}</td>
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.diff ? group.diff[i] : "-"}</td>
+                          {showGames && <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.gamesDiff ? group.gamesDiff[i] : "-"}</td>}
                           <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50 whitespace-nowrap">
                               {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
                               ? `${group.positions[i]}°` 
@@ -715,7 +735,7 @@ export default function Home() {
                 if (pool.length > 0) {
                     match.p2 = pool.pop();
                 } else {
-                    match.p2 = { name: "", rank: 0 }; 
+                    match.p2 = { name: "", rank: 0 };
                 }
             }
         } else {
@@ -942,7 +962,22 @@ export default function Home() {
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
-            rawData = { r1: rows.map(r => r[0]).slice(0, 16), s1: rows.map(r => r[1]).slice(0, 16), r2: rows.map(r => r[2]).slice(0, 8), s2: rows.map(r => r[3]).slice(0, 8), r3: rows.map(r => r[4]).slice(0, 4), s3: rows.map(r => r[5]).slice(0, 4), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds };
+            rawData = { 
+                r1: rows.map(r => r[0]).slice(0, 16), 
+                s1: rows.map(r => r[1]).slice(0, 16), 
+                r2: rows.map(r => r[2]).slice(0, 8), 
+                s2: rows.map(r => r[3]).slice(0, 8), 
+                r3: rows.map(r => r[4]).slice(0, 4), 
+                s3: rows.map(r => r[5]).slice(0, 4), 
+                r4: rows.map(r => r[6]).slice(0, 2), 
+                s4: rows.map(r => r[7]).slice(0, 2), 
+                winner: winner, 
+                runnerUp: runnerUp, 
+                bracketSize: 16, 
+                hasData: true, 
+                canGenerate: false, 
+                seeds: seeds 
+            };
           } else {
             rawData = { r1: rows.map(r => r[0]).slice(0, 8), s1: rows.map(r => r[1]).slice(0, 8), r2: rows.map(r => r[2]).slice(0, 4), s2: rows.map(r => r[3]).slice(0, 4), r3: [], s3: [], r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds };
           }
@@ -1118,10 +1153,7 @@ export default function Home() {
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
-                  
-                  {/* Botón Lista Basti: Solo visible si NO está confirmado */}
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
-                  
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
@@ -1288,27 +1320,25 @@ export default function Home() {
                   })}
                 </div>
 
+                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
-                        const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
-                        
                         let topFinalistName = "";
                         let botFinalistName = "";
 
-                        if (bracketData.winner) {
-                             const topSemiPlayers = [semisR[0], semisR[1]];
-                             const botSemiPlayers = [semisR[2], semisR[3]];
-                             
-                             if (topSemiPlayers.includes(bracketData.winner)) {
-                                 topFinalistName = bracketData.winner;
+                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
+                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
+                            topFinalistName = bracketData.r4[0];
+                            botFinalistName = bracketData.r4[1];
+                        } 
+                        // Fallback lógica antigua para otros tamaños o si no hay datos
+                        else {
+                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
+                            
+                            if (bracketData.winner) {
+                                 topFinalistName = bracketData.winner; 
                                  botFinalistName = bracketData.runnerUp;
-                             } else if (botSemiPlayers.includes(bracketData.winner)) {
-                                 botFinalistName = bracketData.winner;
-                                 topFinalistName = bracketData.runnerUp;
-                             } else {
-                                 topFinalistName = bracketData.winner;
-                                 botFinalistName = bracketData.runnerUp;
-                             }
+                            }
                         }
 
                         const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
@@ -1337,8 +1367,7 @@ export default function Home() {
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
                         
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
-                        {/* Palabra CAMPEÓN agrandada */}
-                        <span className="text-[#b35a38]/70 font-black text-xs md:text-sm uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
+                        <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
