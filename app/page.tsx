@@ -85,17 +85,14 @@ export default function Home() {
       }
   };
 
-  // --- LÓGICA DE RANKING (Full Support + Global Sort) ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        // 1. Obtener puntos del torneo actual (Baremo A37:Z50 para incluir filas 44-46)
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z50`;
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        // 2. Obtener Ranking Global 2026 para ORDENAR
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
@@ -143,9 +140,9 @@ export default function Home() {
             quarters: getPoints(4),   
             octavos: getPoints(5),    
             dieciseis: getPoints(6),
-            groupWin1: getPoints(7), // Fila 44
-            groupWin2: getPoints(8), // Fila 45
-            groupWin3: getPoints(9)  // Fila 46
+            groupWin1: getPoints(7), 
+            groupWin2: getPoints(8), 
+            groupWin3: getPoints(9) 
         };
 
         const playerScores: any = {};
@@ -158,7 +155,6 @@ export default function Home() {
             }
         };
 
-        // 3. Puntos de Cuadro
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, winner, runnerUp, bracketSize } = bracketData;
             
@@ -182,7 +178,6 @@ export default function Home() {
             if (winner) addRoundScore(winner, pts.champion);
         }
 
-        // 4. Si es FULL, sumar victorias de grupo
         if (tourType === "full") {
             const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
             try {
@@ -232,7 +227,6 @@ export default function Home() {
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
-        // 5. Ordenar por Ranking Global (RESTAURADO)
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
             points: playerScores[key],
@@ -1030,13 +1024,11 @@ export default function Home() {
 
           let rawData: any = {};
           
-          // --- LOGICA CORREGIDA DEL CAMPEÓN ---
           let winnerIdx = -1;
-          if (bracketSize === 32) winnerIdx = 10; // K
-          else if (bracketSize === 16) winnerIdx = 8; // I
-          else if (bracketSize === 8) winnerIdx = 6; // G
+          if (bracketSize === 32) winnerIdx = 10; 
+          else if (bracketSize === 16) winnerIdx = 8; 
+          else if (bracketSize === 8) winnerIdx = 6; 
           
-          // Solo leemos si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
           const runnerUp = (winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
@@ -1466,10 +1458,7 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti VISIBLE aqui */}
-                            <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-10 w-12 rounded-xl">
-                                <List className="w-5 h-5" />
-                            </Button>
+                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
