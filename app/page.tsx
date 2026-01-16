@@ -22,7 +22,6 @@ const tournaments = [
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
-  { id: "masters", name: "Masters", short: "Masters", type: "full" }, // NUEVO TORNEO MASTERS
 ]
 
 export default function Home() {
@@ -85,19 +84,18 @@ export default function Home() {
       }
   };
 
-  // --- LÓGICA DE RANKING MODIFICADA ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
-        // 1. Ampliamos rango para leer filas 44, 45, 46 (Victorias de grupo)
-        const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z50`;
+        const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z44`;
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
 
+        if (rows.length < 2) throw new Error("No se encontraron datos en Formatos Grupos");
+
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
-        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
         
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) {
@@ -127,40 +125,25 @@ export default function Home() {
             return isNaN(val) ? 0 : val;
         };
 
-        // Mapeo de filas del Excel a Indices del Array (A37 es index 0)
-        // Fila 38 (Campeon) -> Index 1
-        // Fila 41 (Cuartos) -> Index 4
-        // Fila 44 (1 Partido Ganado) -> Index 7
-        // Fila 45 (2 Partidos Ganados) -> Index 8
-        // Fila 46 (3 Partidos Ganados) -> Index 9
-        
         const pts = {
             champion: getPoints(1),   
             finalist: getPoints(2),   
             semi: getPoints(3),       
             quarters: getPoints(4),   
             octavos: getPoints(5),    
-            dieciseis: getPoints(6),
-            
-            // Puntos por victorias en grupo (Solo Full)
-            groupWin1: getPoints(7), // Fila 44
-            groupWin2: getPoints(8), // Fila 45
-            groupWin3: getPoints(9)  // Fila 46 (Asumido para 3 victorias)
+            dieciseis: getPoints(6),  
+            groupWin: getPoints(7)    
         };
 
         const playerScores: any = {};
-        
-        // Función base para sumar puntos de ronda
-        const addRoundScore = (name: string, score: number) => {
+        const addScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
             const cleanName = name.trim();
-            // En direct y full, el puntaje de ronda es el maximo alcanzado
             if (!playerScores[cleanName] || score > playerScores[cleanName]) {
                 playerScores[cleanName] = score;
             }
         };
 
-        // 2. Calcular puntos de CUADRO (Bracket)
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, winner, runnerUp, bracketSize } = bracketData;
             
@@ -174,105 +157,20 @@ export default function Home() {
                 semis = r2; cuartos = r1;
             }
 
-            if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
-            if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
+            if (bracketSize === 32) dieciseis.forEach((p: string) => addScore(p, pts.dieciseis));
+            if (bracketSize >= 16) octavos.forEach((p: string) => addScore(p, pts.octavos));
             
-            cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
-            semis.forEach((p: string) => addRoundScore(p, pts.semi));
+            cuartos.forEach((p: string) => addScore(p, pts.quarters));
+            semis.forEach((p: string) => addScore(p, pts.semi));
             
-            if (runnerUp) addRoundScore(runnerUp, pts.finalist);
-            if (winner) addRoundScore(winner, pts.champion);
+            if (runnerUp) addScore(runnerUp, pts.finalist);
+            if (winner) addScore(winner, pts.champion);
         }
-
-        // 3. Si es FULL, buscar victorias de grupo y SUMARLAS
-        if (tourType === "full") {
-            const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
-            try {
-                const groupRes = await fetch(groupUrl);
-                const groupTxt = await groupRes.text();
-                const groupRows = parseCSV(groupTxt);
-                
-                // Mapa para contar victorias por jugador
-                const playerWins: any = {};
-
-                // Logica de parsing de grupos (similar a fetchGroupPhase)
-                for (let i = 0; i < groupRows.length; i += 4) {
-                    if (groupRows[i] && groupRows[i][0] && (groupRows[i][0].includes("Zona") || groupRows[i][0].includes("Grupo"))) {
-                        const players = [
-                            groupRows[i+1]?.[0],
-                            groupRows[i+2]?.[0],
-                            groupRows[i+3]?.[0],
-                            groupRows[i+4]?.[0] // Soporte para zonas de 4 (Masters)
-                        ].filter(p => p && p !== "-" && p !== "");
-
-                        // Matriz de resultados
-                        for(let x=0; x<players.length; x++) {
-                            const pName = players[x].trim();
-                            if (!playerWins[pName]) playerWins[pName] = 0;
-                            
-                            // Revisar fila del jugador para contar victorias
-                            const rowIndex = i + 1 + x;
-                            if (groupRows[rowIndex]) {
-                                for(let y=1; y<=players.length; y++) {
-                                    const res = groupRows[rowIndex][y];
-                                    if(res && res.length > 2) {
-                                        // Chequeo simple de victoria (quien tiene mas sets o games)
-                                        // Asumimos que si esta escrito 6/4, gano el row player
-                                        // Para ser robusto usamos la misma logica de conteo:
-                                        const sets = res.trim().split(" ");
-                                        let sW = 0, sL = 0;
-                                        sets.forEach(s => {
-                                            if(s.includes("/")) {
-                                                const parts = s.split("/").map(Number);
-                                                if(parts[0] > parts[1]) sW++; else sL++;
-                                            }
-                                        });
-                                        if(sW > sL) playerWins[pName]++;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Sumar puntos de victorias al puntaje base del cuadro
-                Object.keys(playerWins).forEach(pName => {
-                    const wins = playerWins[pName];
-                    let extraPoints = 0;
-                    if (wins === 1) extraPoints = pts.groupWin1;
-                    else if (wins === 2) extraPoints = pts.groupWin2;
-                    else if (wins >= 3) extraPoints = pts.groupWin3;
-
-                    if (playerScores[pName]) {
-                        playerScores[pName] += extraPoints;
-                    } else {
-                        // Si no paso al cuadro pero jugo grupos (ej: quedo 3ro)
-                        // Deberia sumar solo los puntos de grupo? 
-                        // El usuario dijo "Si llega a cuartos... Fila 41 + Fila 44". 
-                        // Asumo que si no llega al cuadro, igual suma sus victorias.
-                        playerScores[pName] = extraPoints;
-                    }
-                });
-
-            } catch (err) {
-                console.log("Error leyendo grupos para ranking full", err);
-            }
-        }
-
-        // Fetch Global Ranking for sorting
-        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.selectedCategory || navState.category} 2026`)}`;
-        const rankRes = await fetch(rankUrl);
-        const rankCsv = await rankRes.text();
-        const globalRankingMap: any = {};
-        parseCSV(rankCsv).slice(1).forEach(row => {
-            if(row[1]) globalRankingMap[row[1].trim().toLowerCase()] = row[11] ? parseInt(row[11]) : 0;
-        });
 
         const rankingArray = Object.keys(playerScores).map(key => ({
             name: key,
-            points: playerScores[key],
-            globalRank: globalRankingMap[key.toLowerCase()] || 0
-        })).sort((a, b) => b.globalRank - a.globalRank);
+            points: playerScores[key]
+        })).sort((a, b) => b.points - a.points);
 
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
@@ -489,47 +387,23 @@ export default function Home() {
       const totalPlayers = entryList.length;
       if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
 
-      // --- LOGICA DE GRUPOS MODIFICADA PARA MASTERS ---
-      let groupsOf4 = 0; // Solo para Masters
       let groupsOf3 = 0;
       let groupsOf2 = 0;
-      let capacities = [];
+      const remainder = totalPlayers % 3;
 
-      if (tournamentShort === "Masters") {
-          // Obligación de armar zonas de 4
-          groupsOf4 = Math.floor(totalPlayers / 4);
-          const remainder = totalPlayers % 4;
-          
-          for(let i=0; i<groupsOf4; i++) capacities.push(4);
-          
-          if (remainder === 3) capacities.push(3);
-          else if (remainder === 2) capacities.push(2);
-          else if (remainder === 1) {
-              // Si sobra 1, ajustamos para no dejar a uno solo o hacemos zona de 5?
-              // O sacamos uno de 4 y hacemos 3+2. Simplificamos: zona de 5 si es posible o 3 y 2
-              // La logica base ATP prefiere 3. Si es Masters estricto 4, 
-              // asumiremos que la inscripcion es multiplo o se tolera una de 3.
-              if (capacities.length > 0) {
-                  capacities[capacities.length - 1] += 1; // Zona de 5
-              } else {
-                  capacities.push(1); // Caso borde imposible
-              }
-          }
-      } else {
-          // Lógica Standard ATP (3 y 2)
-          const remainder = totalPlayers % 3;
-          if (remainder === 0) {
-            groupsOf3 = totalPlayers / 3;
-          } else if (remainder === 1) {
-            groupsOf2 = 2;
-            groupsOf3 = (totalPlayers - 4) / 3;
-          } else if (remainder === 2) {
-            groupsOf2 = 1;
-            groupsOf3 = (totalPlayers - 2) / 3;
-          }
-          for(let i=0; i<groupsOf3; i++) capacities.push(3);
-          for(let i=0; i<groupsOf2; i++) capacities.push(2);
+      if (remainder === 0) {
+        groupsOf3 = totalPlayers / 3;
+      } else if (remainder === 1) {
+        groupsOf2 = 2;
+        groupsOf3 = (totalPlayers - 4) / 3;
+      } else if (remainder === 2) {
+        groupsOf2 = 1;
+        groupsOf3 = (totalPlayers - 2) / 3;
       }
+
+      let capacities = [];
+      for(let i=0; i<groupsOf3; i++) capacities.push(3);
+      for(let i=0; i<groupsOf2; i++) capacities.push(2);
       
       capacities = capacities.sort(() => Math.random() - 0.5);
 
@@ -538,10 +412,10 @@ export default function Home() {
         groupName: `Zona ${i + 1}`,
         capacity: cap,
         players: [],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], // Soporte 4 rows
-        positions: ["-", "-", "-", "-"],
-        points: ["", "", "", ""],
-        diff: ["", "", "", ""]
+        results: [["-","-","-"], ["-","-","-"], ["-","-","-"]],
+        positions: ["-", "-", "-"],
+        points: ["", "", ""],
+        diff: ["", "", ""]
       }));
 
       for (let i = 0; i < numGroups; i++) {
@@ -584,17 +458,13 @@ export default function Home() {
         for (let i = 0; i < rows.length; i += 4) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            // Detectar 4to jugador para Masters
-            const p4 = rows[i+4] && rows[i+4][0] && rows[i+4][0] !== "-" ? rows[i+4] : null;
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
-            if (p4) playersRaw.push(p4);
-
             const validPlayersIndices = [];
             const players = [];
             const positions = [];
             const points = [];
             const diff = [];
-            const gamesDiff = []; 
+            const gamesDiff = [];
 
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
@@ -1089,6 +959,7 @@ export default function Home() {
           if (bracketSize === 32) {
             rawData = { r1: rows.map(r => r[0]).slice(0, 32), s1: rows.map(r => r[1]).slice(0, 32), r2: rows.map(r => r[2]).slice(0, 16), s2: rows.map(r => r[3]).slice(0, 16), r3: rows.map(r => r[4]).slice(0, 8), s3: rows.map(r => r[5]).slice(0, 8), r4: rows.map(r => r[6]).slice(0, 4), s4: rows.map(r => r[7]).slice(0, 4), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds };
           } else if (bracketSize === 16) {
+            // FIX ADELAIDE A: Leemos r4 (finalistas) de columnas 6(G) y 7(H)
             rawData = { 
                 r1: rows.map(r => r[0]).slice(0, 16), 
                 s1: rows.map(r => r[1]).slice(0, 16), 
@@ -1096,6 +967,7 @@ export default function Home() {
                 s2: rows.map(r => r[3]).slice(0, 8), 
                 r3: rows.map(r => r[4]).slice(0, 4), 
                 s3: rows.map(r => r[5]).slice(0, 4), 
+                // Lectura explícita de Final
                 r4: rows.map(r => r[6]).slice(0, 2), 
                 s4: rows.map(r => r[7]).slice(0, 2), 
                 winner: winner, 
@@ -1526,14 +1398,7 @@ export default function Home() {
               </div>
             )}
             
-            {/* Botón Lista Basti SOLO si hay datos del cuadro */}
-            {bracketData.hasData && (
-                <div className="mt-8 flex justify-center pb-4">
-                   <Button onClick={enviarListaBasti} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-md flex items-center">
-                        <List className="mr-2" /> ENVIAR LISTA BASTI
-                   </Button>
-                </div>
-            )}
+            {/* Botón Lista Basti REMOVED from here */}
 
           </div>
         )}
