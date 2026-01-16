@@ -29,7 +29,7 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -1029,11 +1029,13 @@ export default function Home() {
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
+          // Solo leemos GANADOR si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
-          const runnerUp = rows.length > 1 ? (rows[1][8] || rows[1][6] || rows[1][4] || "") : "";
+          
+          // FIX: Solo leemos SUBCAMPEÓN si hay un GANADOR definido
+          const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
 
           if (bracketSize === 32) {
-            // FIX ROUND 32 FINALISTS (G, H indices 8, 9)
             rawData = { 
                 r1: rows.map(r => r[0]).slice(0, 32), 
                 s1: rows.map(r => r[1]).slice(0, 32), 
@@ -1043,7 +1045,7 @@ export default function Home() {
                 s3: rows.map(r => r[5]).slice(0, 8), 
                 r4: rows.map(r => r[6]).slice(0, 4), 
                 s4: rows.map(r => r[7]).slice(0, 4), 
-                // Add Explicit Finalists Read
+                // Lectura explícita de Finalistas (Cols I, J -> index 8, 9)
                 r5: rows.map(r => r[8]).slice(0, 2), 
                 s5: rows.map(r => r[9]).slice(0, 2),
                 winner: winner, 
@@ -1496,10 +1498,7 @@ export default function Home() {
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti VISIBLE aqui */}
-                            <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-10 w-12 rounded-xl">
-                                <List className="w-5 h-5" />
-                            </Button>
+                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                             <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
                                 <Shuffle className="mr-2 w-4 h-4" /> Sortear
@@ -1516,9 +1515,6 @@ export default function Home() {
                 )}
               </div>
             )}
-            
-            {/* Botón Lista Basti REMOVED from here */}
-
           </div>
         )}
 
