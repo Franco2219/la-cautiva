@@ -435,9 +435,7 @@ export default function Home() {
         capacity: cap,
         players: [],
         results: [["-","-","-"], ["-","-","-"], ["-","-","-"]],
-        positions: ["-", "-", "-"],
-        points: ["", "", ""],
-        diff: ["", "", ""]
+        positions: ["-", "-", "-"]
       }));
 
       for (let i = 0; i < numGroups; i++) {
@@ -923,11 +921,18 @@ export default function Home() {
       let allRows = parseCSV(csvText);
       let rows = [];
       
-      // LOGICA DE CORTE: Leer desde startRow hacia abajo y frenar al encontrar celda vacía
+      // LOGICA DE CORTE ESTRICTO
       for (let i = startRow; i < allRows.length; i++) {
-          const cell = allRows[i] && allRows[i][startCol] ? allRows[i][startCol].trim() : "";
-          if (!cell || cell === "") break; 
-          rows.push(allRows[i].slice(startCol));
+          const row = allRows[i];
+          const cell = row && row[startCol] ? row[startCol].trim() : "";
+          
+          // Detectar fin de tabla: celda vacía, guión o título de siguiente sección
+          const isHeader = ["categoría", "categoria", "torneo", "zona", "grupo"].some(kw => cell.toLowerCase().includes(kw));
+          
+          if (!cell || cell === "" || cell === "-" || (i > startRow && isHeader)) {
+              break;
+          }
+          rows.push(row.slice(startCol));
       }
 
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
