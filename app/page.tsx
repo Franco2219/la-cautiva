@@ -1122,11 +1122,6 @@ export default function Home() {
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
               }).map((t) => {
-                const tStyle = getTournamentStyle(t.short);
-                // Extraemos el color base (ej: "bg-blue-800") y construimos la clase hover ("hover:bg-blue-800")
-                const hoverBgClass = tStyle.color.replace("bg-", "hover:bg-");
-                const hoverBorderClass = tStyle.borderColor.replace("border-", "hover:border-");
-                
                 return (
                   <Button 
                     key={t.id} 
@@ -1134,8 +1129,7 @@ export default function Home() {
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} 
-                    // Botón por defecto naranja, hover del color del torneo
-                    className={`w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] ${hoverBorderClass} ${hoverBgClass} hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                    className={buttonStyle}
                   >
                     {t.name}
                   </Button>
