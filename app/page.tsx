@@ -27,14 +27,14 @@ const tournaments = [
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
 const TOURNAMENT_STYLES: any = {
-    // SUPERFICIE DURA (AZUL OSCURO)
-    "adelaide": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/adelaide.png", pointsLogo: null },
-    "ao": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/ao.png", pointsLogo: null },
-    "us": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/usopen.png", pointsLogo: null },
-    "iw": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/indianwells.png", pointsLogo: null },
-    "masters": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/masters.png", pointsLogo: null },
+    // SUPERFICIE DURA (AZUL OSCURO - BLUE 900)
+    "adelaide": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/adelaide.png", pointsLogo: null },
+    "ao": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/ao.png", pointsLogo: null },
+    "us": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/usopen.png", pointsLogo: null },
+    "iw": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/indianwells.png", pointsLogo: null },
+    "masters": { color: "bg-blue-950", borderColor: "border-blue-950", textColor: "text-blue-950", trophyColor: "text-blue-950", logo: "/logos/masters.png", pointsLogo: null },
     
-    // CESPED (VERDE CLARO)
+    // CESPED (VERDE CLARO - GREEN 500)
     "wimbledon": { color: "bg-green-500", borderColor: "border-green-500", textColor: "text-green-500", trophyColor: "text-green-500", logo: "/logos/wimbledon.png", pointsLogo: null },
 
     // POLVO DE LADRILLO (NARANJA - DEFAULT)
@@ -71,7 +71,18 @@ export default function Home() {
 
   const getTournamentStyle = (shortName: string) => {
       const key = shortName ? shortName.toLowerCase().trim() : "default";
-      const map: any = { "adelaide": "adelaide", "ao": "ao", "us open": "us", "us": "us", "indian wells": "iw", "iw": "iw", "masters": "masters", "wimbledon": "wimbledon", "w": "wimbledon" };
+      const map: any = { 
+          "adelaide": "adelaide", 
+          "ao": "ao", 
+          "us open": "us", "us": "us", 
+          "indian wells": "iw", "iw": "iw", 
+          "masters": "masters", 
+          "wimbledon": "wimbledon", "w": "wimbledon",
+          "roland garros": "rg", "rg": "rg",
+          "monte carlo": "mc", "mc": "mc",
+          "s8 500": "s8_500", "super 8 / 500": "s8_500",
+          "s8 250": "s8_250", "super 8 / 250": "s8_250"
+      };
       const styleKey = map[key] || "default";
       return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
   };
@@ -143,7 +154,6 @@ export default function Home() {
 
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
-        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
         
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) {
@@ -215,6 +225,7 @@ export default function Home() {
             });
         }
 
+        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
         if (tourType === "full") {
             const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
             try {
@@ -1104,11 +1115,6 @@ export default function Home() {
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
               }).map((t) => {
-                const tStyle = getTournamentStyle(t.short);
-                // Generamos las clases dinámicas para el hover (fondo y borde)
-                const hoverBgClass = tStyle.color.replace("bg-", "hover:bg-");
-                const hoverBorderClass = tStyle.borderColor.replace("border-", "hover:border-");
-                
                 return (
                   <Button 
                     key={t.id} 
@@ -1116,10 +1122,7 @@ export default function Home() {
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} 
-                    // CORRECCIÓN AQUÍ:
-                    // 1. Borde y fondo iniciales naranjas (border-[#b35a38] bg-[#b35a38])
-                    // 2. Borde y fondo al hover dinámicos (${hoverBorderClass} ${hoverBgClass})
-                    className={`w-full text-lg h-20 border-2 border-[#b35a38] bg-[#b35a38] ${hoverBorderClass} ${hoverBgClass} text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                    className={buttonStyle}
                   >
                     {t.name}
                   </Button>
@@ -1334,13 +1337,13 @@ export default function Home() {
                       <>
                         <div key={idx} className="relative flex flex-col space-y-8">
                           <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-black font-black text-xs ml-1">{s1}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-black font-black text-xs ml-1">{s2}</span>
@@ -1398,12 +1401,12 @@ export default function Home() {
                         return (
                             <div className="relative flex flex-col space-y-2">
                                 <div className={`h-8 border-b-2 ${isTopWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {topFinalistName || ""}
                                     </span>
                                 </div>
                                 <div className={`h-8 border-b-2 ${isBotWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {botFinalistName || ""}
                                     </span>
                                 </div>
