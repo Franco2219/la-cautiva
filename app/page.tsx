@@ -1096,8 +1096,7 @@ export default function Home() {
               ))}
             </div>
           )}
-
-          {navState.level === "tournament-selection" && (
+            {navState.level === "tournament-selection" && (
             <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
@@ -1106,8 +1105,9 @@ export default function Home() {
                 return true;
               }).map((t) => {
                 const tStyle = getTournamentStyle(t.short);
-                // Extraemos el color base (ej: "bg-blue-800") y construimos la clase hover ("hover:bg-blue-800")
-                const hoverClass = tStyle.color.replace("bg-", "hover:bg-");
+                // Generamos las clases dinámicas para el hover (fondo y borde)
+                const hoverBgClass = tStyle.color.replace("bg-", "hover:bg-");
+                const hoverBorderClass = tStyle.borderColor.replace("border-", "hover:border-");
                 
                 return (
                   <Button 
@@ -1116,8 +1116,10 @@ export default function Home() {
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} 
-                    // Botón por defecto naranja, hover del color del torneo
-                    className={`w-full text-lg h-20 border-2 ${tStyle.borderColor} bg-[#b35a38] ${hoverClass} text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                    // CORRECCIÓN AQUÍ:
+                    // 1. Borde y fondo iniciales naranjas (border-[#b35a38] bg-[#b35a38])
+                    // 2. Borde y fondo al hover dinámicos (${hoverBorderClass} ${hoverBgClass})
+                    className={`w-full text-lg h-20 border-2 border-[#b35a38] bg-[#b35a38] ${hoverBorderClass} ${hoverBgClass} text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
                   >
                     {t.name}
                   </Button>
