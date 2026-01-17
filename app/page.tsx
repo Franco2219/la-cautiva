@@ -37,7 +37,13 @@ const TOURNAMENT_STYLES: any = {
     // CESPED (VERDE CLARO)
     "wimbledon": { color: "bg-green-500", borderColor: "border-green-500", textColor: "text-green-500", trophyColor: "text-green-500", logo: "/logos/wimbledon.png", pointsLogo: null },
 
-    // DEFAULT / POLVO DE LADRILLO (NARANJA)
+    // POLVO DE LADRILLO (NARANJA - DEFAULT)
+    "rg": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/rg.png", pointsLogo: null },
+    "mc": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/mc.png", pointsLogo: null },
+    "s8_500": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/s8_500.png", pointsLogo: null },
+    "s8_250": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/s8_250.png", pointsLogo: null },
+
+    // FALLBACK
     "default": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logo.png", pointsLogo: null }
 };
 
