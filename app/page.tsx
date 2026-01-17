@@ -34,9 +34,16 @@ const TOURNAMENT_STYLES: any = {
     "iw": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/indianwells.png", pointsLogo: null },
     "masters": { color: "bg-blue-950", borderColor: "border-blue-950", textColor: "text-blue-950", trophyColor: "text-blue-950", logo: "/logos/masters.png", pointsLogo: null },
     
-    // CESPED (VERDE CLARO - GREEN 500)
-    "wimbledon": { color: "bg-green-500", borderColor: "border-green-500", textColor: "text-green-500", trophyColor: "text-green-500", logo: "/logos/wimbledon.png", pointsLogo: null },
-
+    // CESPED (VERDE OFICIAL WIMBLEDON)
+    "wimbledon": { 
+      color: "bg-[#00703C]", 
+      borderColor: "border-[#00703C]", 
+      textColor: "text-[#00703C]", 
+      trophyColor: "text-[#00703C]", 
+      logo: "/logos/wimbledon.png", 
+      pointsLogo: null 
+    },
+    
     // POLVO DE LADRILLO (NARANJA - DEFAULT)
     "rg": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/rg.png", pointsLogo: null },
     "mc": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/mc.png", pointsLogo: null },
