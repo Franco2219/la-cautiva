@@ -87,6 +87,12 @@ export default function Home() {
       return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
   };
 
+  // Función helper para obtener el nombre completo
+  const getTournamentName = (shortName: string) => {
+      const tour = tournaments.find(t => t.short === shortName);
+      return tour ? tour.name : shortName;
+  };
+
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${navState.tournamentShort || navState.currentTour}*\n\n`;
     
@@ -1107,26 +1113,31 @@ export default function Home() {
               ))}
             </div>
           )}
-
-          {navState.level === "tournament-selection" && (
+            {navState.level === "tournament-selection" && (
             <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
-              }).map((t) => (
-                <Button 
-                  key={t.id} 
-                  onClick={() => {
-                    if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
-                    else { fetchGroupPhase(navState.category, t.short); }
-                  }} 
-                  className={buttonStyle}
-                >
-                  {t.name}
-                </Button>
-              ))}
+              }).map((t) => {
+                const tStyle = getTournamentStyle(t.short);
+                const hoverBgClass = tStyle.color.replace("bg-", "hover:bg-");
+                const hoverBorderClass = tStyle.borderColor.replace("border-", "hover:border-");
+                
+                return (
+                  <Button 
+                    key={t.id} 
+                    onClick={() => {
+                      if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
+                      else { fetchGroupPhase(navState.category, t.short); }
+                    }} 
+                    className={`w-full text-lg h-20 border-2 border-[#b35a38] bg-[#b35a38] ${hoverBorderClass} ${hoverBgClass} text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                  >
+                    {t.name}
+                  </Button>
+                );
+              })}
             </div>
           )}
 
@@ -1136,12 +1147,20 @@ export default function Home() {
               {navState.hasGroups ? (
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
-                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour, tournamentShort: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
+                  <Button onClick={() => { 
+                      const tourName = getTournamentName(navState.currentTour);
+                      fetchBracketData(navState.currentCat, navState.currentTour); 
+                      setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
+                  }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
                 </>
               ) : (
                 <>
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
-                  <Button onClick={() => { fetchBracketData(navState.currentCat, navState.currentTour); setNavState({ ...navState, level: "direct-bracket", tournament: navState.currentTour, tournamentShort: navState.currentTour }); }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
+                  <Button onClick={() => { 
+                      const tourName = getTournamentName(navState.currentTour);
+                      fetchBracketData(navState.currentCat, navState.currentTour); 
+                      setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
+                  }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
                 </>
               )}
             </div>
@@ -1223,7 +1242,7 @@ export default function Home() {
                    {getTournamentStyle(navState.currentTour).logo && <Image src={getTournamentStyle(navState.currentTour).logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
                </div>
                <div className="flex-1">
-                 <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
+                 <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(navState.currentTour)} - Fase de Grupos</h2>
                  <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
                </div>
                <div className="w-20 h-20 flex items-center justify-center relative">
