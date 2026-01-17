@@ -26,19 +26,20 @@ const tournaments = [
 ]
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
+// Si logo o pointsLogo es null, no se mostrará nada.
 const TOURNAMENT_STYLES: any = {
-    // SUPERFICIE DURA (AZUL)
-    "adelaide": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/adelaide.png", pointsLogo: "/logos/points_generic.png" },
-    "ao": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/ao.png", pointsLogo: "/logos/points_generic.png" },
-    "us": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/usopen.png", pointsLogo: "/logos/points_generic.png" },
-    "iw": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/indianwells.png", pointsLogo: "/logos/points_generic.png" },
-    "masters": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", logo: "/logos/masters.png", pointsLogo: "/logos/points_generic.png" },
+    // SUPERFICIE DURA (AZUL OSCURO)
+    "adelaide": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/adelaide.png", pointsLogo: null },
+    "ao": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/ao.png", pointsLogo: null },
+    "us": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/usopen.png", pointsLogo: null },
+    "iw": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", trophyColor: "text-blue-800", logo: "/logos/indianwells.png", pointsLogo: null },
+    "masters": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/masters.png", pointsLogo: null },
     
-    // CESPED (VERDE)
-    "wimbledon": { color: "bg-green-700", borderColor: "border-green-700", textColor: "text-green-700", logo: "/logos/wimbledon.png", pointsLogo: "/logos/points_generic.png" },
+    // CESPED (VERDE CLARO)
+    "wimbledon": { color: "bg-green-500", borderColor: "border-green-500", textColor: "text-green-500", trophyColor: "text-green-500", logo: "/logos/wimbledon.png", pointsLogo: null },
 
     // DEFAULT / POLVO DE LADRILLO (NARANJA)
-    "default": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", logo: "/logo.png", pointsLogo: "/logos/points_generic.png" }
+    "default": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logo.png", pointsLogo: null }
 };
 
 export default function Home() {
@@ -65,7 +66,6 @@ export default function Home() {
 
   const getTournamentStyle = (shortName: string) => {
       const key = shortName ? shortName.toLowerCase().trim() : "default";
-      // Mapeo especial para nombres cortos vs IDs
       const map: any = { "adelaide": "adelaide", "ao": "ao", "us open": "us", "us": "us", "indian wells": "iw", "iw": "iw", "masters": "masters", "wimbledon": "wimbledon", "w": "wimbledon" };
       const styleKey = map[key] || "default";
       return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
@@ -109,7 +109,7 @@ export default function Home() {
       }
   };
 
-  // --- LÓGICA DE RANKING (Orden Global + Puntos Torneo) ---
+  // --- LÓGICA DE RANKING ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -118,35 +118,23 @@ export default function Home() {
         const txt = await res.text();
         const rows = parseCSV(txt);
 
-        // --- FETCH GLOBAL RANKING PARA ORDENAMIENTO ---
         const catName = navState.category || navState.selectedCategory;
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${catName} 2026`)}`;
         
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
         
-        // Guardamos los nombres exactos del ranking en orden (índice 0 = top 1)
         const rankNames = parseCSV(rankCsv).slice(1).map(row => row[1] ? row[1].trim().toLowerCase() : "");
         
-        // Helper mejorado para buscar el índice de ranking
         const getRankIndex = (name: string) => {
             if (!name) return 99999;
             const n = name.toLowerCase().trim();
-            
-            // 1. Búsqueda exacta
             let idx = rankNames.indexOf(n);
             if (idx !== -1) return idx;
-
-            // 2. Normalización de nombre tipo "Apellido, N" -> "Apellido N" o "N Apellido"
-            // Ej: "Palmero, T" -> busca "palmero"
-            const parts = n.replace(/,/g, "").split(" ").filter(p => p.length > 2); // Filtramos iniciales cortas
-            
+            const parts = n.replace(/,/g, "").split(" ").filter(p => p.length > 2); 
             if (parts.length > 0) {
-                 // Buscamos si alguna parte del apellido está contenida en el nombre del ranking
-                 // Priorizamos el apellido principal
                  idx = rankNames.findIndex(rankName => rankName.includes(parts[0]));
             }
-
             return idx === -1 ? 99999 : idx;
         };
 
@@ -183,19 +171,11 @@ export default function Home() {
         };
 
         const pts = {
-            champion: getPoints(1),   
-            finalist: getPoints(2),   
-            semi: getPoints(3),       
-            quarters: getPoints(4),   
-            octavos: getPoints(5),    
-            dieciseis: getPoints(6),
-            groupWin1: getPoints(7), 
-            groupWin2: getPoints(8), 
-            groupWin3: getPoints(9) 
+            champion: getPoints(1), finalist: getPoints(2), semi: getPoints(3), quarters: getPoints(4),   
+            octavos: getPoints(5), dieciseis: getPoints(6), groupWin1: getPoints(7), groupWin2: getPoints(8), groupWin3: getPoints(9) 
         };
 
         const playerScores: any = {};
-        
         const addRoundScore = (name: string, score: number) => {
             if (!name || name === "BYE" || name === "") return;
             const cleanName = name.trim();
@@ -206,37 +186,28 @@ export default function Home() {
 
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, r5, winner, bracketSize } = bracketData;
-            
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
             let finalists: string[] = [];
 
             if (bracketSize === 32) {
-                semis = r4; cuartos = r3; octavos = r2; dieciseis = r1;
-                finalists = r5 || [];
+                semis = r4; cuartos = r3; octavos = r2; dieciseis = r1; finalists = r5 || [];
             } else if (bracketSize === 16) {
-                semis = r3; cuartos = r2; octavos = r1;
-                finalists = r4 || [];
+                semis = r3; cuartos = r2; octavos = r1; finalists = r4 || [];
             } else { 
-                semis = r2; cuartos = r1;
-                finalists = r3 || []; 
+                semis = r2; cuartos = r1; finalists = r3 || []; 
             }
 
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
             if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
-            
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
             semis.forEach((p: string) => addRoundScore(p, pts.semi));
             
             const winnerName = winner ? winner.trim().toLowerCase() : "";
-
             finalists.forEach((p: string) => {
                 if (p && p !== "BYE" && p !== "") {
                     const pClean = p.trim();
-                    if (winnerName && pClean.toLowerCase() === winnerName) {
-                        addRoundScore(pClean, pts.champion);
-                    } else {
-                        addRoundScore(pClean, pts.finalist);
-                    }
+                    if (winnerName && pClean.toLowerCase() === winnerName) addRoundScore(pClean, pts.champion);
+                    else addRoundScore(pClean, pts.finalist);
                 }
             });
         }
@@ -290,18 +261,12 @@ export default function Home() {
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
-        // ORDENAR POR POSICIÓN EN EL RANKING GLOBAL 2026 (Menor índice = mejor ranking)
         const rankingArray = Object.keys(playerScores).map(key => ({
-            name: key,
-            points: playerScores[key]
+            name: key, points: playerScores[key]
         })).sort((a, b) => {
             const rankA = getRankIndex(a.name);
             const rankB = getRankIndex(b.name);
-            
-            // Si tienen el mismo ranking (o no están, 99999), desempatamos por puntos del torneo
-            if (rankA === rankB) {
-                return b.points - a.points;
-            }
+            if (rankA === rankB) return b.points - a.points;
             return rankA - rankB; 
         });
 
@@ -356,10 +321,8 @@ export default function Home() {
         const byeCount = bracketSize - totalPlayers;
         let slots: any[] = Array(bracketSize).fill(null);
         
-        let pos1 = 0;
-        let pos2 = bracketSize - 1;
+        let pos1 = 0; let pos2 = bracketSize - 1;
         let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
-        
         let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
@@ -371,22 +334,17 @@ export default function Home() {
 
         if (seeds[2] && seeds[3]) {
             const group34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
-            slots[pos34[0]] = group34[0]; 
-            slots[pos34[1]] = group34[1]; 
-        } else if (seeds[2]) {
-             slots[pos34[Math.floor(Math.random()*2)]] = seeds[2];
-        }
+            slots[pos34[0]] = group34[0]; slots[pos34[1]] = group34[1]; 
+        } else if (seeds[2]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[2]; }
 
         if (seeds.length >= 8 && pos58.length === 4) {
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
             const seedsTop = group58.slice(0, 2);
             const seedsBot = group58.slice(2, 4);
             const posTop = [pos58[0], pos58[1]].sort(() => Math.random() - 0.5);
-            slots[posTop[0]] = seedsTop[0];
-            slots[posTop[1]] = seedsTop[1];
+            slots[posTop[0]] = seedsTop[0]; slots[posTop[1]] = seedsTop[1];
             const posBot = [pos58[2], pos58[3]].sort(() => Math.random() - 0.5);
-            slots[posBot[0]] = seedsBot[0];
-            slots[posBot[1]] = seedsBot[1];
+            slots[posBot[0]] = seedsBot[0]; slots[posBot[1]] = seedsBot[1];
         }
 
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
@@ -407,11 +365,8 @@ export default function Home() {
 
         let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
-             if (slots[i] === null && slots[i+1] === null) {
-                 emptyPairsIndices.push(i);
-             }
+             if (slots[i] === null && slots[i+1] === null) emptyPairsIndices.push(i);
         }
-        
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2);
         let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
         
@@ -437,7 +392,6 @@ export default function Home() {
         
         const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
         nonSeeds.sort(() => Math.random() - 0.5); 
-
         let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
         let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
@@ -446,14 +400,9 @@ export default function Home() {
              const emptyTop = emptySlots.filter(i => i < bracketSize/2);
              const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
              let targetIdx = -1;
-
-             if (countTop <= countBot && emptyTop.length > 0) {
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             } else if (emptyBot.length > 0) {
-                  targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-             } else if (emptyTop.length > 0) { 
-                  targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             }
+             if (countTop <= countBot && emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
+             else if (emptyBot.length > 0) targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
+             else if (emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
 
              if (targetIdx !== -1) {
                  slots[targetIdx] = player;
@@ -461,29 +410,17 @@ export default function Home() {
                  emptySlots = emptySlots.filter(i => i !== targetIdx);
              }
         }
-
-        for (let i = 0; i < slots.length; i++) {
-            if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 };
-        }
+        for (let i = 0; i < slots.length; i++) { if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 }; }
 
         let matches = [];
         for (let i = 0; i < bracketSize; i += 2) {
-            let p1 = slots[i];
-            let p2 = slots[i+1];
-            if (p1?.name === "BYE" && p2?.name !== "BYE") {
-                let temp = p1; p1 = p2; p2 = temp;
-            }
+            let p1 = slots[i]; let p2 = slots[i+1];
+            if (p1?.name === "BYE" && p2?.name !== "BYE") { let temp = p1; p1 = p2; p2 = temp; }
             matches.push({ p1, p2 });
         }
-
         setGeneratedBracket(matches);
         setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
-
-    } catch (e) {
-        alert("Error al generar sorteo directo.");
-    } finally {
-        setIsLoading(false);
-    }
+    } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
 
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
@@ -520,10 +457,7 @@ export default function Home() {
       const totalPlayers = entryList.length;
       if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
 
-      let groupsOf4 = 0; // Masters
-      let groupsOf3 = 0;
-      let groupsOf2 = 0;
-      let capacities = [];
+      let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
 
       if (tournamentShort === "Masters") {
           groupsOf4 = Math.floor(totalPlayers / 4);
@@ -532,26 +466,19 @@ export default function Home() {
           if (remainder === 3) capacities.push(3);
           else if (remainder === 2) capacities.push(2);
           else if (remainder === 1) {
-              if (capacities.length > 0) capacities[capacities.length - 1] += 1; // 5
+              if (capacities.length > 0) capacities[capacities.length - 1] += 1; 
               else capacities.push(1);
           }
       } else {
           const remainder = totalPlayers % 3;
-          if (remainder === 0) {
-            groupsOf3 = totalPlayers / 3;
-          } else if (remainder === 1) {
-            groupsOf2 = 2;
-            groupsOf3 = (totalPlayers - 4) / 3;
-          } else if (remainder === 2) {
-            groupsOf2 = 1;
-            groupsOf3 = (totalPlayers - 2) / 3;
-          }
+          if (remainder === 0) { groupsOf3 = totalPlayers / 3; } 
+          else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } 
+          else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; }
           for(let i=0; i<groupsOf3; i++) capacities.push(3);
           for(let i=0; i<groupsOf2; i++) capacities.push(2);
       }
       
       capacities = capacities.sort(() => Math.random() - 0.5);
-
       const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({
         groupName: `Zona ${i + 1}`,
@@ -563,12 +490,8 @@ export default function Home() {
         diff: ["", "", "", ""]
       }));
 
-      for (let i = 0; i < numGroups; i++) {
-        if (entryList[i]) groups[i].players.push(entryList[i].name);
-      }
-
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) groups[i].players.push(entryList[i].name); }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
-      
       let pIdx = 0;
       for (let g = 0; g < numGroups; g++) {
         while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) {
@@ -576,12 +499,9 @@ export default function Home() {
           pIdx++;
         }
       }
-
       setGroupData(groups);
       setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
-    } catch (e) {
-      alert("Error al procesar el sorteo.");
-    } finally { setIsLoading(false); }
+    } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
   }
 
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
@@ -594,7 +514,6 @@ export default function Home() {
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       const res = await fetch(url);
       const csvText = await res.text();
-      
       let foundGroups = false;
 
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
@@ -617,23 +536,10 @@ export default function Home() {
             playersRaw.forEach((row, index) => {
                 if (row && row[0] && row[0] !== "-" && row[0] !== "") {
                     players.push(row[0]);
-                    
-                    let rawPos = row[4] || "";
-                    if (rawPos.startsWith("#")) rawPos = "-";
-                    positions.push(rawPos); 
-                    
-                    let rawPts = row[5] || "";
-                    if (rawPts.startsWith("#")) rawPts = "";
-                    points.push(rawPts);
-
-                    let rawDif = row[6] || "";
-                    if (rawDif.startsWith("#")) rawDif = "";
-                    diff.push(rawDif);
-
-                    let rawGames = row[7] || "";
-                    if (rawGames.startsWith("#")) rawGames = "";
-                    gamesDiff.push(rawGames);
-
+                    let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); 
+                    let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts);
+                    let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif);
+                    let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames);
                     validPlayersIndices.push(index); 
                 }
             });
@@ -649,7 +555,6 @@ export default function Home() {
                 }
                 results.push(rowResults);
             }
-
             parsedGroups.push({
               groupName: rows[i][0],
               players: players,
@@ -667,34 +572,14 @@ export default function Home() {
           setIsSorteoConfirmado(true);
           setIsFixedData(true);
           foundGroups = true;
-          setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort,
-            hasGroups: true 
-          });
+          setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: true });
         }
       } 
-      
       if (!foundGroups) {
-        setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort, 
-            hasGroups: false 
-        });
+        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
       }
-
     } catch (e) {
-        setNavState({ 
-            ...navState, 
-            level: "tournament-phases", 
-            currentCat: categoryShort, 
-            currentTour: tournamentShort,
-            hasGroups: false 
-        });
+        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
     } finally { setIsLoading(false); }
   }
 
@@ -743,14 +628,11 @@ export default function Home() {
             originalPos: group.positions[i]
         }));
 
-        // Función para saber si A le ganó a B (Head to Head)
         const checkHeadToHead = (idxA: number, idxB: number) => {
             const result = group.results[idxA][idxB]; 
             if (!result || result.length < 3) return 0;
-            
             const sets = result.trim().split(" ");
             let winsA = 0; let winsB = 0;
-            
             sets.forEach((s: string) => {
                 if (s.includes("/")) {
                     const [gamesA, gamesB] = s.split("/").map(Number);
@@ -758,23 +640,17 @@ export default function Home() {
                     else if (gamesB > gamesA) winsB++;
                 }
             });
-            
             if (winsA > winsB) return 1; 
             if (winsB > winsA) return -1; 
             return 0;
         };
 
-        // Ordenamiento
         playersData.sort((a: any, b: any) => {
             if (b.points !== a.points) return b.points - a.points;
             if (b.setsDiff !== a.setsDiff) return b.setsDiff - a.setsDiff;
             if (b.gamesDiff !== a.gamesDiff) return b.gamesDiff - a.gamesDiff;
-            
-            // 4. Head to Head
             const h2h = checkHeadToHead(a.index, b.index);
-            if (h2h !== 0) return h2h * -1; // -1 porque queremos que el ganador (1) vaya antes
-
-            // 5. Empate total (Circular o real) -> Devolver 0 para mantener igualdad
+            if (h2h !== 0) return h2h * -1; 
             return 0;
         });
 
@@ -786,27 +662,18 @@ export default function Home() {
             } else {
                  const prev = playersData[i-1];
                  const curr = playersData[i];
-                 
-                 // Verificamos si son realmente iguales en métricas
                  const areEqualMetrics = prev.points === curr.points && 
                                          prev.setsDiff === curr.setsDiff && 
                                          prev.gamesDiff === curr.gamesDiff;
-                 
                  const h2h = checkHeadToHead(prev.index, curr.index);
 
-                 // Si todo es igual y el H2H no desempató (circular) o es irrelevante
-                 // En la lógica de sort, si h2h != 0, ya los ordenó.
-                 // Si son iguales en métricas Y el sort no pudo separarlos (h2h=0), entonces comparten puesto.
-                 
-                 // Chequeo simplificado: si el sort los dejó "pegados" y sus métricas son iguales y no hay H2H decisivo entre ellos
                  if (areEqualMetrics && h2h === 0) {
-                     ranks[curr.index] = ranks[prev.index]; // Mismo rango
+                     ranks[curr.index] = ranks[prev.index]; 
                  } else {
-                     ranks[curr.index] = i + 1; // Nuevo rango
+                     ranks[curr.index] = i + 1; 
                  }
             }
         }
-        
         return ranks;
     };
 
@@ -816,22 +683,17 @@ export default function Home() {
     return (
     <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-between`}>
-          <div className="w-12 h-12 flex items-center justify-center relative">
-               <Image src={style.logo} alt="Tour Logo" width={48} height={48} className="object-contain" />
+          <div className="w-20 h-20 flex items-center justify-center relative">
+               {style.logo && <Image src={style.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
           </div>
           <span className="flex-1 text-center">{group.groupName}</span>
-          <div className="w-12 h-12 flex items-center justify-center relative">
-               <Image src={style.pointsLogo} alt="Points" width={40} height={40} className="object-contain opacity-80" />
+          <div className="w-20 h-20 flex items-center justify-center relative">
+               {style.pointsLogo && <Image src={style.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
           </div>
       </div>
       <style jsx>{`
-        .hide-scroll::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scroll {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       <div className="overflow-x-auto w-full hide-scroll">
           <table className="w-max min-w-full text-[11px] md:text-xs">
@@ -842,11 +704,8 @@ export default function Home() {
                   let shortName = p;
                   if (p) {
                       const clean = p.replace(/,/g, "").trim().split(/\s+/);
-                      if (clean.length > 1) {
-                          shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
-                      } else {
-                          shortName = clean[0];
-                      }
+                      if (clean.length > 1) shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                      else shortName = clean[0];
                   }
                   return (
                     <th key={i} className={`p-3 border-r text-center font-black uppercase min-w-[80px] whitespace-nowrap ${style.textColor}`}>
@@ -893,6 +752,7 @@ export default function Home() {
   };
 
   const generatePlayoffBracket = (qualifiers: any[]) => {
+    // ... (Igual)
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
     if (totalPlayers > 16) bracketSize = 32; 
@@ -912,99 +772,66 @@ export default function Home() {
         if(winners[i]) playersWithBye.add(winners[i].name);
         else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
     }
-
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-
     const wZ1 = winners.find(w => w.groupIndex === 0);
     const wZ2 = winners.find(w => w.groupIndex === 1);
     const wZ3 = winners.find(w => w.groupIndex === 2);
     const wZ4 = winners.find(w => w.groupIndex === 3);
     const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
 
-    const idxTop = 0; 
-    const idxBottom = numMatches - 1;
-    const idxMidTop = halfMatches - 1; 
-    const idxMidBottom = halfMatches; 
+    const idxTop = 0; const idxBottom = numMatches - 1;
+    const idxMidTop = halfMatches - 1; const idxMidBottom = halfMatches; 
 
     if (wZ1) matches[idxTop].p1 = wZ1;
     if (wZ2) matches[idxBottom].p1 = wZ2;
-
     const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
     if (mids.length > 0) matches[idxMidTop].p1 = mids[0];
     if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
-
-    matches.forEach(m => {
-        if (!m.p1 && otherWinners.length > 0) m.p1 = otherWinners.pop();
-    });
+    matches.forEach(m => { if (!m.p1 && otherWinners.length > 0) m.p1 = otherWinners.pop(); });
 
     const topHalfMatches = matches.slice(0, halfMatches);
     const bottomHalfMatches = matches.slice(halfMatches);
-
     const zonesInTop = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
     const zonesInBottom = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
-
     const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
     const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
     const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
-
     const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
-    let poolTop = shuffle([...mustGoTop]);
-    let poolBottom = shuffle([...mustGoBottom]);
-    let poolFree = shuffle([...freeAgents]);
+    let poolTop = shuffle([...mustGoTop]); let poolBottom = shuffle([...mustGoBottom]); let poolFree = shuffle([...freeAgents]);
 
     while (poolTop.length < halfMatches && poolFree.length > 0) poolTop.push(poolFree.pop());
     while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) poolBottom.push(poolFree.pop());
-    
-    poolTop = shuffle(poolTop);
-    poolBottom = shuffle(poolBottom);
+    poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
 
     matches.forEach((match, index) => {
         const isTopHalf = index < halfMatches;
         let pool = isTopHalf ? poolTop : poolBottom;
-
         if (match.p1) {
-            if (playersWithBye.has(match.p1.name)) {
-                match.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-            } else {
-                if (pool.length > 0) {
-                    match.p2 = pool.pop();
-                } else {
-                    match.p2 = { name: "", rank: 0 };
-                }
-            }
+            if (playersWithBye.has(match.p1.name)) { match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; } 
+            else { if (pool.length > 0) match.p2 = pool.pop(); else match.p2 = { name: "", rank: 0 }; }
         } else {
-            if (pool.length >= 2) {
-                match.p1 = pool.pop();
-                match.p2 = pool.pop();
-            } else if (pool.length === 1) {
-                match.p1 = pool.pop();
-                match.p2 = { name: "BYE", rank: 0 };
-            }
+            if (pool.length >= 2) { match.p1 = pool.pop(); match.p2 = pool.pop(); } 
+            else if (pool.length === 1) { match.p1 = pool.pop(); match.p2 = { name: "BYE", rank: 0 }; }
         }
     });
-
     return { matches, bracketSize };
   }
 
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
+      // ... (Igual)
       setIsLoading(true);
       setGeneratedBracket([]);
-      
       const sheetName = `Grupos ${tournamentShort} ${category}`;
       const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      
       try {
           const response = await fetch(url);
           const csvText = await response.text();
           const rows = parseCSV(csvText);
-          
           let qualifiers = [];
-          
           for(let i = 0; i < 50; i++) { 
               if (rows[i] && rows[i].length > 5) {
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
-                  
                   if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
                       qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
                   }
@@ -1013,41 +840,29 @@ export default function Home() {
                   }
               }
           }
-
           if (qualifiers.length >= 3) { 
              const result = generatePlayoffBracket(qualifiers);
              if (result) {
                  setGeneratedBracket(result.matches);
                  setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
              }
-          } else {
-             alert("No se encontraron clasificados para sortear");
-          }
-
-      } catch (e) {
-          console.error(e);
-          alert("Error leyendo los clasificados.");
-      } finally {
-          setIsLoading(false);
-      }
+          } else { alert("No se encontraron clasificados para sortear"); }
+      } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
   }
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
-    
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
         const p2Name = match.p2 ? match.p2.name : "TBD"; 
-        
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
-    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
   const fetchRankingData = async (categoryShort: string, year: string) => {
+    // ... (Igual)
     setIsLoading(true); setRankingData([]); setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
@@ -1067,11 +882,10 @@ export default function Home() {
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
+    // ... (Igual)
     setIsLoading(true); 
     setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
-    
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
-    
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
         if (isDirect) {
@@ -1082,9 +896,7 @@ export default function Home() {
                 const rows = parseCSV(txt);
                 const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
                 setBracketData({ hasData: false, canGenerate: count >= 4 });
-            } catch (e) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
+            } catch (e) { setBracketData({ hasData: false, canGenerate: false }); }
         } else {
             const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
             const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
@@ -1094,23 +906,16 @@ export default function Home() {
                 const rowsGroups = parseCSV(txtGroups);
                 let foundQualifiers = false;
                 for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") {
-                        foundQualifiers = true;
-                        break;
-                    }
+                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") { foundQualifiers = true; break; }
                 }
                 setBracketData({ hasData: false, canGenerate: foundQualifiers });
-            } catch(err2) {
-                setBracketData({ hasData: false, canGenerate: false });
-            }
+            } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
         }
     };
 
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data;
-        const newR2 = [...r2];
-        const newR3 = [...r3];
-        
+        const newR2 = [...r2]; const newR3 = [...r3];
         if (bracketSize === 32) {
             for (let i = 0; i < r1.length; i += 2) {
                 const p1 = r1[i]; const p2 = r1[i+1];
@@ -1122,10 +927,8 @@ export default function Home() {
             }
             data.r2 = newR2;
         }
-
         const roundPrev = bracketSize === 32 ? newR2 : r1;
         const roundNext = bracketSize === 32 ? newR3 : r2; 
-        
         for (let i = 0; i < roundPrev.length; i += 2) {
              const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
              const targetIdx = Math.floor(i / 2);
@@ -1134,7 +937,6 @@ export default function Home() {
                  else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
              }
         }
-        
         if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
         return data;
     }
@@ -1164,19 +966,16 @@ export default function Home() {
                name: row[1] || "",
                total: row[11] ? parseInt(row[11]) : 0
              })).filter(p => p.name !== "");
-
              const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
              const inscRes = await fetch(inscUrl);
              const inscTxt = await inscRes.text();
              const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
                cols[0] === tournamentShort && cols[1] === category
              ).map(cols => cols[2]);
-
              const entryList = filteredInscriptos.map(n => {
                  const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
                  return { name: n, points: p ? p.total : 0 };
              }).sort((a, b) => b.points - a.points);
-
              const top8 = entryList.slice(0, 8);
              const seedMap: any = {};
              top8.forEach((p, i) => { if (p.name) seedMap[p.name] = i + 1; });
@@ -1184,25 +983,15 @@ export default function Home() {
           } catch(e) { console.log("Error fetching seeds", e); }
 
           let rawData: any = {};
-          
           let winnerIdx = -1;
           if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
-          // Solo leemos GANADOR si la columna exacta tiene datos
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
-          
-          // FIX ADELAIDE: Solo consideramos RunnerUp si YA HAY CAMPEÓN
           const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
-
-          // Helper para leer columna limpiando vacios y guiones
-          const getColData = (colIdx: number, limit: number) => {
-              return rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
-          }
-          const getScoreData = (colIdx: number, limit: number) => {
-               return rows.map(r => r[colIdx] || "").slice(0, limit); // Scores keep empty strings for alignment
-          }
+          const getColData = (colIdx: number, limit: number) => rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
+          const getScoreData = (colIdx: number, limit: number) => rows.map(r => r[colIdx] || "").slice(0, limit);
 
           if (bracketSize === 32) {
             rawData = { 
@@ -1210,47 +999,28 @@ export default function Home() {
                 r2: getColData(2, 16), s2: getScoreData(3, 16),
                 r3: getColData(4, 8),  s3: getScoreData(5, 8),
                 r4: getColData(6, 4),  s4: getScoreData(7, 4),
-                r5: getColData(8, 2),  s5: getScoreData(9, 2), // Final (Col I)
-                winner: winner, 
-                runnerUp: runnerUp, 
-                bracketSize: 32, 
-                hasData: true, 
-                canGenerate: false, 
-                seeds: seeds 
+                r5: getColData(8, 2),  s5: getScoreData(9, 2), 
+                winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds 
             };
           } else if (bracketSize === 16) {
             rawData = { 
                 r1: getColData(0, 16), s1: getScoreData(1, 16),
                 r2: getColData(2, 8),  s2: getScoreData(3, 8),
                 r3: getColData(4, 4),  s3: getScoreData(5, 4),
-                r4: getColData(6, 2),  s4: getScoreData(7, 2), // Final (Col G)
-                winner: winner, 
-                runnerUp: runnerUp, 
-                bracketSize: 16, 
-                hasData: true, 
-                canGenerate: false, 
-                seeds: seeds 
+                r4: getColData(6, 2),  s4: getScoreData(7, 2), 
+                winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds 
             };
           } else {
             rawData = { 
                 r1: getColData(0, 8), s1: getScoreData(1, 8),
                 r2: getColData(2, 4), s2: getScoreData(3, 4),
-                r3: getColData(4, 2), s3: getScoreData(5, 2), // Final (Col E)
-                r4: [], s4: [],
-                winner: winner, 
-                runnerUp: runnerUp, 
-                bracketSize: 8, 
-                hasData: true, 
-                canGenerate: false, 
-                seeds: seeds 
+                r3: getColData(4, 2), s3: getScoreData(5, 2), 
+                r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds 
             };
           }
-          
           if (bracketSize !== 8) rawData = processByes(rawData); 
           setBracketData(rawData);
-
       } else { await checkCanGenerate(); }
-
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
 
@@ -1331,12 +1101,21 @@ export default function Home() {
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
-              }).map((t) => (
-                <Button key={t.id} onClick={() => {
-                  if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
-                  else { fetchGroupPhase(navState.category, t.short); }
-                }} className={buttonStyle}>{t.name}</Button>
-              ))}
+              }).map((t) => {
+                const tStyle = getTournamentStyle(t.short);
+                return (
+                  <Button 
+                    key={t.id} 
+                    onClick={() => {
+                      if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
+                      else { fetchGroupPhase(navState.category, t.short); }
+                    }} 
+                    className={`w-full text-lg h-20 border-2 ${tStyle.borderColor} ${tStyle.color} text-white hover:opacity-90 transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                  >
+                    {t.name}
+                  </Button>
+                );
+              })}
             </div>
           )}
 
@@ -1429,16 +1208,16 @@ export default function Home() {
             </div>
             {/* Cabecera general de la fase de grupos */}
             <div className={`${getTournamentStyle(navState.currentTour).color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
-               <div className="w-16 h-16 flex items-center justify-center relative">
-                   <Image src={getTournamentStyle(navState.currentTour).logo} alt="Tour Logo" width={60} height={60} className="object-contain" />
+               <div className="w-20 h-20 flex items-center justify-center relative">
+                   {getTournamentStyle(navState.currentTour).logo && <Image src={getTournamentStyle(navState.currentTour).logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
                </div>
                <div className="flex-1">
                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
                  <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
                </div>
-               <div className="w-16 h-16 flex items-center justify-center relative">
-                   {/* Logo de puntos placeholder */}
-                   <Image src={getTournamentStyle(navState.currentTour).pointsLogo} alt="Points" width={50} height={50} className="object-contain opacity-80" />
+               <div className="w-20 h-20 flex items-center justify-center relative">
+                   {/* Logo de puntos */}
+                   {getTournamentStyle(navState.currentTour).pointsLogo && <Image src={getTournamentStyle(navState.currentTour).pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
                </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -1450,12 +1229,12 @@ export default function Home() {
         {navState.level === "direct-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
             <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex items-center justify-between`}>
-               <div className="w-10 h-10 flex items-center justify-center relative">
-                   <Image src={bracketStyle.logo} alt="Tour Logo" width={40} height={40} className="object-contain" />
+               <div className="w-16 h-16 flex items-center justify-center relative">
+                   {bracketStyle.logo && <Image src={bracketStyle.logo} alt="Tour Logo" width={64} height={64} className="object-contain" />}
                </div>
                <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
-               <div className="w-10 h-10 flex items-center justify-center relative">
-                    <Image src={bracketStyle.pointsLogo} alt="Points" width={36} height={36} className="object-contain opacity-80" />
+               <div className="w-16 h-16 flex items-center justify-center relative">
+                    {bracketStyle.pointsLogo && <Image src={bracketStyle.pointsLogo} alt="Points" width={64} height={64} className="object-contain opacity-80" />}
                </div>
             </div>
             
@@ -1473,14 +1252,14 @@ export default function Home() {
                       return (
                         <>
                           <div key={idx} className="relative flex flex-col space-y-2 mb-2">
-                            <div className={`h-6 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                            <div className={`h-6 border-b ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
                                   {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
                             </div>
-                            <div className={`h-6 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                            <div className={`h-6 border-b ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
                                   {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
@@ -1509,14 +1288,14 @@ export default function Home() {
                     return (
                       <>
                         <div key={idx} className="relative flex flex-col space-y-4">
-                          <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
-                          <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1545,14 +1324,14 @@ export default function Home() {
                     return (
                       <>
                         <div key={idx} className="relative flex flex-col space-y-8">
-                          <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
-                          <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1578,14 +1357,14 @@ export default function Home() {
                      return (
                       <>
                         <div key={idx} className="relative flex flex-col space-y-12">
-                          <div className={`h-8 border-b ${w1 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s1}</span>
                           </div>
-                          <div className={`h-8 border-b ${w2 ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                          <div className={`h-8 border-b ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-[#b35a38] font-black text-xs ml-1">{s2}</span>
@@ -1609,13 +1388,13 @@ export default function Home() {
                         const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
                         return (
                             <div className="relative flex flex-col space-y-2">
-                                <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                <div className={`h-8 border-b ${isTopWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {topFinalistName || ""}
                                     </span>
                                 </div>
-                                <div className={`h-8 border-b ${isBotWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? 'text-[#b35a38] font-black' : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                <div className={`h-8 border-b ${isBotWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {botFinalistName || ""}
                                     </span>
                                 </div>
@@ -1628,7 +1407,7 @@ export default function Home() {
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
-                        <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
+                        <Trophy className={`w-14 h-14 ${bracketStyle.trophyColor} mb-2 animate-bounce`} />
                         <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
