@@ -25,6 +25,22 @@ const tournaments = [
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
 ]
 
+// --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
+const TOURNAMENT_STYLES: any = {
+    // SUPERFICIE DURA (AZUL)
+    "adelaide": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/adelaide.png", pointsLogo: "/logos/points_generic.png" },
+    "ao": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/ao.png", pointsLogo: "/logos/points_generic.png" },
+    "us": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/usopen.png", pointsLogo: "/logos/points_generic.png" },
+    "iw": { color: "bg-blue-600", borderColor: "border-blue-600", textColor: "text-blue-600", logo: "/logos/indianwells.png", pointsLogo: "/logos/points_generic.png" },
+    "masters": { color: "bg-blue-800", borderColor: "border-blue-800", textColor: "text-blue-800", logo: "/logos/masters.png", pointsLogo: "/logos/points_generic.png" },
+    
+    // CESPED (VERDE)
+    "wimbledon": { color: "bg-green-700", borderColor: "border-green-700", textColor: "text-green-700", logo: "/logos/wimbledon.png", pointsLogo: "/logos/points_generic.png" },
+
+    // DEFAULT / POLVO DE LADRILLO (NARANJA)
+    "default": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", logo: "/logo.png", pointsLogo: "/logos/points_generic.png" }
+};
+
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
@@ -45,6 +61,14 @@ export default function Home() {
     return text.split('\n').map(row => 
       row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
     );
+  };
+
+  const getTournamentStyle = (shortName: string) => {
+      const key = shortName ? shortName.toLowerCase().trim() : "default";
+      // Mapeo especial para nombres cortos vs IDs
+      const map: any = { "adelaide": "adelaide", "ao": "ao", "us open": "us", "us": "us", "indian wells": "iw", "iw": "iw", "masters": "masters", "wimbledon": "wimbledon", "w": "wimbledon" };
+      const styleKey = map[key] || "default";
+      return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
   };
 
   const enviarListaBasti = () => {
@@ -576,7 +600,7 @@ export default function Home() {
       if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
         const rows = parseCSV(csvText);
         const parsedGroups = [];
-        for (let i = 0; i < rows.length; i += 4) {
+        for (let i = 0; i < rows.length; i++) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
             const p4 = rows[i+4] && rows[i+4][0] && rows[i+4][0] !== "-" ? rows[i+4] : null;
@@ -706,9 +730,100 @@ export default function Home() {
     
     const showGames = hasTies();
 
+    // LÓGICA DE RANKING INTERNA DEL GRUPO (Puntos > Sets > Games > H2H)
+    const calculateRanks = () => {
+        if (!isComplete) return group.positions.map((p:any) => p); 
+
+        const playersData = group.players.map((p: string, i: number) => ({
+            index: i,
+            name: p,
+            points: parseInt(group.points[i]) || 0,
+            setsDiff: parseInt(group.diff[i]) || 0,
+            gamesDiff: parseInt(group.gamesDiff[i]) || 0,
+            originalPos: group.positions[i]
+        }));
+
+        // Función para saber si A le ganó a B (Head to Head)
+        const checkHeadToHead = (idxA: number, idxB: number) => {
+            const result = group.results[idxA][idxB]; 
+            if (!result || result.length < 3) return 0;
+            
+            const sets = result.trim().split(" ");
+            let winsA = 0; let winsB = 0;
+            
+            sets.forEach((s: string) => {
+                if (s.includes("/")) {
+                    const [gamesA, gamesB] = s.split("/").map(Number);
+                    if (gamesA > gamesB) winsA++;
+                    else if (gamesB > gamesA) winsB++;
+                }
+            });
+            
+            if (winsA > winsB) return 1; 
+            if (winsB > winsA) return -1; 
+            return 0;
+        };
+
+        // Ordenamiento
+        playersData.sort((a: any, b: any) => {
+            if (b.points !== a.points) return b.points - a.points;
+            if (b.setsDiff !== a.setsDiff) return b.setsDiff - a.setsDiff;
+            if (b.gamesDiff !== a.gamesDiff) return b.gamesDiff - a.gamesDiff;
+            
+            // 4. Head to Head
+            const h2h = checkHeadToHead(a.index, b.index);
+            if (h2h !== 0) return h2h * -1; // -1 porque queremos que el ganador (1) vaya antes
+
+            // 5. Empate total (Circular o real) -> Devolver 0 para mantener igualdad
+            return 0;
+        });
+
+        const ranks = new Array(totalPlayers).fill("-");
+        
+        for (let i = 0; i < playersData.length; i++) {
+            if (i === 0) {
+                 ranks[playersData[i].index] = 1;
+            } else {
+                 const prev = playersData[i-1];
+                 const curr = playersData[i];
+                 
+                 // Verificamos si son realmente iguales en métricas
+                 const areEqualMetrics = prev.points === curr.points && 
+                                         prev.setsDiff === curr.setsDiff && 
+                                         prev.gamesDiff === curr.gamesDiff;
+                 
+                 const h2h = checkHeadToHead(prev.index, curr.index);
+
+                 // Si todo es igual y el H2H no desempató (circular) o es irrelevante
+                 // En la lógica de sort, si h2h != 0, ya los ordenó.
+                 // Si son iguales en métricas Y el sort no pudo separarlos (h2h=0), entonces comparten puesto.
+                 
+                 // Chequeo simplificado: si el sort los dejó "pegados" y sus métricas son iguales y no hay H2H decisivo entre ellos
+                 if (areEqualMetrics && h2h === 0) {
+                     ranks[curr.index] = ranks[prev.index]; // Mismo rango
+                 } else {
+                     ranks[curr.index] = i + 1; // Nuevo rango
+                 }
+            }
+        }
+        
+        return ranks;
+    };
+
+    const displayRanks = calculateRanks();
+    const style = getTournamentStyle(navState.currentTour);
+
     return (
-    <div className="bg-white border-2 border-[#b35a38]/20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden">
-      <div className="bg-[#b35a38] p-3 text-white font-black italic text-center uppercase tracking-wider">{group.groupName}</div>
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
+      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-between`}>
+          <div className="w-12 h-12 flex items-center justify-center relative">
+               <Image src={style.logo} alt="Tour Logo" width={48} height={48} className="object-contain" />
+          </div>
+          <span className="flex-1 text-center">{group.groupName}</span>
+          <div className="w-12 h-12 flex items-center justify-center relative">
+               <Image src={style.pointsLogo} alt="Points" width={40} height={40} className="object-contain opacity-80" />
+          </div>
+      </div>
       <style jsx>{`
         .hide-scroll::-webkit-scrollbar {
           display: none;
@@ -734,7 +849,7 @@ export default function Home() {
                       }
                   }
                   return (
-                    <th key={i} className="p-3 border-r text-center font-black text-[#b35a38] uppercase min-w-[80px] whitespace-nowrap">
+                    <th key={i} className={`p-3 border-r text-center font-black uppercase min-w-[80px] whitespace-nowrap ${style.textColor}`}>
                         {shortName}
                     </th>
                   )
@@ -752,7 +867,7 @@ export default function Home() {
             <tbody>
               {group.players && group.players.map((p1: string, i: number) => (
                 <tr key={i} className="border-b">
-                  <td className="p-3 border-r font-black bg-slate-50 uppercase text-[#b35a38] text-left whitespace-nowrap">{p1}</td>
+                  <td className={`p-3 border-r font-black bg-slate-50 uppercase text-left whitespace-nowrap ${style.textColor}`}>{p1}</td>
                   {group.players.map((p2: string, j: number) => (
                     <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
                       {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
@@ -763,10 +878,8 @@ export default function Home() {
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.points ? group.points[i] : "-"}</td>
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.diff ? group.diff[i] : "-"}</td>
                           {showGames && <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.gamesDiff ? group.gamesDiff[i] : "-"}</td>}
-                          <td className="p-3 text-center font-black text-[#b35a38] text-xl bg-slate-50 whitespace-nowrap">
-                              {group.positions && group.positions[i] && !isNaN(group.positions[i]) 
-                              ? `${group.positions[i]}°` 
-                              : (group.positions[i] === "-" ? "-" : group.positions[i])}
+                          <td className={`p-3 text-center font-black text-xl bg-slate-50 whitespace-nowrap ${style.textColor}`}>
+                              {displayRanks[i] || "-"}°
                           </td>
                       </>
                   )}
@@ -1172,6 +1285,8 @@ export default function Home() {
     </div>
   );
 
+  const bracketStyle = getTournamentStyle(navState.tournamentShort);
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
@@ -1312,9 +1427,19 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic">
-              <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
-              <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
+            {/* Cabecera general de la fase de grupos */}
+            <div className={`${getTournamentStyle(navState.currentTour).color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
+               <div className="w-16 h-16 flex items-center justify-center relative">
+                   <Image src={getTournamentStyle(navState.currentTour).logo} alt="Tour Logo" width={60} height={60} className="object-contain" />
+               </div>
+               <div className="flex-1">
+                 <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{navState.currentTour} - Fase de Grupos</h2>
+                 <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
+               </div>
+               <div className="w-16 h-16 flex items-center justify-center relative">
+                   {/* Logo de puntos placeholder */}
+                   <Image src={getTournamentStyle(navState.currentTour).pointsLogo} alt="Points" width={50} height={50} className="object-contain opacity-80" />
+               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
@@ -1324,13 +1449,18 @@ export default function Home() {
 
         {navState.level === "direct-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
-            <div className="bg-[#b35a38] p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto">
-              <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
+            <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex items-center justify-between`}>
+               <div className="w-10 h-10 flex items-center justify-center relative">
+                   <Image src={bracketStyle.logo} alt="Tour Logo" width={40} height={40} className="object-contain" />
+               </div>
+               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
+               <div className="w-10 h-10 flex items-center justify-center relative">
+                    <Image src={bracketStyle.pointsLogo} alt="Points" width={36} height={36} className="object-contain opacity-80" />
+               </div>
             </div>
             
             {bracketData.hasData ? (
               <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
-                
                 {bracketData.bracketSize === 32 && (
                   <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
@@ -1363,14 +1493,12 @@ export default function Home() {
                     })}
                   </div>
                 )}
-
                 {bracketData.bracketSize >= 16 && (
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
                     const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r3 : bracketData.r2;
-                    
                     const p1 = r[idx]; const p2 = r[idx+1];
                     const w1 = p1 && nextR.includes(p1);
                     const w2 = p2 && nextR.includes(p2);
@@ -1401,13 +1529,12 @@ export default function Home() {
                   })}
                 </div>
                 )}
-
+                {/* ... (Resto de columnas de bracket) */}
                 <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
                     const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
                     const nextR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
-
                     const p1 = r[idx]; const p2 = r[idx+1];
                     const w1 = p1 && nextR.includes(p1);
                     const w2 = p2 && nextR.includes(p2);
@@ -1442,14 +1569,12 @@ export default function Home() {
                   {[0, 2].map((idx, i) => {
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
                      const s = bracketData.bracketSize === 32 ? bracketData.s4 : (bracketData.bracketSize === 16 ? bracketData.s3 : bracketData.s2);
-                     
                      const p1 = r[idx]; const p2 = r[idx+1];
                      const w1 = p1 && p1 === bracketData.winner;
                      const w2 = p2 && p2 === bracketData.winner;
                      const s1 = s[idx]; const s2 = s[idx+1];
                      const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                      const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
-
                      return (
                       <>
                         <div key={idx} className="relative flex flex-col space-y-12">
@@ -1473,40 +1598,15 @@ export default function Home() {
                   })}
                 </div>
 
-                 {/* FINAL (Usa r4/s4 en size 16, rX en otros) */}
                 <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
                     {(() => {
-                        let topFinalistName = "";
-                        let botFinalistName = "";
-
-                        // Si es bracket 16, tenemos los datos reales leídos de G/H en r4
-                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) {
-                            topFinalistName = bracketData.r4[0];
-                            botFinalistName = bracketData.r4[1];
-                        } 
-                         // Si es bracket 32, tenemos los datos reales leídos de I/J en r5 (FIX 32)
-                        else if (bracketData.bracketSize === 32 && bracketData.r5 && bracketData.r5.length >= 2) {
-                            topFinalistName = bracketData.r5[0];
-                            botFinalistName = bracketData.r5[1];
-                        }
-                        // Si es bracket 8, leemos r3
-                        else if (bracketData.bracketSize === 8 && bracketData.r3 && bracketData.r3.length >= 2) {
-                            topFinalistName = bracketData.r3[0];
-                            botFinalistName = bracketData.r3[1];
-                        }
-                        // Fallback lógica antigua para otros tamaños o si no hay datos
-                        else {
-                            const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; 
-                            
-                            if (bracketData.winner) {
-                                 topFinalistName = bracketData.winner; 
-                                 botFinalistName = bracketData.runnerUp;
-                            }
-                        }
-
+                        let topFinalistName = ""; let botFinalistName = "";
+                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) { topFinalistName = bracketData.r4[0]; botFinalistName = bracketData.r4[1]; } 
+                        else if (bracketData.bracketSize === 32 && bracketData.r5 && bracketData.r5.length >= 2) { topFinalistName = bracketData.r5[0]; botFinalistName = bracketData.r5[1]; }
+                        else if (bracketData.bracketSize === 8 && bracketData.r3 && bracketData.r3.length >= 2) { topFinalistName = bracketData.r3[0]; botFinalistName = bracketData.r3[1]; }
+                        else { const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; if (bracketData.winner) { topFinalistName = bracketData.winner; botFinalistName = bracketData.runnerUp; } }
                         const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
                         const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
-
                         return (
                             <div className="relative flex flex-col space-y-2">
                                 <div className={`h-8 border-b ${isTopWinner ? 'border-[#b35a38]' : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
@@ -1528,56 +1628,41 @@ export default function Home() {
                  <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
                     <div className="relative flex flex-col items-center">
                         <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
-                        
                         <Trophy className="w-12 h-12 md:w-14 md:h-14 text-orange-400 mb-2 animate-bounce" />
                         <span className="text-[#b35a38]/70 font-black text-sm md:text-base uppercase tracking-[0.2em] mb-1 scale-125">CAMPEÓN</span>
                         <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
                     </div>
                 </div>
-
               </div>
             ) : (
               <div className="py-20 flex flex-col items-center justify-center text-slate-400">
                 <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
                 <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
-                
                 {bracketData.canGenerate ? (
                     <div className="mt-4">
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
-                            {/* Botón Lista Basti ELIMINADO DE AQUI */}
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
-                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                            </Button>
+                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             ) : (
-                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg">
-                                <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                            </Button>
+                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             )}
                         </div>
                     </div>
-                ) : (
-                    <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p>
-                )}
+                ) : ( <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p> )}
               </div>
             )}
           </div>
         )}
-
         {showRankingCalc && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
-                    <Button onClick={() => setShowRankingCalc(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost">
-                        <X className="w-6 h-6" />
-                    </Button>
-                    
+                    <Button onClick={() => setShowRankingCalc(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost"> <X className="w-6 h-6" /> </Button>
                     <div className="text-center mb-6">
                         <Trophy className="w-12 h-12 text-orange-500 mx-auto mb-2" />
                         <h3 className="text-2xl font-black uppercase text-slate-800">Cálculo de Puntos</h3>
                         <p className="text-sm text-slate-500 font-medium">Torneo: {navState.tournamentShort}</p>
                     </div>
-
                     <div className="bg-slate-50 rounded-xl border-2 border-slate-100 overflow-hidden">
                         <table className="w-full text-left">
                             <thead className="bg-[#b35a38] text-white">
@@ -1596,30 +1681,21 @@ export default function Home() {
                             </tbody>
                         </table>
                     </div>
-                    
                     <div className="mt-6 flex gap-4">
                         <Button onClick={() => {
                             const text = calculatedRanking.map(p => `${p.name}\t${p.points}`).join('\n');
                             navigator.clipboard.writeText(text);
                             alert("Tabla copiada al portapapeles");
-                        }} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-12 rounded-xl">
-                            <Copy className="mr-2 w-4 h-4" /> COPIAR TABLA
-                        </Button>
-                        
+                        }} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-12 rounded-xl"> <Copy className="mr-2 w-4 h-4" /> COPIAR TABLA </Button>
                         <Button onClick={() => {
                             let mensaje = `*RANKING CALCULADO - ${navState.tournamentShort}*\n\n`;
-                            calculatedRanking.forEach(p => {
-                                mensaje += `${p.name}: ${p.points}\n`;
-                            });
+                            calculatedRanking.forEach(p => { mensaje += `${p.name}: ${p.points}\n`; });
                             window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-                        }} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold h-12 rounded-xl">
-                            <Send className="mr-2 w-4 h-4" /> ENVIAR POR WHATSAPP
-                        </Button>
+                        }} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold h-12 rounded-xl"> <Send className="mr-2 w-4 h-4" /> ENVIAR POR WHATSAPP </Button>
                     </div>
                 </div>
             </div>
         )}
-
         {navState.level === "ranking-view" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
             <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
