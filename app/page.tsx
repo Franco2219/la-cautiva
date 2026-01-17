@@ -160,6 +160,7 @@ export default function Home() {
 
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
+        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
         
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) {
@@ -231,7 +232,6 @@ export default function Home() {
             });
         }
 
-        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
         if (tourType === "full") {
             const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
             try {
@@ -1113,7 +1113,8 @@ export default function Home() {
               ))}
             </div>
           )}
-            {navState.level === "tournament-selection" && (
+
+          {navState.level === "tournament-selection" && (
             <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
@@ -1122,6 +1123,7 @@ export default function Home() {
                 return true;
               }).map((t) => {
                 const tStyle = getTournamentStyle(t.short);
+                // Extraemos el color base (ej: "bg-blue-800") y construimos la clase hover ("hover:bg-blue-800")
                 const hoverBgClass = tStyle.color.replace("bg-", "hover:bg-");
                 const hoverBorderClass = tStyle.borderColor.replace("border-", "hover:border-");
                 
@@ -1132,7 +1134,8 @@ export default function Home() {
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} 
-                    className={`w-full text-lg h-20 border-2 border-[#b35a38] bg-[#b35a38] ${hoverBorderClass} ${hoverBgClass} text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
+                    // Botón por defecto naranja, hover del color del torneo
+                    className={`w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] ${hoverBorderClass} ${hoverBgClass} hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center`}
                   >
                     {t.name}
                   </Button>
@@ -1262,7 +1265,7 @@ export default function Home() {
                <div className="w-20 h-20 flex items-center justify-center relative">
                    {bracketStyle.logo && <Image src={bracketStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
                </div>
-               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{navState.tournament} - {navState.selectedCategory}</h2>
+               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{getTournamentName(navState.tournamentShort)} - {navState.selectedCategory}</h2>
                <div className="w-20 h-20 flex items-center justify-center relative">
                     {bracketStyle.pointsLogo && <Image src={bracketStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
                </div>
