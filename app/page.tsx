@@ -1107,27 +1107,26 @@ export default function Home() {
               ))}
             </div>
           )}
-            {navState.level === "tournament-selection" && (
+
+          {navState.level === "tournament-selection" && (
             <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
-              }).map((t) => {
-                return (
-                  <Button 
-                    key={t.id} 
-                    onClick={() => {
-                      if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
-                      else { fetchGroupPhase(navState.category, t.short); }
-                    }} 
-                    className={buttonStyle}
-                  >
-                    {t.name}
-                  </Button>
-                );
-              })}
+              }).map((t) => (
+                <Button 
+                  key={t.id} 
+                  onClick={() => {
+                    if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
+                    else { fetchGroupPhase(navState.category, t.short); }
+                  }} 
+                  className={buttonStyle}
+                >
+                  {t.name}
+                </Button>
+              ))}
             </div>
           )}
 
@@ -1337,13 +1336,13 @@ export default function Home() {
                       <>
                         <div key={idx} className="relative flex flex-col space-y-8">
                           <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-black font-black text-xs ml-1">{s1}</span>
                           </div>
                           <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                   {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-black font-black text-xs ml-1">{s2}</span>
@@ -1401,12 +1400,12 @@ export default function Home() {
                         return (
                             <div className="relative flex flex-col space-y-2">
                                 <div className={`h-8 border-b-2 ${isTopWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {topFinalistName || ""}
                                     </span>
                                 </div>
                                 <div className={`h-8 border-b-2 ${isBotWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? bracketStyle.textColor : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
                                         {botFinalistName || ""}
                                     </span>
                                 </div>
