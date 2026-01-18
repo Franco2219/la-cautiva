@@ -645,7 +645,11 @@ export default function Home() {
         for (let i = 0; i < rows.length; i++) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            const p4 = rows[i+4] && rows[i+4][0] && rows[i+4][0] !== "-" ? rows[i+4] : null;
+            // CORRECCIÓN FANTASMA: Validar p4 para que no sea un header de otra zona
+            const potentialP4 = rows[i+4] && rows[i+4][0];
+            const isNextHeader = potentialP4 && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
+            const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null;
+
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
             if (p4) playersRaw.push(p4);
 
@@ -658,9 +662,11 @@ export default function Home() {
 
             playersRaw.forEach((row, index) => {
                 const pName = row && row[0] ? row[0] : "";
+                // CORRECCIÓN FANTASMA: Filtro más estricto
                 if (pName && pName !== "-" && pName !== "" && 
-                    !pName.toLowerCase().startsWith("zona") && 
-                    !pName.toLowerCase().startsWith("grupo")) {
+                    !pName.toLowerCase().includes("zona") && 
+                    !pName.toLowerCase().includes("grupo") &&
+                    !pName.includes("*")) {
                     
                     players.push(pName);
                     let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); 
@@ -898,9 +904,10 @@ export default function Home() {
           const rows = parseCSV(csvText);
           let qualifiers = [];
           for(let i = 0; i < 50; i++) { 
-              if (rows[i] && rows[i].length > 5) {
+              // CORRECCIÓN WIMBLEDON: Se eliminó rows[i].length > 5 para permitir leer aunque las columnas iniciales estén vacías
+              if (rows[i]) {
                   const winnerName = rows[i][12]; 
-                  const runnerName = rows[i].length > 13 ? rows[i][13] : null; 
+                  const runnerName = rows[i][13]; 
                   if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
                       qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
                   }
