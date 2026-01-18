@@ -34,7 +34,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/adelaide.png", 
-        pointsLogo: "/logos/pts_adelaide.png" 
+        pointsLogo: null 
     },
     "ao": { 
         color: "bg-blue-900", 
@@ -42,7 +42,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/ao.png", 
-        pointsLogo: "/logos/pts_ao.png" 
+        pointsLogo: "null 
     },
     "us": { 
         color: "bg-blue-900", 
@@ -50,7 +50,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/usopen.png", 
-        pointsLogo: "/logos/pts_usopen.png" 
+        pointsLogo: null
     },
     "iw": { 
         color: "bg-blue-900", 
@@ -66,7 +66,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-950", 
         trophyColor: "text-blue-950", 
         logo: "/logos/masters.png", 
-        pointsLogo: "/logos/pts_masters.png" 
+        pointsLogo: null
     },
     
     // CESPED (VERDE OFICIAL WIMBLEDON)
