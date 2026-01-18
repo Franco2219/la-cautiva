@@ -561,8 +561,13 @@ export default function Home() {
             const gamesDiff = []; 
 
             playersRaw.forEach((row, index) => {
-                if (row && row[0] && row[0] !== "-" && row[0] !== "") {
-                    players.push(row[0]);
+                const pName = row && row[0] ? row[0] : "";
+                // CORRECCIÓN AQUÍ: Filtrar explícitamente celdas que sean cabeceras de otros grupos
+                if (pName && pName !== "-" && pName !== "" && 
+                    !pName.toLowerCase().startsWith("zona") && 
+                    !pName.toLowerCase().startsWith("grupo")) {
+                    
+                    players.push(pName);
                     let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); 
                     let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts);
                     let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif);
@@ -611,7 +616,7 @@ export default function Home() {
   }
 
   const confirmarYEnviar = () => {
-    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
+    let mensaje = `*SORTEO CONFIRMADO - ${getTournamentName(navState.currentTour)}*\n*Categoría:* ${navState.currentCat}\n\n`;
     groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n\n`; });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
@@ -879,7 +884,7 @@ export default function Home() {
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
+    let mensaje = `*SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
         const p2Name = match.p2 ? match.p2.name : "TBD"; 
@@ -1262,12 +1267,12 @@ export default function Home() {
 
         {navState.level === "direct-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
-            <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex items-center justify-between`}>
-               <div className="w-20 h-20 flex items-center justify-center relative">
+            <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}>
+               <div className="w-20 h-20 flex items-center justify-center relative order-1">
                    {bracketStyle.logo && <Image src={bracketStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
                </div>
-               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider">{getTournamentName(navState.tournamentShort)} - {navState.selectedCategory}</h2>
-               <div className="w-20 h-20 flex items-center justify-center relative">
+               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider order-3 md:order-2 w-full md:w-auto mt-2 md:mt-0">{getTournamentName(navState.tournamentShort)} - {navState.selectedCategory}</h2>
+               <div className="w-20 h-20 flex items-center justify-center relative order-2 md:order-3">
                     {bracketStyle.pointsLogo && <Image src={bracketStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
                </div>
             </div>
@@ -1275,7 +1280,7 @@ export default function Home() {
             {bracketData.hasData ? (
               <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
                 {bracketData.bracketSize === 32 && (
-                  <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
+                  <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                     {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
                       const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
                       const w1 = p1 && bracketData.r2.includes(p1);
@@ -1287,13 +1292,13 @@ export default function Home() {
                         <>
                           <div key={idx} className="relative flex flex-col space-y-2 mb-2">
                             <div className={`h-6 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[160px]`}>
                                   {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
                               </span>
                               <span className="text-black font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
                             </div>
                             <div className={`h-6 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[90px]`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[160px]`}>
                                   {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
                               </span>
                               <span className="text-black font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
@@ -1307,7 +1312,7 @@ export default function Home() {
                   </div>
                 )}
                 {bracketData.bracketSize >= 16 && (
-                <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
                     const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
@@ -1343,7 +1348,7 @@ export default function Home() {
                 </div>
                 )}
                 {/* ... (Resto de columnas de bracket) */}
-                <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
                     const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
@@ -1378,7 +1383,7 @@ export default function Home() {
                   })}
                 </div>
 
-                <div className="flex flex-col justify-around min-w-[90px] md:min-w-0 md:flex-1 relative">
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                   {[0, 2].map((idx, i) => {
                      const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
                      const s = bracketData.bracketSize === 32 ? bracketData.s4 : (bracketData.bracketSize === 16 ? bracketData.s3 : bracketData.s2);
@@ -1411,7 +1416,7 @@ export default function Home() {
                   })}
                 </div>
 
-                <div className="flex flex-col justify-center min-w-[90px] md:min-w-0 md:flex-1 relative">
+                <div className="flex flex-col justify-center min-w-[150px] md:min-w-0 md:flex-1 relative">
                     {(() => {
                         let topFinalistName = ""; let botFinalistName = "";
                         if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) { topFinalistName = bracketData.r4[0]; botFinalistName = bracketData.r4[1]; } 
