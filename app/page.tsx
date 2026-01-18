@@ -828,6 +828,7 @@ export default function Home() {
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
+    // MODIFICACION: Soporte para hasta 64 jugadores
     if (totalPlayers > 32) bracketSize = 64;
     else if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
@@ -850,24 +851,20 @@ export default function Home() {
     const fixedByeWinners = winners.slice(0, fixedByesCount);
     const fixedByeWinnersIndices = new Set(fixedByeWinners.map(w => w.groupIndex));
 
-    // El resto va a la bolsa: 
-    // - Ganadores que no entraron en el Top 8 (Z9 en adelante o similar)
-    // - Todos los segundos
-    // - Los BYEs sobrantes ("floating byes")
+    // El resto de ganadores NO van a la bolsa, se asignan a P1 de otros partidos
     const remainingWinners = winners.slice(fixedByesCount);
     
-    // Objetos BYE para la bolsa
+    // Objetos BYE para la bolsa (los sobrantes)
     const floatingByes = Array(floatingByesCount).fill(null).map(() => ({ name: "BYE", rank: 0, groupIndex: -1 }));
 
-    // Bolsa mezclada
-    const bag = [...remainingWinners, ...runners, ...floatingByes].sort(() => Math.random() - 0.5);
+    // Bolsa mezclada: SOLO SEGUNDOS Y BYES FLOTANTES
+    // Eliminamos 'remainingWinners' de la bolsa para evitar cruces 1ro vs 1ro
+    const bag = [...runners, ...floatingByes].sort(() => Math.random() - 0.5);
 
     // Inicializar array de partidos vacíos
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
-    // --- PASO 1: COLOCAR GANADORES EN POSICIONES CABEZA DE SERIE ---
-    // Mantenemos la lógica de distribución original para los Ganadores de Zona (Z1 Top, Z2 Bot, etc.)
-    // para cumplir con "no borrar reglas de posiciones", pero aplicamos la lógica de rivales nueva.
+    // --- PASO 1: COLOCAR TODOS LOS GANADORES EN P1 ---
     
     const placeWinner = (winner: any, matchIndex: number) => {
         if (!winner) return;
@@ -879,13 +876,10 @@ export default function Home() {
         }
     };
 
-    // Distribuir todos los ganadores (tengan bye o no) en sus seeds correspondientes
-    // Z1 -> Top (0)
+    // Distribuir ganadores estratégicos (Z1-Z4)
     if (winners[0]) placeWinner(winners[0], 0);
-    // Z2 -> Bottom (Last)
     if (winners[1]) placeWinner(winners[1], numMatches - 1);
     
-    // Z3 & Z4 -> Mid Top / Mid Bottom
     const mids = [winners[2], winners[3]].filter(Boolean);
     // Aleatorio entre ellos quien va arriba y abajo del medio
     if (mids.length === 2 && Math.random() > 0.5) mids.reverse();
@@ -893,10 +887,8 @@ export default function Home() {
     if (mids[1]) placeWinner(mids[1], (numMatches / 2));
 
     // El resto de ganadores (Z5 en adelante) se distribuyen en espacios vacíos de P1
-    // Buscamos slots vacíos para P1 (donde no hayamos puesto a Z1-Z4)
     const remainingWinnersToPlace = winners.slice(4);
     
-    // Indices disponibles para P1 (excluyendo los 4 corners/mids ya usados)
     let availableP1Indices = [];
     for(let i=0; i < numMatches; i++) {
         if (matches[i].p1 === null) availableP1Indices.push(i);
@@ -904,7 +896,6 @@ export default function Home() {
     // Mezclamos indices para aleatoriedad en posiciones intermedias
     availableP1Indices.sort(() => Math.random() - 0.5);
 
-    // Colocamos el resto de los ganadores en esos slots P1
     remainingWinnersToPlace.forEach(w => {
         if (availableP1Indices.length > 0) {
             const idx = availableP1Indices.pop();
@@ -912,29 +903,31 @@ export default function Home() {
         }
     });
 
-    // --- PASO 2: LLENAR HUECOS CON LA BOLSA ---
-    // Ahora recorremos todos los partidos. 
-    // Si P1 está vacío (no hay ganador de zona ahí porque eran pocos), sacamos de la bolsa.
-    // Si P2 está vacío (no es un Fixed BYE), sacamos de la bolsa.
+    // --- PASO 2: LLENAR RIVALES Y HUECOS CON LA BOLSA ---
     
     for (let i = 0; i < numMatches; i++) {
-        // Llenar P1 si falta
-        if (!matches[i].p1) {
-            if (bag.length > 0) matches[i].p1 = bag.pop();
-            else matches[i].p1 = { name: "BYE", rank: 0 }; // Fallback raro
-        }
-
-        // Llenar P2 si falta
-        if (!matches[i].p2) {
+        // Caso A: Ya hay un P1 (es un Ganador).
+        // Si P2 está vacío (no es Fixed Bye), le asignamos rival de la bolsa (Runner o Floating Bye)
+        if (matches[i].p1 && !matches[i].p2) {
              if (bag.length > 0) matches[i].p2 = bag.pop();
              else matches[i].p2 = { name: "BYE", rank: 0 }; // Fallback raro
         }
+        // Caso B: P1 está vacío (No hay Ganador en esta llave).
+        // Llenamos P1 y P2 con la bolsa (Cruce de Segundos o Byes)
+        else if (!matches[i].p1) {
+            if (bag.length > 0) matches[i].p1 = bag.pop();
+            else matches[i].p1 = { name: "BYE", rank: 0 };
+
+            if (bag.length > 0) matches[i].p2 = bag.pop();
+            else matches[i].p2 = { name: "BYE", rank: 0 };
+        }
     }
 
-    // Limpieza final por si quedó algún null (no debería)
+    // Limpieza final y ordenamiento de BYEs en llaves sin ganadores para estética
     matches.forEach(m => {
-        if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
-        if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
+        if (m.p1?.name === "BYE" && m.p2?.name !== "BYE") {
+            const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
+        }
     });
 
     return { matches, bracketSize };
