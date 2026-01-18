@@ -42,7 +42,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/ao.png", 
-        pointsLogo: "null 
+        pointsLogo: null 
     },
     "us": { 
         color: "bg-blue-900", 
