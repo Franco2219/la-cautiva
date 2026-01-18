@@ -414,26 +414,35 @@ export default function Home() {
         if (totalPlayers > 4) bracketSize = 8;
         if (totalPlayers > 8) bracketSize = 16;
         if (totalPlayers > 16) bracketSize = 32;
+        if (totalPlayers > 32) bracketSize = 64;
 
         const byeCount = bracketSize - totalPlayers;
         let slots: any[] = Array(bracketSize).fill(null);
         
         let pos1 = 0; let pos2 = bracketSize - 1;
+        
+        // Logica para 1-4 es igual en 32 y 64
         let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
+        
+        // Logica para 5-8
         let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
+        else if (bracketSize === 64) pos58 = [15, 16, 47, 48];
+
+        const seeds = entryList.slice(0, 16).map((p, i) => ({ ...p, rank: i + 1 }));
         
-        const seeds = entryList.slice(0, 8).map((p, i) => ({ ...p, rank: i + 1 }));
-        
+        // Colocar 1 y 2
         if (seeds[0]) slots[pos1] = seeds[0];
         if (seeds[1]) slots[pos2] = seeds[1];
 
+        // Colocar 3 y 4
         if (seeds[2] && seeds[3]) {
             const group34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
             slots[pos34[0]] = group34[0]; slots[pos34[1]] = group34[1]; 
         } else if (seeds[2]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[2]; }
 
+        // Colocar 5 al 8
         if (seeds.length >= 8 && pos58.length === 4) {
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
             const seedsTop = group58.slice(0, 2);
@@ -444,10 +453,23 @@ export default function Home() {
             slots[posBot[0]] = seedsBot[0]; slots[posBot[1]] = seedsBot[1];
         }
 
+        // Colocar 9 al 16 (Solo si es cuadro de 64)
+        if (bracketSize === 64 && seeds.length >= 16) {
+             const group9to16 = seeds.slice(8, 16).sort(() => Math.random() - 0.5);
+             // Indices especificos para 9-16 para que no crucen con 1-8 en primeras rondas
+             // Deben ir en indices: 7, 8, 23, 24, 39, 40, 55, 56
+             const pos9to16 = [7, 8, 23, 24, 39, 40, 55, 56].sort(() => Math.random() - 0.5);
+             for(let i=0; i<8; i++) {
+                 if (group9to16[i]) slots[pos9to16[i]] = group9to16[i];
+             }
+        }
+
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
         let byesRemaining = byeCount;
 
-        for (let r = 1; r <= 8; r++) {
+        // Asignar BYES a los sembrados (si corresponde)
+        const maxSeedCheck = bracketSize === 64 ? 16 : 8;
+        for (let r = 1; r <= maxSeedCheck; r++) {
             if (byesRemaining > 0) {
                 const seedIdx = slots.findIndex(s => s && s.rank === r);
                 if (seedIdx !== -1) {
@@ -460,6 +482,7 @@ export default function Home() {
             }
         }
 
+        // Llenar huecos vacíos con BYES para balancear
         let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
              if (slots[i] === null && slots[i+1] === null) emptyPairsIndices.push(i);
@@ -487,8 +510,11 @@ export default function Home() {
             } else { break; }
         }
         
-        const nonSeeds = entryList.slice(8).map(p => ({ ...p, rank: 0 }));
+        // Rellenar con no-sembrados
+        const nonSeedsStartIndex = bracketSize === 64 ? 16 : 8;
+        const nonSeeds = entryList.slice(nonSeedsStartIndex).map(p => ({ ...p, rank: 0 }));
         nonSeeds.sort(() => Math.random() - 0.5); 
+        
         let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
         let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
@@ -686,7 +712,8 @@ export default function Home() {
 
   const confirmarYEnviar = () => {
     let mensaje = `*SORTEO CONFIRMADO - ${getTournamentName(navState.currentTour)}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n\n`; });
+    // MODIFICACION: Se quito el doble salto de linea (\n\n) por uno simple (\n)
+    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
   };
@@ -795,7 +822,9 @@ export default function Home() {
     // ... (Igual)
     const totalPlayers = qualifiers.length;
     let bracketSize = 8;
-    if (totalPlayers > 16) bracketSize = 32; 
+    // MODIFICACION: Soporte para hasta 64 jugadores
+    if (totalPlayers > 32) bracketSize = 64;
+    else if (totalPlayers > 16) bracketSize = 32; 
     else if (totalPlayers > 8) bracketSize = 16; 
     else if (totalPlayers > 4) bracketSize = 8; 
     else bracketSize = 4; 
@@ -1186,12 +1215,17 @@ export default function Home() {
 
         {navState.level === "generate-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center">
-             <div className="bg-[#b35a38] p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0">
+             {/* HEADER MODIFICADO: Color dinámico y nombre de torneo + categoría */}
+             <div className={`${getTournamentStyle(navState.tournamentShort).color} p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0`}>
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
-                   {navState.bracketSize === 32 ? "Sorteo 16avos" : 
+                   {navState.bracketSize === 64 ? "Sorteo 32avos" :
+                    navState.bracketSize === 32 ? "Sorteo 16avos" : 
                     navState.bracketSize === 16 ? "Sorteo Octavos" : 
                     navState.bracketSize === 8 ? "Sorteo Cuartos" : "Sorteo Semis"}
                </h2>
+               <p className="text-sm font-bold uppercase mt-1 opacity-90">
+                   {getTournamentName(navState.tournamentShort)} - {navState.category}
+               </p>
              </div>
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
@@ -1200,7 +1234,7 @@ export default function Home() {
                         {i === (generatedBracket.length / 2) - 1 && (
                             <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
-                                <span className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Mitad de Cuadro</span>
+                                <span className="text-xs text-slate-400 font-black uppercase tracking-[0.2em]">Mitad de Cuadro</span>
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                             </div>
                         )}
@@ -1484,14 +1518,19 @@ export default function Home() {
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
                     <Button onClick={() => setShowRankingCalc(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost"> <X className="w-6 h-6" /> </Button>
+                    {/* MODAL HEADER MODIFICADO: Colores del torneo y categoría agregada */}
                     <div className="text-center mb-6">
-                        <Trophy className="w-12 h-12 text-orange-500 mx-auto mb-2" />
-                        <h3 className="text-2xl font-black uppercase text-slate-800">Cálculo de Puntos</h3>
-                        <p className="text-sm text-slate-500 font-medium">Torneo: {navState.tournamentShort}</p>
+                        <Trophy className={`w-12 h-12 mx-auto mb-2 ${getTournamentStyle(navState.tournamentShort).trophyColor}`} />
+                        <h3 className={`text-2xl font-black uppercase ${getTournamentStyle(navState.tournamentShort).textColor}`}>Cálculo de Puntos</h3>
+                        <p className="text-sm text-slate-500 font-medium uppercase mt-1">
+                            Torneo: {getTournamentName(navState.tournamentShort)}
+                            <br/>
+                            <span className="text-xs opacity-80">{navState.category}</span>
+                        </p>
                     </div>
                     <div className="bg-slate-50 rounded-xl border-2 border-slate-100 overflow-hidden">
                         <table className="w-full text-left">
-                            <thead className="bg-[#b35a38] text-white">
+                            <thead className={`${getTournamentStyle(navState.tournamentShort).color} text-white`}>
                                 <tr>
                                     <th className="p-3 font-bold text-sm uppercase tracking-wider">Jugador</th>
                                     <th className="p-3 font-bold text-sm uppercase tracking-wider text-right">Puntos</th>
@@ -1501,7 +1540,7 @@ export default function Home() {
                                 {calculatedRanking.map((p, i) => (
                                     <tr key={i} className="hover:bg-white transition-colors">
                                         <td className="p-3 font-bold text-slate-700 uppercase text-sm">{p.name}</td>
-                                        <td className="p-3 font-black text-orange-600 text-right">{p.points}</td>
+                                        <td className={`p-3 font-black text-right ${getTournamentStyle(navState.tournamentShort).textColor}`}>{p.points}</td>
                                     </tr>
                                 ))}
                             </tbody>
