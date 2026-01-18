@@ -982,7 +982,10 @@ export default function Home() {
                 const rowsGroups = parseCSV(txtGroups);
                 let foundQualifiers = false;
                 for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                    if (rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-") { foundQualifiers = true; break; }
+                    // CORRECCION FINAL: Chequea tanto si hay datos de grupos (col 5) COMO si hay clasificados directos (col 12)
+                    const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-";
+                    const hasQualifiersList = rowsGroups[i] && rowsGroups[i][12] && rowsGroups[i][12] !== "" && rowsGroups[i][12] !== "-";
+                    if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; }
                 }
                 setBracketData({ hasData: false, canGenerate: foundQualifiers });
             } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
