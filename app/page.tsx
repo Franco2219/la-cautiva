@@ -28,23 +28,100 @@ const tournaments = [
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
 const TOURNAMENT_STYLES: any = {
     // SUPERFICIE DURA (AZUL OSCURO - BLUE 900)
-    "adelaide": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/adelaide.png", pointsLogo: null },
-    "ao": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/ao.png", pointsLogo: null },
-    "us": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/usopen.png", pointsLogo: null },
-    "iw": { color: "bg-blue-900", borderColor: "border-blue-900", textColor: "text-blue-900", trophyColor: "text-blue-900", logo: "/logos/indianwells.png", pointsLogo: null },
-    "masters": { color: "bg-blue-950", borderColor: "border-blue-950", textColor: "text-blue-950", trophyColor: "text-blue-950", logo: "/logos/masters.png", pointsLogo: null },
+    "adelaide": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/adelaide.png", 
+        pointsLogo: "/logos/pts_adelaide.png" 
+    },
+    "ao": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/ao.png", 
+        pointsLogo: "/logos/pts_ao.png" 
+    },
+    "us": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/usopen.png", 
+        pointsLogo: "/logos/pts_usopen.png" 
+    },
+    "iw": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/indianwells.png", 
+        pointsLogo: "/logos/pts_indianwells.png" 
+    },
+    "masters": { 
+        color: "bg-blue-950", 
+        borderColor: "border-blue-950", 
+        textColor: "text-blue-950", 
+        trophyColor: "text-blue-950", 
+        logo: "/logos/masters.png", 
+        pointsLogo: "/logos/pts_masters.png" 
+    },
     
     // CESPED (VERDE OFICIAL WIMBLEDON)
-    "wimbledon": { color: "bg-[#00703C]", borderColor: "border-[#00703C]", textColor: "text-[#00703C]", trophyColor: "text-[#00703C]", logo: "/logos/wimbledon.png", pointsLogo: null },
+    "wimbledon": { 
+      color: "bg-[#00703C]", 
+      borderColor: "border-[#00703C]", 
+      textColor: "text-[#00703C]", 
+      trophyColor: "text-[#00703C]", 
+      logo: "/logos/wimbledon.png", 
+      pointsLogo: "/logos/pts_wimbledon.png" 
+    },
 
     // POLVO DE LADRILLO (NARANJA - DEFAULT)
-    "rg": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/rg.svg", pointsLogo: null },
-    "mc": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/mc.png", pointsLogo: null },
-    "s8_500": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/s8_500.png", pointsLogo: null },
-    "s8_250": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logos/s8_250.png", pointsLogo: null },
+    "rg": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/rg.svg", 
+        pointsLogo: "/logos/pts_rg.png" 
+    },
+    "mc": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/mc.png", 
+        pointsLogo: "/logos/pts_mc.png" 
+    },
+    "s8_500": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/s8_500.png", 
+        pointsLogo: "/logos/pts_s8_500.png" 
+    },
+    "s8_250": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/s8_250.png", 
+        pointsLogo: "/logos/pts_s8_250.png" 
+    },
 
     // FALLBACK
-    "default": { color: "bg-[#b35a38]", borderColor: "border-[#b35a38]", textColor: "text-[#b35a38]", trophyColor: "text-[#b35a38]", logo: "/logo.png", pointsLogo: null }
+    "default": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logo.png", 
+        pointsLogo: null 
+    }
 };
 
 export default function Home() {
@@ -641,7 +718,8 @@ export default function Home() {
 
     // LÓGICA DE RANKING: Usar directamente lo que viene del Excel
     const calculateRanks = () => {
-        return group.positions || [];
+      // Devuelve la columna 'positions' que leyó fetchGroupPhase del Excel
+      return group.positions || [];
     };
 
     const displayRanks = calculateRanks();
