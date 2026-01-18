@@ -1209,9 +1209,9 @@ export default function Home() {
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                {/* Botón Lista Basti VISIBLE aqui */}
-                <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 w-12 rounded-xl">
-                    <List className="w-6 h-6" />
+                {/* Botón Lista Basti VISIBLE aqui - CORREGIDO */}
+                <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg">
+                    <List className="mr-2 w-4 h-4" /> LISTA BASTI
                 </Button>
 
                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
