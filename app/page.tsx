@@ -42,7 +42,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/ao.png", 
-        pointsLogo: "/logos/pts_ao.png" 
+        pointsLogo: null
     },
     "us": { 
         color: "bg-blue-900", 
@@ -50,7 +50,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/usopen.png", 
-        pointsLogo: "/logos/pts_usopen.png" 
+        pointsLogo: null
     },
     "iw": { 
         color: "bg-blue-900", 
@@ -76,7 +76,7 @@ const TOURNAMENT_STYLES: any = {
       textColor: "text-[#00703C]", 
       trophyColor: "text-[#00703C]", 
       logo: "/logos/wimbledon.png", 
-      pointsLogo: "/logos/pts_wimbledon.png" 
+      pointsLogo: null
     },
 
     // POLVO DE LADRILLO (NARANJA - DEFAULT)
@@ -86,7 +86,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-[#b35a38]", 
         trophyColor: "text-[#b35a38]", 
         logo: "/logos/rg.svg", 
-        pointsLogo: "/logos/pts_rg.png" 
+        pointsLogo: null 
     },
     "mc": { 
         color: "bg-[#b35a38]", 
