@@ -34,7 +34,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/adelaide.png", 
-        pointsLogo: "/logos/pts_adelaide.png" 
+        pointsLogo: "null" 
     },
     "ao": { 
         color: "bg-blue-900", 
