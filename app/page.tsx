@@ -66,7 +66,7 @@ const TOURNAMENT_STYLES: any = {
         textColor: "text-blue-950", 
         trophyColor: "text-blue-950", 
         logo: "/logos/masters.png", 
-        pointsLogo: "/logos/pts_masters.png" 
+        pointsLogo: null 
     },
     
     // CESPED (VERDE OFICIAL WIMBLEDON)
