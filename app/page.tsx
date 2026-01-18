@@ -101,7 +101,7 @@ export default function Home() {
   };
 
   const enviarListaBasti = () => {
-    let mensaje = `*PARTIDOS - ${navState.tournamentShort || navState.currentTour}*\n\n`;
+    let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
     
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
@@ -562,7 +562,6 @@ export default function Home() {
 
             playersRaw.forEach((row, index) => {
                 const pName = row && row[0] ? row[0] : "";
-                // CORRECCIÓN AQUÍ: Filtrar explícitamente celdas que sean cabeceras de otros grupos
                 if (pName && pName !== "-" && pName !== "" && 
                     !pName.toLowerCase().startsWith("zona") && 
                     !pName.toLowerCase().startsWith("grupo")) {
@@ -697,9 +696,9 @@ export default function Home() {
                  const areEqualMetrics = prev.points === curr.points && 
                                          prev.setsDiff === curr.setsDiff && 
                                          prev.gamesDiff === curr.gamesDiff;
-                 const h2h = checkHeadToHead(prev.index, curr.index);
-
-                 if (areEqualMetrics && h2h === 0) {
+                 
+                 // CORRECCIÓN AQUÍ: Si hay métricas iguales, comparten posición (evita sorteo)
+                 if (areEqualMetrics) {
                      ranks[curr.index] = ranks[prev.index]; 
                  } else {
                      ranks[curr.index] = i + 1; 
@@ -714,14 +713,9 @@ export default function Home() {
 
     return (
     <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
-      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-between`}>
-          <div className="w-20 h-20 flex items-center justify-center relative">
-               {style.logo && <Image src={style.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
-          </div>
-          <span className="flex-1 text-center">{group.groupName}</span>
-          <div className="w-20 h-20 flex items-center justify-center relative">
-               {style.pointsLogo && <Image src={style.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
-          </div>
+      {/* HEADER DE GRUPO MODIFICADO: Sin logos, título más grande y centrado */}
+      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
+          <span className="text-3xl">{group.groupName}</span>
       </div>
       <style jsx>{`
         .hide-scroll::-webkit-scrollbar { display: none; }
