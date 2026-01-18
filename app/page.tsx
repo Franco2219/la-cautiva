@@ -717,17 +717,11 @@ export default function Home() {
     const showGames = hasTies();
 
     // LÓGICA DE RANKING INTERNA DEL GRUPO (Puntos > Sets > Games > H2H)
+    // LÓGICA DE RANKING: Usar directamente lo que viene del Excel
     const calculateRanks = () => {
-        if (!isComplete) return group.positions.map((p:any) => p); 
-
-        const playersData = group.players.map((p: string, i: number) => ({
-            index: i,
-            name: p,
-            points: parseInt(group.points[i]) || 0,
-            setsDiff: parseInt(group.diff[i]) || 0,
-            gamesDiff: parseInt(group.gamesDiff[i]) || 0,
-            originalPos: group.positions[i]
-        }));
+      // Devuelve la columna 'positions' que leyó fetchGroupPhase del Excel
+      return group.positions || [];
+        };
 
         const checkHeadToHead = (idxA: number, idxB: number) => {
             const result = group.results[idxA][idxB]; 
