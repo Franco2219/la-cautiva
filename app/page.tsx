@@ -164,7 +164,6 @@ export default function Home() {
       return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
   };
 
-  // Función helper para obtener el nombre completo
   const getTournamentName = (shortName: string) => {
       const tour = tournaments.find(t => t.short === shortName);
       return tour ? tour.name : shortName;
@@ -208,7 +207,6 @@ export default function Home() {
       }
   };
 
-  // --- LÓGICA DE RANKING ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -420,11 +418,7 @@ export default function Home() {
         let slots: any[] = Array(bracketSize).fill(null);
         
         let pos1 = 0; let pos2 = bracketSize - 1;
-        
-        // Logica para 1-4 es igual en 32 y 64
         let pos34 = [(bracketSize / 2) - 1, bracketSize / 2];
-        
-        // Logica para 5-8
         let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [2, 5, 10, 13]; 
         else if (bracketSize === 32) pos58 = [7, 8, 23, 24]; 
@@ -432,17 +426,14 @@ export default function Home() {
 
         const seeds = entryList.slice(0, 16).map((p, i) => ({ ...p, rank: i + 1 }));
         
-        // Colocar 1 y 2
         if (seeds[0]) slots[pos1] = seeds[0];
         if (seeds[1]) slots[pos2] = seeds[1];
 
-        // Colocar 3 y 4
         if (seeds[2] && seeds[3]) {
             const group34 = [seeds[2], seeds[3]].sort(() => Math.random() - 0.5);
             slots[pos34[0]] = group34[0]; slots[pos34[1]] = group34[1]; 
         } else if (seeds[2]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[2]; }
 
-        // Colocar 5 al 8
         if (seeds.length >= 8 && pos58.length === 4) {
             const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5);
             const seedsTop = group58.slice(0, 2);
@@ -453,11 +444,8 @@ export default function Home() {
             slots[posBot[0]] = seedsBot[0]; slots[posBot[1]] = seedsBot[1];
         }
 
-        // Colocar 9 al 16 (Solo si es cuadro de 64)
         if (bracketSize === 64 && seeds.length >= 16) {
              const group9to16 = seeds.slice(8, 16).sort(() => Math.random() - 0.5);
-             // Indices especificos para 9-16 para que no crucen con 1-8 en primeras rondas
-             // Deben ir en indices: 7, 8, 23, 24, 39, 40, 55, 56
              const pos9to16 = [7, 8, 23, 24, 39, 40, 55, 56].sort(() => Math.random() - 0.5);
              for(let i=0; i<8; i++) {
                  if (group9to16[i]) slots[pos9to16[i]] = group9to16[i];
@@ -467,7 +455,6 @@ export default function Home() {
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
         let byesRemaining = byeCount;
 
-        // Asignar BYES a los sembrados (si corresponde)
         const maxSeedCheck = bracketSize === 64 ? 16 : 8;
         for (let r = 1; r <= maxSeedCheck; r++) {
             if (byesRemaining > 0) {
@@ -482,7 +469,6 @@ export default function Home() {
             }
         }
 
-        // Llenar huecos vacíos con BYES para balancear
         let emptyPairsIndices = []; 
         for (let i = 0; i < bracketSize; i += 2) {
              if (slots[i] === null && slots[i+1] === null) emptyPairsIndices.push(i);
@@ -510,7 +496,6 @@ export default function Home() {
             } else { break; }
         }
         
-        // Rellenar con no-sembrados
         const nonSeedsStartIndex = bracketSize === 64 ? 16 : 8;
         const nonSeeds = entryList.slice(nonSeedsStartIndex).map(p => ({ ...p, rank: 0 }));
         nonSeeds.sort(() => Math.random() - 0.5); 
@@ -645,7 +630,6 @@ export default function Home() {
         for (let i = 0; i < rows.length; i++) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
-            // CORRECCIÓN FANTASMA: Validar p4 para que no sea un header de otra zona
             const potentialP4 = rows[i+4] && rows[i+4][0];
             const isNextHeader = potentialP4 && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
             const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null;
@@ -662,7 +646,6 @@ export default function Home() {
 
             playersRaw.forEach((row, index) => {
                 const pName = row && row[0] ? row[0] : "";
-                // CORRECCIÓN FANTASMA: Filtro más estricto
                 if (pName && pName !== "-" && pName !== "" && 
                     !pName.toLowerCase().includes("zona") && 
                     !pName.toLowerCase().includes("grupo") &&
@@ -716,14 +699,6 @@ export default function Home() {
     } finally { setIsLoading(false); }
   }
 
-  const confirmarYEnviar = () => {
-    let mensaje = `*SORTEO CONFIRMADO - ${getTournamentName(navState.currentTour)}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    // MODIFICACION: Se quito el doble salto de linea (\n\n) por uno simple (\n)
-    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
-    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    setIsSorteoConfirmado(true);
-  };
-
   const GroupTable = ({ group }: { group: any }) => {
     const totalPlayers = group.players.length;
     let isComplete = true;
@@ -749,9 +724,7 @@ export default function Home() {
     
     const showGames = hasTies();
 
-    // LÓGICA DE RANKING: Usar directamente lo que viene del Excel
     const calculateRanks = () => {
-      // Devuelve la columna 'positions' que leyó fetchGroupPhase del Excel
       return group.positions || [];
     };
 
@@ -760,7 +733,6 @@ export default function Home() {
 
     return (
     <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
-      {/* HEADER DE GRUPO MODIFICADO: Sin logos, título más grande y centrado */}
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
@@ -824,151 +796,219 @@ export default function Home() {
     );
   };
 
-  // --- LOGICA MODIFICADA PARA DISTRIBUCIÓN DE BYES (FIXED TOP 8 + BAG + REGLAS ANTI-CRUCE Y ANTI-BYE) ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
-    let bracketSize = 8;
-    // Soporte para hasta 64 jugadores
-    if (totalPlayers > 32) bracketSize = 64;
-    else if (totalPlayers > 16) bracketSize = 32; 
-    else if (totalPlayers > 8) bracketSize = 16; 
-    else if (totalPlayers > 4) bracketSize = 8; 
-    else bracketSize = 4; 
 
-    const byeCount = bracketSize - totalPlayers;
-    const numMatches = bracketSize / 2;
+    // --- LÓGICA ORIGINAL PARA 32 JUGADORES O MENOS ---
+    if (totalPlayers <= 32) {
+        let bracketSize = 8;
+        if (totalPlayers > 16) bracketSize = 32; 
+        else if (totalPlayers > 8) bracketSize = 16; 
+        else if (totalPlayers > 4) bracketSize = 8; 
+        else bracketSize = 4; 
 
-    const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-    const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+        const byeCount = bracketSize - totalPlayers;
+        const numMatches = bracketSize / 2;
+        const halfMatches = numMatches / 2;
 
-    // --- NUEVA LÓGICA DE BYES Y BOLSA ---
-    const maxFixedByes = 8;
-    const fixedByesCount = Math.min(byeCount, maxFixedByes);
-    const floatingByesCount = Math.max(0, byeCount - maxFixedByes);
+        const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+        const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
-    // Identificar a los ganadores que tienen BYE asegurado (Top 8 como máximo)
-    const fixedByeWinners = winners.slice(0, fixedByesCount);
-    const fixedByeWinnersIndices = new Set(fixedByeWinners.map(w => w.groupIndex));
-
-    const remainingWinners = winners.slice(fixedByesCount);
-    const floatingByes = Array(floatingByesCount).fill(null).map(() => ({ name: "BYE", rank: 0, groupIndex: -1 }));
-
-    // Bolsa mezclada: SOLO SEGUNDOS Y BYES FLOTANTES
-    // IMPORTANTE: Ordenar la bolsa para que los BYEs queden AL FINAL (índice 0, ya que usamos pop())
-    // y los jugadores reales queden al principio para ser sacados último? NO.
-    // Usamos pop(), saca del final del array. 
-    // Queremos sacar jugadores reales PRIMERO para llenar P1.
-    // Entonces: [BYE, BYE, ..., PLAYER, PLAYER].
-    const bag = [...runners, ...floatingByes].sort((a, b) => {
-        const isByeA = a.name === "BYE";
-        const isByeB = b.name === "BYE";
-        if (isByeA && !isByeB) return -1; // Bye va antes (fondo)
-        if (!isByeA && isByeB) return 1;  // Player va despues (tope)
-        return Math.random() - 0.5; // Mezclar iguales
-    });
-
-    let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-
-    // --- PASO 1: DEFINIR INDICES PROHIBIDOS (ANTI-CRUCE) ---
-    const getOpponentMatchIdx = (idx: number) => (idx % 2 === 0 ? idx + 1 : idx - 1);
-    const restrictedMatches = new Set();
-    const top4Indices: number[] = [];
-
-    // Pre-calcular dónde irán Z1-Z4
-    if (winners[0]) top4Indices.push(0); // Top
-    if (winners[1]) top4Indices.push(numMatches - 1); // Bottom
-    const mid1 = (numMatches / 2) - 1;
-    const mid2 = numMatches / 2;
-    // Z3 y Z4 van a los medios
-    if (winners.length >= 3) top4Indices.push(mid1);
-    if (winners.length >= 4) top4Indices.push(mid2);
-
-    top4Indices.forEach(idx => {
-        restrictedMatches.add(getOpponentMatchIdx(idx));
-    });
-
-    const placeWinner = (winner: any, matchIndex: number) => {
-        if (!winner) return;
-        matches[matchIndex].p1 = winner;
-        if (fixedByeWinnersIndices.has(winner.groupIndex)) {
-             matches[matchIndex].p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+        const playersWithBye = new Set();
+        for(let i=0; i < byeCount; i++) {
+            if(winners[i]) playersWithBye.add(winners[i].name);
+            else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
         }
-    };
+        let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+        const wZ1 = winners.find(w => w.groupIndex === 0);
+        const wZ2 = winners.find(w => w.groupIndex === 1);
+        const wZ3 = winners.find(w => w.groupIndex === 2);
+        const wZ4 = winners.find(w => w.groupIndex === 3);
+        const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
 
-    // --- PASO 2: COLOCAR GANADORES Z1-Z4 ---
-    if (winners[0]) placeWinner(winners[0], 0);
-    if (winners[1]) placeWinner(winners[1], numMatches - 1);
-    
-    const mids = [winners[2], winners[3]].filter(Boolean);
-    if (mids.length === 2 && Math.random() > 0.5) mids.reverse();
-    if (mids[0]) placeWinner(mids[0], (numMatches / 2) - 1);
-    if (mids[1]) placeWinner(mids[1], (numMatches / 2));
+        const idxTop = 0; const idxBottom = numMatches - 1;
+        const idxMidTop = halfMatches - 1; const idxMidBottom = halfMatches; 
 
-    // --- PASO 3: COLOCAR RESTO DE GANADORES (Z5+) CON RESTRICCIONES ---
-    const remainingWinnersToPlace = winners.slice(4);
+        if (wZ1) matches[idxTop].p1 = wZ1;
+        if (wZ2) matches[idxBottom].p1 = wZ2;
+        const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+        if (mids.length > 0) matches[idxMidTop].p1 = mids[0];
+        if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
+        matches.forEach(m => { if (!m.p1 && otherWinners.length > 0) m.p1 = otherWinners.pop(); });
+
+        const topHalfMatches = matches.slice(0, halfMatches);
+        const bottomHalfMatches = matches.slice(halfMatches);
+        const zonesInTop = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
+        const zonesInBottom = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
+        const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
+        const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
+        const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
+        const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
+        let poolTop = shuffle([...mustGoTop]); let poolBottom = shuffle([...mustGoBottom]); let poolFree = shuffle([...freeAgents]);
+
+        while (poolTop.length < halfMatches && poolFree.length > 0) poolTop.push(poolFree.pop());
+        while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) poolBottom.push(poolFree.pop());
+        poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
+
+        matches.forEach((match, index) => {
+            const isTopHalf = index < halfMatches;
+            let pool = isTopHalf ? poolTop : poolBottom;
+            if (match.p1) {
+                if (playersWithBye.has(match.p1.name)) { match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; } 
+                else { if (pool.length > 0) match.p2 = pool.pop(); else match.p2 = { name: "", rank: 0 }; }
+            } else {
+                if (pool.length >= 2) { match.p1 = pool.pop(); match.p2 = pool.pop(); } 
+                else if (pool.length === 1) { match.p1 = pool.pop(); match.p2 = { name: "BYE", rank: 0 }; }
+            }
+        });
+        return { matches, bracketSize };
+    } 
     
-    // Identificar espacios vacíos para P1
-    let availableP1Indices = [];
-    for(let i=0; i < numMatches; i++) {
-        if (matches[i].p1 === null) availableP1Indices.push(i);
+    // --- LÓGICA NUEVA PARA > 32 JUGADORES (MODO GRAND SLAM) ---
+    else {
+        const bracketSize = 64;
+        const numMatches = 32; // bracketSize / 2
+        const byeCount = bracketSize - totalPlayers;
+
+        const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+        const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+
+        // Prioridad Byes: Zonas 1 a 8
+        const maxPriorityByes = 8;
+        const assignedByesCount = Math.min(byeCount, maxPriorityByes);
+        
+        // Zonas con Bye Fijo (1-8 si alcanzan los byes)
+        const priorityByeZones = new Set();
+        // Asignamos prioridad a los ganadores Z1-Z8 si existen
+        for(let i=0; i<assignedByesCount; i++) {
+            if(winners[i]) priorityByeZones.add(winners[i].groupIndex);
+        }
+
+        let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+
+        // --- COLOCACIÓN ESTRATÉGICA DE CABEZAS DE SERIE (P1) ---
+        const placeP1 = (winner: any, index: number) => {
+            if (!winner) return;
+            matches[index].p1 = winner;
+            // Si tiene Bye asignado por prioridad
+            if (priorityByeZones.has(winner.groupIndex)) {
+                matches[index].p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+            }
+        };
+
+        // Regla 1: Z1 Top, Z2 Bottom, Z3/Z4 Mids
+        if (winners[0]) placeP1(winners[0], 0); // Z1
+        if (winners[1]) placeP1(winners[1], numMatches - 1); // Z2
+        
+        const mids = [winners[2], winners[3]].filter(Boolean); // Z3 y Z4
+        if (mids.length > 0) {
+            // Aleatorio cual va arriba del bloque de abajo y abajo del bloque de arriba
+            if (Math.random() > 0.5) mids.reverse();
+            // Fin de la mitad superior (index 15) y Inicio de la mitad inferior (index 16)
+            if (mids[0]) placeP1(mids[0], (numMatches/2) - 1);
+            if (mids[1]) placeP1(mids[1], (numMatches/2));
+        }
+
+        // Regla 2: Z5-Z8 Lejos de Z1-Z4
+        // Llaves peligrosas (cercanas a Z1-Z4 en R2/R3): 0, 1, 14, 15, 16, 17, 30, 31
+        // Llaves seguras (Cruces de Cuartos): 7, 8, 23, 24
+        const safeIndices = [7, 8, 23, 24].sort(() => Math.random() - 0.5);
+        const z5to8 = winners.slice(4, 8); // Z5, Z6, Z7, Z8
+        z5to8.forEach(w => {
+            if (safeIndices.length > 0) placeP1(w, safeIndices.pop()!);
+            else { 
+                // Fallback si no hay safe indices (raro)
+                const emptyIdx = matches.findIndex(m => m.p1 === null);
+                if (emptyIdx !== -1) placeP1(w, emptyIdx);
+            }
+        });
+
+        // Resto de los ganadores (Z9+)
+        const remainingWinners = winners.slice(8);
+        const emptyIndicesP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+        
+        remainingWinners.forEach(w => {
+            if (emptyIndicesP1.length > 0) placeP1(w, emptyIndicesP1.pop()!);
+        });
+
+        // --- DISTRIBUCIÓN DE RUNNERS (REGLA 4: ZONAS OPUESTAS) ---
+        // Clasificamos runners en "Debe ir Arriba" y "Debe ir Abajo"
+        const runnersTop = [];
+        const runnersBot = [];
+        const runnersFree = []; // Si su winner no clasificó o algo raro
+
+        runners.forEach(r => {
+            // Buscar dónde está su winner
+            const winnerMatchIndex = matches.findIndex(m => m.p1 && m.p1.groupIndex === r.groupIndex);
+            if (winnerMatchIndex !== -1) {
+                if (winnerMatchIndex < numMatches / 2) runnersBot.push(r); // Winner arriba -> Runner abajo
+                else runnersTop.push(r); // Winner abajo -> Runner arriba
+            } else {
+                runnersFree.push(r);
+            }
+        });
+
+        // Mezclar las bolsas
+        runnersTop.sort(() => Math.random() - 0.5);
+        runnersBot.sort(() => Math.random() - 0.5);
+        runnersFree.sort(() => Math.random() - 0.5);
+
+        // --- LLENADO DE HUECOS (REGLAS 3, 5, 6: NO BYE VS BYE, BALANCE) ---
+        // Paso A: Llenar P1 vacíos con Runners para asegurar jugadores reales vs jugadores reales/bye
+        // Primero llenamos P1s vacíos de Arriba con RunnersTop
+        for(let i=0; i < numMatches/2; i++) {
+            if (!matches[i].p1) {
+                if(runnersTop.length > 0) matches[i].p1 = runnersTop.pop();
+                else if(runnersFree.length > 0) matches[i].p1 = runnersFree.pop();
+            }
+        }
+        // Luego P1s vacíos de Abajo con RunnersBot
+        for(let i=numMatches/2; i < numMatches; i++) {
+            if (!matches[i].p1) {
+                if(runnersBot.length > 0) matches[i].p1 = runnersBot.pop();
+                else if(runnersFree.length > 0) matches[i].p1 = runnersFree.pop();
+            }
+        }
+
+        // Si sobraron runners con restricción y no entraron en P1 de su lado preferido, van a la bolsa general de P2
+        // Ojo: Si quedaron P1 vacíos, llenarlos con lo que haya para balancear
+        const remainingP1Slots = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1);
+        const allRemainingRunners = [...runnersTop, ...runnersBot, ...runnersFree].sort(() => Math.random() - 0.5);
+        
+        remainingP1Slots.forEach(idx => {
+            if (allRemainingRunners.length > 0) matches[idx].p1 = allRemainingRunners.pop();
+            else matches[idx].p1 = { name: "BYE", rank: 0 }; // Caso extremo (pocos jugadores)
+        });
+
+        // Paso B: Llenar P2 vacíos (Rivales)
+        // La bolsa ahora tiene los Runners que sobraron de llenar P1 + los Byes flotantes
+        // Calculamos cuántos Byes faltan colocar
+        let currentByesPlaced = matches.filter(m => m.p2 && m.p2.name === "BYE").length;
+        let byesNeeded = byeCount - currentByesPlaced;
+        
+        const finalPool = [...allRemainingRunners];
+        for(let k=0; k<byesNeeded; k++) finalPool.push({ name: "BYE", rank: 0, groupIndex: -1 });
+        finalPool.sort(() => Math.random() - 0.5);
+
+        // Llenar P2
+        const emptyP2Indices = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+        
+        emptyP2Indices.forEach(idx => {
+            if (finalPool.length > 0) matches[idx].p2 = finalPool.pop();
+            else matches[idx].p2 = { name: "BYE", rank: 0 };
+        });
+
+        // Limpieza final y estética (Si P1 es Bye y P2 Player, invertir)
+        matches.forEach(m => {
+            if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
+            if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
+            if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
+                const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
+            }
+        });
+
+        return { matches, bracketSize };
     }
-    availableP1Indices.sort(() => Math.random() - 0.5);
-
-    // Separar índices seguros de peligrosos
-    const safeIndices = availableP1Indices.filter(idx => !restrictedMatches.has(idx));
-    const dangerousIndices = availableP1Indices.filter(idx => restrictedMatches.has(idx));
-
-    // Los primeros 4 de los restantes (Z5-Z8) tienen prioridad para ir a zona segura
-    const winners5to8 = remainingWinnersToPlace.slice(0, 4);
-    const winnersRest = remainingWinnersToPlace.slice(4);
-
-    winners5to8.forEach(w => {
-        if (safeIndices.length > 0) {
-            placeWinner(w, safeIndices.pop()!);
-        } else if (dangerousIndices.length > 0) {
-            placeWinner(w, dangerousIndices.pop()!); // Fallback si no hay lugar seguro
-        }
-    });
-
-    // El resto va donde sea
-    const finalAvailable = [...safeIndices, ...dangerousIndices].sort(() => Math.random() - 0.5);
-    winnersRest.forEach(w => {
-         if (finalAvailable.length > 0) {
-            placeWinner(w, finalAvailable.pop()!);
-         }
-    });
-
-    // --- PASO 4: LLENAR RIVALES Y HUECOS CON LA BOLSA (PRIORIDAD PLAYERS) ---
-    
-    for (let i = 0; i < numMatches; i++) {
-        // Caso A: Ya hay un P1 (es un Ganador).
-        if (matches[i].p1 && !matches[i].p2) {
-             if (bag.length > 0) matches[i].p2 = bag.pop();
-             else matches[i].p2 = { name: "BYE", rank: 0 }; 
-        }
-        // Caso B: P1 está vacío (No hay Ganador en esta llave).
-        else if (!matches[i].p1) {
-            // Llenar P1 primero. Como la bolsa tiene Players al final, sacamos Player.
-            if (bag.length > 0) matches[i].p1 = bag.pop();
-            else matches[i].p1 = { name: "BYE", rank: 0 };
-
-            // Luego llenar P2
-            if (bag.length > 0) matches[i].p2 = bag.pop();
-            else matches[i].p2 = { name: "BYE", rank: 0 };
-        }
-    }
-
-    // Limpieza final
-    matches.forEach(m => {
-        if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
-        if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
-        // Estética: Si es Bye vs Player (raro en P1), invertir para que se vea lindo
-        if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
-            const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
-        }
-    });
-
-    return { matches, bracketSize };
   }
 
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
