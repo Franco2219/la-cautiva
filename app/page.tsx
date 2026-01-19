@@ -2,41 +2,133 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Button } from "../components/ui/button"
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Shuffle, List } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, AlertCircle, Shuffle, X, Copy, List } from "lucide-react"
 
-// --- IMPORTS DE UTILIDADES Y CONSTANTES ---
-import { 
-  ID_2025, 
-  ID_DATOS_GENERALES, 
-  ID_TORNEOS, 
-  MI_TELEFONO, 
-  TELEFONO_BASTI, 
-  tournaments 
-} from "../lib/constants"
+// --- CONFIGURACIÓN DE DATOS ---
+const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
+const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
+const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
+const MI_TELEFONO = "5491150568353"; 
+const TELEFONO_BASTI = "5491123965949"; 
 
-import { 
-  parseCSV, 
-  getTournamentName, 
-  getTournamentStyle 
-} from "../lib/utils"
+const tournaments = [
+  { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
+  { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
+  { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
+  { id: "ao", name: "Australian Open", short: "AO", type: "full" }, 
+  { id: "iw", name: "Indian Wells", short: "IW", type: "full" },
+  { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
+  { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
+  { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
+  { id: "us", name: "US Open", short: "US", type: "direct" },
+  { id: "masters", name: "Masters", short: "Masters", type: "full" },
+]
 
-// --- IMPORTS DE COMPONENTES VISUALES ---
-import { GroupTable } from "../components/tournament/GroupTable"
-import { GeneratedMatch } from "../components/tournament/GeneratedMatch"
-import { BracketView } from "../components/tournament/BracketView"
-import { RankingTable } from "../components/tournament/RankingTable"
-import { CalculatedRankingModal } from "../components/tournament/CalculatedRankingModal"
+// --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
+const TOURNAMENT_STYLES: any = {
+    // SUPERFICIE DURA (AZUL OSCURO - BLUE 900)
+    "adelaide": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/adelaide.png", 
+        pointsLogo: null 
+    },
+    "ao": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/ao.png", 
+        pointsLogo: null 
+    },
+    "us": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/usopen.png", 
+        pointsLogo: null
+    },
+    "iw": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/indianwells.png", 
+        pointsLogo: "/logos/pts_indianwells.png" 
+    },
+    "masters": { 
+        color: "bg-blue-950", 
+        borderColor: "border-blue-950", 
+        textColor: "text-blue-950", 
+        trophyColor: "text-blue-950", 
+        logo: "/logos/masters.png", 
+        pointsLogo: null
+    },
+    
+    // CESPED (VERDE OFICIAL WIMBLEDON)
+    "wimbledon": { 
+      color: "bg-[#00703C]", 
+      borderColor: "border-[#00703C]", 
+      textColor: "text-[#00703C]", 
+      trophyColor: "text-[#00703C]", 
+      logo: "/logos/wimbledon.png", 
+      pointsLogo: null 
+    },
+
+    // POLVO DE LADRILLO (NARANJA - DEFAULT)
+    "rg": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/rg.svg", 
+        pointsLogo: null 
+    },
+    "mc": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/mc.png", 
+        pointsLogo: "/logos/pts_mc.png" 
+    },
+    "s8_500": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/s8_500.png", 
+        pointsLogo: "/logos/pts_s8_500.png" 
+    },
+    "s8_250": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/s8_250.png", 
+        pointsLogo: "/logos/pts_s8_250.png" 
+    },
+
+    // FALLBACK
+    "default": { 
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logo.png", 
+        pointsLogo: null 
+    }
+};
 
 export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  // UPDATE: Agregados r6 y s6 para cuadro de 64
-  const [bracketData, setBracketData] = useState<any>({ 
-    r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], 
-    winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} 
-  });
+  const [bracketData, setBracketData] = useState<any>({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
   const [groupData, setGroupData] = useState<any[]>([])
   const [isSorteoConfirmado, setIsSorteoConfirmado] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -47,19 +139,48 @@ export default function Home() {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
+  const parseCSV = (text: string) => {
+    if (!text) return [];
+    return text.split('\n').map(row => 
+      row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c ? c.replace(/"/g, '').trim() : "")
+    );
+  };
 
-  // --- LÓGICA DE NEGOCIO ---
+  const getTournamentStyle = (shortName: string) => {
+      const key = shortName ? shortName.toLowerCase().trim() : "default";
+      const map: any = { 
+          "adelaide": "adelaide", 
+          "ao": "ao", 
+          "us open": "us", "us": "us", 
+          "indian wells": "iw", "iw": "iw", 
+          "masters": "masters", 
+          "wimbledon": "wimbledon", "w": "wimbledon",
+          "roland garros": "rg", "rg": "rg",
+          "monte carlo": "mc", "mc": "mc",
+          "s8 500": "s8_500", "super 8 / 500": "s8_500",
+          "s8 250": "s8_250", "super 8 / 250": "s8_250"
+      };
+      const styleKey = map[key] || "default";
+      return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
+  };
+
+  // Función helper para obtener el nombre completo
+  const getTournamentName = (shortName: string) => {
+      const tour = tournaments.find(t => t.short === shortName);
+      return tour ? tour.name : shortName;
+  };
 
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
+    
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
              if (m.p1 && m.p2 && m.p2.name !== "BYE") {
                  mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
              }
          });
-    } else if (navState.level === "group-phase") {
+    }
+    else if (navState.level === "group-phase") {
         groupData.forEach(group => {
             const players = group.players;
             for (let i = 0; i < players.length; i++) {
@@ -72,6 +193,7 @@ export default function Home() {
             }
         });
     }
+
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -86,6 +208,7 @@ export default function Home() {
       }
   };
 
+  // --- LÓGICA DE RANKING ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -106,7 +229,9 @@ export default function Home() {
             let idx = rankNames.indexOf(n);
             if (idx !== -1) return idx;
             const parts = n.replace(/,/g, "").split(" ").filter(p => p.length > 2); 
-            if (parts.length > 0) idx = rankNames.findIndex(rankName => rankName.includes(parts[0]));
+            if (parts.length > 0) {
+                 idx = rankNames.findIndex(rankName => rankName.includes(parts[0]));
+            }
             return idx === -1 ? 99999 : idx;
         };
 
@@ -116,11 +241,17 @@ export default function Home() {
         
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) {
-            if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) { colIndex = i; break; }
+            if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) {
+                colIndex = i;
+                break;
+            }
         }
         if (colIndex === -1) {
             for(let i=0; i<headerRow.length; i++) {
-                if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) { colIndex = i; break; }
+                if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) {
+                    colIndex = i;
+                    break;
+                }
             }
         }
 
@@ -162,9 +293,7 @@ export default function Home() {
             } else { 
                 semis = r2; cuartos = r1; finalists = r3 || []; 
             }
-            
-            // UPDATE: Manejo básico de puntos para 64 (r1 = dieciseisavos o treintaidosavos)
-            // Nota: Aquí se mantiene la lógica original, si quisieras puntos para ronda de 64, habría que agregarlos al baremo
+
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
             if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
@@ -214,15 +343,18 @@ export default function Home() {
                         }
                     }
                 }
+
                 Object.keys(playerWins).forEach(pName => {
                     const wins = playerWins[pName];
                     let extraPoints = 0;
                     if (wins === 1) extraPoints = pts.groupWin1;
                     else if (wins === 2) extraPoints = pts.groupWin2;
                     else if (wins >= 3) extraPoints = pts.groupWin3;
+
                     if (playerScores[pName]) playerScores[pName] += extraPoints;
                     else playerScores[pName] = extraPoints;
                 });
+
             } catch (err) { console.log("Error leyendo grupos para ranking full", err); }
         }
 
@@ -237,6 +369,7 @@ export default function Home() {
 
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
+
     } catch (e) {
         console.error(e);
         alert("Error calculando ranking. Verificá la hoja Formatos Grupos.");
@@ -467,11 +600,7 @@ export default function Home() {
         diff: ["", "", "", ""]
       }));
 
-      for (let i = 0; i < numGroups; i++) { 
-        if (entryList[i]) {
-            groups[i].players.push(`${i + 1}. ${entryList[i].name}`); 
-        }
-    }
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) groups[i].players.push(entryList[i].name); }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       let pIdx = 0;
       for (let g = 0; g < numGroups; g++) {
@@ -503,6 +632,7 @@ export default function Home() {
         for (let i = 0; i < rows.length; i++) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
+            // CORRECCIÓN CRASH AO B2: Agregamos validación robusta de tipo para potentialP4
             const potentialP4 = rows[i+4] && rows[i+4][0];
             const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
             const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null;
@@ -579,9 +709,107 @@ export default function Home() {
     setIsSorteoConfirmado(true);
   };
 
+  const GroupTable = ({ group }: { group: any }) => {
+    const totalPlayers = group.players.length;
+    let isComplete = true;
+
+    for (let i = 0; i < totalPlayers; i++) {
+        for (let j = 0; j < totalPlayers; j++) {
+           if (i === j) continue; 
+           const val = group.results[i]?.[j];
+           if (!val || val.trim() === "-" || val.trim().length < 2) {
+             isComplete = false;
+             break;
+           }
+        }
+        if (isComplete) break;
+    }
+
+    const hasTies = () => {
+        if (!group.points || !group.diff) return false;
+        const signatures = group.points.map((p: any, i: number) => `${p}|${group.diff[i]}`);
+        const unique = new Set(signatures);
+        return unique.size !== signatures.length; 
+    };
+    
+    const showGames = hasTies();
+
+    const calculateRanks = () => {
+      return group.positions || [];
+    };
+
+    const displayRanks = calculateRanks();
+    const style = getTournamentStyle(navState.currentTour);
+
+    return (
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
+      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
+          <span className="text-3xl">{group.groupName}</span>
+      </div>
+      <style jsx>{`
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+      <div className="overflow-x-auto w-full hide-scroll">
+          <table className="w-max min-w-full text-[11px] md:text-xs">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="p-3 border-r w-32 text-left font-bold text-black min-w-[120px] whitespace-nowrap">JUGADOR</th>
+                {group.players && group.players.map((p: string, i: number) => {
+                  let shortName = p;
+                  if (p) {
+                      const clean = p.replace(/,/g, "").trim().split(/\s+/);
+                      if (clean.length > 1) shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                      else shortName = clean[0];
+                  }
+                  return (
+                    <th key={i} className={`p-3 border-r text-center font-black uppercase min-w-[80px] whitespace-nowrap ${style.textColor}`}>
+                        {shortName}
+                    </th>
+                  )
+                })}
+                {isComplete && (
+                    <>
+                        <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">PTS</th>
+                        <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">SETS</th>
+                        {showGames && <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">GAMES</th>}
+                        <th className="p-3 text-center font-black text-black bg-slate-100 w-12 whitespace-nowrap">POS</th>
+                    </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {group.players && group.players.map((p1: string, i: number) => (
+                <tr key={i} className="border-b">
+                  <td className={`p-3 border-r font-black bg-slate-50 uppercase text-left whitespace-nowrap ${style.textColor}`}>{p1}</td>
+                  {group.players.map((p2: string, j: number) => (
+                    <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
+                      {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
+                    </td>
+                  ))}
+                  {isComplete && (
+                      <>
+                          <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.points ? group.points[i] : "-"}</td>
+                          <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.diff ? group.diff[i] : "-"}</td>
+                          {showGames && <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.gamesDiff ? group.gamesDiff[i] : "-"}</td>}
+                          <td className={`p-3 text-center font-black text-xl bg-slate-50 whitespace-nowrap ${style.textColor}`}>
+                              {displayRanks[i] || "-"}°
+                          </td>
+                      </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+      </div>
+    </div>
+    );
+  };
+
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
 
+    // --- LÓGICA ORIGINAL PARA 32 JUGADORES O MENOS ---
     if (totalPlayers <= 32) {
         let bracketSize = 8;
         if (totalPlayers > 16) bracketSize = 32; 
@@ -645,51 +873,67 @@ export default function Home() {
         });
         return { matches, bracketSize };
     } 
+    
+    // --- LÓGICA NUEVA PARA > 32 JUGADORES (MODO GRAND SLAM) ---
     else {
         const bracketSize = 64;
-        const numMatches = 32;
+        const numMatches = 32; // bracketSize / 2
         const byeCount = bracketSize - totalPlayers;
 
         const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
         const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+
+        // Prioridad Byes: Zonas 1 a 8
         const maxPriorityByes = 8;
         const assignedByesCount = Math.min(byeCount, maxPriorityByes);
         
+        // Zonas con Bye Fijo (1-8 si alcanzan los byes)
         const priorityByeZones = new Set();
+        // Asignamos prioridad a los ganadores Z1-Z8 si existen
         for(let i=0; i<assignedByesCount; i++) {
             if(winners[i]) priorityByeZones.add(winners[i].groupIndex);
         }
 
         let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
+        // --- COLOCACIÓN ESTRATÉGICA DE CABEZAS DE SERIE (P1) ---
         const placeP1 = (winner: any, index: number) => {
             if (!winner) return;
             matches[index].p1 = winner;
+            // Si tiene Bye asignado por prioridad
             if (priorityByeZones.has(winner.groupIndex)) {
                 matches[index].p2 = { name: "BYE", rank: 0, groupIndex: -1 };
             }
         };
 
-        if (winners[0]) placeP1(winners[0], 0);
-        if (winners[1]) placeP1(winners[1], numMatches - 1);
+        // Regla 1: Z1 Top, Z2 Bottom, Z3/Z4 Mids
+        if (winners[0]) placeP1(winners[0], 0); // Z1
+        if (winners[1]) placeP1(winners[1], numMatches - 1); // Z2
         
-        const mids = [winners[2], winners[3]].filter(Boolean);
+        const mids = [winners[2], winners[3]].filter(Boolean); // Z3 y Z4
         if (mids.length > 0) {
+            // Aleatorio cual va arriba del bloque de abajo y abajo del bloque de arriba
             if (Math.random() > 0.5) mids.reverse();
+            // Fin de la mitad superior (index 15) y Inicio de la mitad inferior (index 16)
             if (mids[0]) placeP1(mids[0], (numMatches/2) - 1);
             if (mids[1]) placeP1(mids[1], (numMatches/2));
         }
 
+        // Regla 2: Z5-Z8 Lejos de Z1-Z4
+        // Llaves peligrosas (cercanas a Z1-Z4 en R2/R3): 0, 1, 14, 15, 16, 17, 30, 31
+        // Llaves seguras (Cruces de Cuartos): 7, 8, 23, 24
         const safeIndices = [7, 8, 23, 24].sort(() => Math.random() - 0.5);
-        const z5to8 = winners.slice(4, 8);
+        const z5to8 = winners.slice(4, 8); // Z5, Z6, Z7, Z8
         z5to8.forEach(w => {
             if (safeIndices.length > 0) placeP1(w, safeIndices.pop()!);
             else { 
+                // Fallback si no hay safe indices (raro)
                 const emptyIdx = matches.findIndex(m => m.p1 === null);
                 if (emptyIdx !== -1) placeP1(w, emptyIdx);
             }
         });
 
+        // Resto de los ganadores (Z9+)
         const remainingWinners = winners.slice(8);
         const emptyIndicesP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
         
@@ -697,30 +941,38 @@ export default function Home() {
             if (emptyIndicesP1.length > 0) placeP1(w, emptyIndicesP1.pop()!);
         });
 
+        // --- DISTRIBUCIÓN DE RUNNERS (REGLA 4: ZONAS OPUESTAS) ---
+        // Clasificamos runners en "Debe ir Arriba" y "Debe ir Abajo"
         const runnersTop = [];
         const runnersBot = [];
-        const runnersFree = [];
+        const runnersFree = []; // Si su winner no clasificó o algo raro
 
         runners.forEach(r => {
+            // Buscar dónde está su winner
             const winnerMatchIndex = matches.findIndex(m => m.p1 && m.p1.groupIndex === r.groupIndex);
             if (winnerMatchIndex !== -1) {
-                if (winnerMatchIndex < numMatches / 2) runnersBot.push(r);
-                else runnersTop.push(r);
+                if (winnerMatchIndex < numMatches / 2) runnersBot.push(r); // Winner arriba -> Runner abajo
+                else runnersTop.push(r); // Winner abajo -> Runner arriba
             } else {
                 runnersFree.push(r);
             }
         });
 
+        // Mezclar las bolsas
         runnersTop.sort(() => Math.random() - 0.5);
         runnersBot.sort(() => Math.random() - 0.5);
         runnersFree.sort(() => Math.random() - 0.5);
 
+        // --- LLENADO DE HUECOS (REGLAS 3, 5, 6: NO BYE VS BYE, BALANCE) ---
+        // Paso A: Llenar P1 vacíos con Runners para asegurar jugadores reales vs jugadores reales/bye
+        // Primero llenamos P1s vacíos de Arriba con RunnersTop
         for(let i=0; i < numMatches/2; i++) {
             if (!matches[i].p1) {
                 if(runnersTop.length > 0) matches[i].p1 = runnersTop.pop();
                 else if(runnersFree.length > 0) matches[i].p1 = runnersFree.pop();
             }
         }
+        // Luego P1s vacíos de Abajo con RunnersBot
         for(let i=numMatches/2; i < numMatches; i++) {
             if (!matches[i].p1) {
                 if(runnersBot.length > 0) matches[i].p1 = runnersBot.pop();
@@ -728,14 +980,19 @@ export default function Home() {
             }
         }
 
+        // Si sobraron runners con restricción y no entraron en P1 de su lado preferido, van a la bolsa general de P2
+        // Ojo: Si quedaron P1 vacíos, llenarlos con lo que haya para balancear
         const remainingP1Slots = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1);
         const allRemainingRunners = [...runnersTop, ...runnersBot, ...runnersFree].sort(() => Math.random() - 0.5);
         
         remainingP1Slots.forEach(idx => {
             if (allRemainingRunners.length > 0) matches[idx].p1 = allRemainingRunners.pop();
-            else matches[idx].p1 = { name: "BYE", rank: 0 };
+            else matches[idx].p1 = { name: "BYE", rank: 0 }; // Caso extremo (pocos jugadores)
         });
 
+        // Paso B: Llenar P2 vacíos (Rivales)
+        // La bolsa ahora tiene los Runners que sobraron de llenar P1 + los Byes flotantes
+        // Calculamos cuántos Byes faltan colocar
         let currentByesPlaced = matches.filter(m => m.p2 && m.p2.name === "BYE").length;
         let byesNeeded = byeCount - currentByesPlaced;
         
@@ -743,6 +1000,7 @@ export default function Home() {
         for(let k=0; k<byesNeeded; k++) finalPool.push({ name: "BYE", rank: 0, groupIndex: -1 });
         finalPool.sort(() => Math.random() - 0.5);
 
+        // Llenar P2
         const emptyP2Indices = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
         
         emptyP2Indices.forEach(idx => {
@@ -750,6 +1008,7 @@ export default function Home() {
             else matches[idx].p2 = { name: "BYE", rank: 0 };
         });
 
+        // Limpieza final y estética (Si P1 es Bye y P2 Player, invertir)
         matches.forEach(m => {
             if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
             if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
@@ -763,6 +1022,7 @@ export default function Home() {
   }
 
   const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
+      // ... (Igual)
       setIsLoading(true);
       setGeneratedBracket([]);
       const sheetName = `Grupos ${tournamentShort} ${category}`;
@@ -773,6 +1033,7 @@ export default function Home() {
           const rows = parseCSV(csvText);
           let qualifiers = [];
           for(let i = 0; i < 50; i++) { 
+              // CORRECCIÓN WIMBLEDON: Se eliminó rows[i].length > 5 para permitir leer aunque las columnas iniciales estén vacías
               if (rows[i]) {
                   const winnerName = rows[i][12]; 
                   const runnerName = rows[i][13]; 
@@ -795,10 +1056,7 @@ export default function Home() {
   }
 
   const confirmarSorteoCuadro = () => {
-    // Si no hay sorteo generado, no hacemos nada
     if (generatedBracket.length === 0) return;
-    
-    // --- 1. Enviar a WhatsApp (Igual que antes) ---
     let mensaje = `*SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
@@ -806,55 +1064,10 @@ export default function Home() {
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-
-    // --- 2. MOSTRAR EL CUADRO EN PANTALLA ---
-    const r1: string[] = [];
-    const s1: string[] = [];
-    const seeds: any = {};
-
-    generatedBracket.forEach(match => {
-        // Procesar Jugador 1
-        if (match.p1) {
-            r1.push(match.p1.name);
-            // UPDATE: Guardar etiqueta completa de zona si existe
-            if (match.p1.rank > 0) {
-                 const label = match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : match.p1.rank;
-                 seeds[match.p1.name] = label;
-            }
-        } else { 
-            r1.push("BYE"); 
-        }
-        
-        // Procesar Jugador 2
-        if (match.p2) {
-            r1.push(match.p2.name);
-            // UPDATE: Guardar etiqueta completa de zona si existe
-            if (match.p2.rank > 0) {
-                 const label = match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : match.p2.rank;
-                 seeds[match.p2.name] = label;
-            }
-        } else { 
-            r1.push("BYE"); 
-        }
-
-        // Scores vacíos
-        s1.push(""); s1.push("");
-    });
-
-    setBracketData({
-        r1: r1, s1: s1,
-        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [],
-        winner: "", runnerUp: "",
-        bracketSize: navState.bracketSize, 
-        hasData: true, 
-        canGenerate: false,
-        seeds: seeds
-    });
-
-    setNavState({ ...navState, level: "direct-bracket" });
   }
 
   const fetchRankingData = async (categoryShort: string, year: string) => {
+    // ... (Igual)
     setIsLoading(true); setRankingData([]); setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
@@ -874,9 +1087,9 @@ export default function Home() {
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
+    // ... (Igual)
     setIsLoading(true); 
-    // UPDATE: Reset inicial con r6/s6
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -898,6 +1111,7 @@ export default function Home() {
                 const rowsGroups = parseCSV(txtGroups);
                 let foundQualifiers = false;
                 for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
+                    // CORRECCION FINAL: Chequea tanto si hay datos de grupos (col 5) COMO si hay clasificados directos (col 12)
                     const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-";
                     const hasQualifiersList = rowsGroups[i] && rowsGroups[i][12] && rowsGroups[i][12] !== "" && rowsGroups[i][12] !== "-";
                     if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; }
@@ -909,32 +1123,29 @@ export default function Home() {
 
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data;
-        const advanceByes = (currentRound: string[], nextRound: string[]) => {
-            if (!currentRound || !nextRound) return;
-            for (let i = 0; i < currentRound.length; i += 2) {
-                const p1 = currentRound[i];
-                const p2 = currentRound[i+1];
+        const newR2 = [...r2]; const newR3 = [...r3];
+        if (bracketSize === 32) {
+            for (let i = 0; i < r1.length; i += 2) {
+                const p1 = r1[i]; const p2 = r1[i+1];
                 const targetIdx = Math.floor(i / 2);
-                if (!nextRound[targetIdx] || nextRound[targetIdx] === "" || nextRound[targetIdx] === "-") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") {
-                        nextRound[targetIdx] = p1;
-                    } else if (p1 === "BYE" && p2 && p2 !== "BYE") {
-                        nextRound[targetIdx] = p2;
-                    }
+                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
+                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
                 }
             }
-        };
-
-        // UPDATE: Cascada de byes incluyendo 64 (r1->r2)
-        if (bracketSize === 64) {
-             advanceByes(data.r1, data.r2);
-             advanceByes(data.r2, data.r3);
-        } else if (bracketSize === 32) {
-             advanceByes(data.r1, data.r2);
-        } else if (bracketSize === 16) {
-             advanceByes(data.r1, data.r2); // r1 son octavos aqui
+            data.r2 = newR2;
         }
-
+        const roundPrev = bracketSize === 32 ? newR2 : r1;
+        const roundNext = bracketSize === 32 ? newR3 : r2; 
+        for (let i = 0; i < roundPrev.length; i += 2) {
+             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
+             const targetIdx = Math.floor(i / 2);
+             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
+                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
+                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
+             }
+        }
+        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
         return data;
     }
 
@@ -951,9 +1162,7 @@ export default function Home() {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
           
           let bracketSize = 16; 
-          // UPDATE: Detección de cuadro 64
-          if (playersInCol1 > 32) bracketSize = 64;
-          else if (playersInCol1 > 16) bracketSize = 32;
+          if (playersInCol1 > 16) bracketSize = 32;
           else if (playersInCol1 <= 8) bracketSize = 8; 
 
           let seeds = {};
@@ -983,9 +1192,7 @@ export default function Home() {
 
           let rawData: any = {};
           let winnerIdx = -1;
-          // UPDATE: Indices para 64
-          if (bracketSize === 64) winnerIdx = 12;
-          else if (bracketSize === 32) winnerIdx = 10; 
+          if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
@@ -994,18 +1201,7 @@ export default function Home() {
           const getColData = (colIdx: number, limit: number) => rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
           const getScoreData = (colIdx: number, limit: number) => rows.map(r => r[colIdx] || "").slice(0, limit);
 
-          if (bracketSize === 64) {
-            // UPDATE: Lectura de columnas para 64
-            rawData = { 
-                r1: getColData(0, 64), s1: getScoreData(1, 64),
-                r2: getColData(2, 32), s2: getScoreData(3, 32),
-                r3: getColData(4, 16), s3: getScoreData(5, 16),
-                r4: getColData(6, 8),  s4: getScoreData(7, 8),
-                r5: getColData(8, 4),  s5: getScoreData(9, 4), 
-                r6: getColData(10, 2), s6: getScoreData(11, 2),
-                winner: winner, runnerUp: runnerUp, bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
-            };
-          } else if (bracketSize === 32) {
+          if (bracketSize === 32) {
             rawData = { 
                 r1: getColData(0, 32), s1: getScoreData(1, 32),
                 r2: getColData(2, 16), s2: getScoreData(3, 16),
@@ -1042,14 +1238,37 @@ export default function Home() {
     setNavState({ ...navState, level: levels[navState.level] || "home" });
   }
 
-  // --- RENDER ---
-  const tourStyle = getTournamentStyle(navState.tournamentShort || navState.currentTour);
+  const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
+
+  const GeneratedMatch = ({ match }: { match: any }) => (
+      <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
+          <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
+              {match.p1 && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p1.rank > 0 ? (match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : `${match.p1.rank}.`) : ""}</span>}
+              <span className={`font-black text-xl uppercase truncate ${match.p1 ? 'text-slate-800' : 'text-slate-300'}`}>
+                  {match.p1 ? match.p1.name : ""}
+              </span>
+          </div>
+          <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
+              {match.p2 && match.p2.name !== 'BYE' && <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">{match.p2.rank > 0 ? (match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : `${match.p2.rank}.`) : ""}</span>}
+              <span className={`font-black text-xl uppercase truncate ${match.p2?.name === 'BYE' ? 'text-green-600' : (match.p2 ? 'text-slate-800' : 'text-slate-300')}`}>
+                  {match.p2 ? match.p2.name : ""}
+              </span>
+          </div>
+      </div>
+  );
+
+  const MiddleSpacer = () => (
+    <div className="h-4 md:h-8 w-full relative">
+        <div className="absolute left-0 top-1/2 w-full border-t-2 border-dotted border-slate-200/50"></div>
+    </div>
+  );
+
+  const bracketStyle = getTournamentStyle(navState.tournamentShort);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
-        {/* HEADER LOGO */}
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
@@ -1133,10 +1352,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- VIEW: GENERATE BRACKET --- */}
         {navState.level === "generate-bracket" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center">
-             <div className={`${tourStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0`}>
+             {/* HEADER MODIFICADO: Color dinámico y nombre de torneo + categoría */}
+             <div className={`${getTournamentStyle(navState.tournamentShort).color} p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0`}>
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">
                    {navState.bracketSize === 64 ? "Sorteo 32avos" :
                     navState.bracketSize === 32 ? "Sorteo 16avos" : 
@@ -1147,12 +1366,10 @@ export default function Home() {
                    {getTournamentName(navState.tournamentShort)} - {navState.category}
                </p>
              </div>
-             
-             {/* Componente extraído de Partido Individual */}
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
-                    <div key={i} className="w-full max-w-md mx-auto">
-                        <GeneratedMatch match={match} />
+                    <>
+                        <GeneratedMatch key={i} match={match} />
                         {i === (generatedBracket.length / 2) - 1 && (
                             <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
@@ -1160,11 +1377,12 @@ export default function Home() {
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                             </div>
                         )}
-                    </div>
+                    </>
                 ))}
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
+                {/* Botón Lista Basti VISIBLE aqui - CORREGIDO */}
                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg">
                     <List className="mr-2 w-4 h-4" /> LISTA BASTI
                 </Button>
@@ -1194,7 +1412,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- VIEW: GROUP PHASE --- */}
         {navState.level === "group-phase" && (
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
             <div className="flex justify-between items-center mb-8">
@@ -1202,66 +1419,319 @@ export default function Home() {
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
+                  {/* Botón Lista Basti VISIBLE */}
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>
                 </div>
               )}
             </div>
-            
-            <div className={`${tourStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
+            {/* Cabecera general de la fase de grupos */}
+            <div className={`${getTournamentStyle(navState.currentTour).color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
                <div className="w-20 h-20 flex items-center justify-center relative">
-                   {tourStyle.logo && <Image src={tourStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
+                   {getTournamentStyle(navState.currentTour).logo && <Image src={getTournamentStyle(navState.currentTour).logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
                </div>
                <div className="flex-1">
                  <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(navState.currentTour)} - Fase de Grupos</h2>
                  <p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p>
                </div>
                <div className="w-20 h-20 flex items-center justify-center relative">
-                   {tourStyle.pointsLogo && <Image src={tourStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
+                   {/* Logo de puntos */}
+                   {getTournamentStyle(navState.currentTour).pointsLogo && <Image src={getTournamentStyle(navState.currentTour).pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
                </div>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              {/* COMPONENTE DE TABLA DE GRUPO EXTRAÍDO */}
-              {groupData.map((group, idx) => (
-                <GroupTable key={idx} group={group} tournamentShort={navState.currentTour} />
-              ))}
+              {groupData.map((group, idx) => <GroupTable key={idx} group={group} />)}
             </div>
           </div>
         )}
 
-        {/* --- VIEW: BRACKET --- */}
         {navState.level === "direct-bracket" && (
-          <BracketView 
-            bracketData={bracketData} 
-            navState={navState} 
-            runDirectDraw={runDirectDraw} 
-            fetchQualifiersAndDraw={fetchQualifiersAndDraw}
-          />
-        )}
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
+            <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}>
+               <div className="w-20 h-20 flex items-center justify-center relative order-1">
+                   {bracketStyle.logo && <Image src={bracketStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
+               </div>
+               <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider order-3 md:order-2 w-full md:w-auto mt-2 md:mt-0">{getTournamentName(navState.tournamentShort)} - {navState.selectedCategory}</h2>
+               <div className="w-20 h-20 flex items-center justify-center relative order-2 md:order-3">
+                    {bracketStyle.pointsLogo && <Image src={bracketStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
+               </div>
+            </div>
+            
+            {bracketData.hasData ? (
+              <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
+                {bracketData.bracketSize === 32 && (
+                  <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+                    {Array.from({length: 16}, (_, i) => i * 2).map((idx) => {
+                      const p1 = bracketData.r1[idx]; const p2 = bracketData.r1[idx+1];
+                      const w1 = p1 && bracketData.r2.includes(p1);
+                      const w2 = p2 && bracketData.r2.includes(p2);
+                      const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                      const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
-        {/* --- MODAL: RANKING CALCULATOR --- */}
+                      return (
+                        <>
+                          <div key={idx} className="relative flex flex-col space-y-2 mb-2">
+                            <div className={`h-6 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[160px]`}>
+                                  {seed1 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-[10px] ml-1">{bracketData.s1[idx]}</span>
+                            </div>
+                            <div className={`h-6 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-[11px] md:text-xs uppercase truncate max-w-[160px]`}>
+                                  {seed2 ? <span className="text-[10px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-[10px] ml-1">{bracketData.s1[idx+1]}</span>
+                            </div>
+                            <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                          </div>
+                          {idx === 14 && <MiddleSpacer />}
+                        </>
+                      )
+                    })}
+                  </div>
+                )}
+                {bracketData.bracketSize >= 16 && (
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+                  {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
+                    const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
+                    const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
+                    const nextR = bracketData.bracketSize === 32 ? bracketData.r3 : bracketData.r2;
+                    const p1 = r[idx]; const p2 = r[idx+1];
+                    const w1 = p1 && nextR.includes(p1);
+                    const w2 = p2 && nextR.includes(p2);
+                    const s1 = s[idx]; const s2 = s[idx+1];
+                    const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                    const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+
+                    return (
+                      <>
+                        <div key={idx} className="relative flex flex-col space-y-4">
+                          <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s1}</span>
+                          </div>
+                          <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s2}</span>
+                          </div>
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                        </div>
+                        {i === 3 && <MiddleSpacer />}
+                      </>
+                    );
+                  })}
+                </div>
+                )}
+                {/* ... (Resto de columnas de bracket) */}
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+                  {[0, 2, 4, 6].map((idx, i) => {
+                    const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
+                    const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
+                    const nextR = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
+                    const p1 = r[idx]; const p2 = r[idx+1];
+                    const w1 = p1 && nextR.includes(p1);
+                    const w2 = p2 && nextR.includes(p2);
+                    const s1 = s[idx]; const s2 = s[idx+1];
+                    const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                    const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+
+                    return (
+                      <>
+                        <div key={idx} className="relative flex flex-col space-y-8">
+                          <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s1}</span>
+                          </div>
+                          <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s2}</span>
+                          </div>
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                        </div>
+                        {i === 1 && <MiddleSpacer />}
+                      </>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+                  {[0, 2].map((idx, i) => {
+                     const r = bracketData.bracketSize === 32 ? bracketData.r4 : (bracketData.bracketSize === 16 ? bracketData.r3 : bracketData.r2);
+                     const s = bracketData.bracketSize === 32 ? bracketData.s4 : (bracketData.bracketSize === 16 ? bracketData.s3 : bracketData.s2);
+                     const p1 = r[idx]; const p2 = r[idx+1];
+                     const w1 = p1 && p1 === bracketData.winner;
+                     const w2 = p2 && p2 === bracketData.winner;
+                     const s1 = s[idx]; const s2 = s[idx+1];
+                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
+                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+                     return (
+                      <>
+                        <div key={idx} className="relative flex flex-col space-y-12">
+                          <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s1}</span>
+                          </div>
+                          <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s2}</span>
+                          </div>
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                        </div>
+                        {i === 0 && <MiddleSpacer />}
+                      </>
+                     )
+                  })}
+                </div>
+
+                <div className="flex flex-col justify-center min-w-[150px] md:min-w-0 md:flex-1 relative">
+                    {(() => {
+                        let topFinalistName = ""; let botFinalistName = "";
+                        if (bracketData.bracketSize === 16 && bracketData.r4 && bracketData.r4.length >= 2) { topFinalistName = bracketData.r4[0]; botFinalistName = bracketData.r4[1]; } 
+                        else if (bracketData.bracketSize === 32 && bracketData.r5 && bracketData.r5.length >= 2) { topFinalistName = bracketData.r5[0]; botFinalistName = bracketData.r5[1]; }
+                        else if (bracketData.bracketSize === 8 && bracketData.r3 && bracketData.r3.length >= 2) { topFinalistName = bracketData.r3[0]; botFinalistName = bracketData.r3[1]; }
+                        else { const semisR = bracketData.bracketSize === 32 ? bracketData.r4 : bracketData.r2; if (bracketData.winner) { topFinalistName = bracketData.winner; botFinalistName = bracketData.runnerUp; } }
+                        const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
+                        const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
+                        return (
+                            <div className="relative flex flex-col space-y-2">
+                                <div className={`h-8 border-b-2 ${isTopWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${topFinalistName === 'BYE' ? 'text-green-600 font-black' : (isTopWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                        {topFinalistName || ""}
+                                    </span>
+                                </div>
+                                <div className={`h-8 border-b-2 ${isBotWinner ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                                    <span className={`${botFinalistName === 'BYE' ? 'text-green-600 font-black' : (isBotWinner ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                        {botFinalistName || ""}
+                                    </span>
+                                </div>
+                                <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                            </div>
+                        );
+                    })()}
+                </div>
+
+                 <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
+                    <div className="relative flex flex-col items-center">
+                        <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
+                        <Trophy className={`w-14 h-14 ${bracketStyle.trophyColor} mb-2 animate-bounce`} />
+                        <span className={`text-xs md:text-base font-black uppercase tracking-[0.2em] mb-1 scale-125 ${bracketStyle.textColor} opacity-70`}>CAMPEÓN</span>
+                        <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">{bracketData.winner || ""}</span>
+                    </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+                <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
+                <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
+                {bracketData.canGenerate ? (
+                    <div className="mt-4">
+                        <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
+                        <div className="flex gap-2 justify-center">
+                            {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
+                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            ) : (
+                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            )}
+                        </div>
+                    </div>
+                ) : ( <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p> )}
+              </div>
+            )}
+          </div>
+        )}
         {showRankingCalc && (
-            <CalculatedRankingModal 
-                ranking={calculatedRanking} 
-                onClose={() => setShowRankingCalc(false)} 
-                tournamentShort={navState.tournamentShort}
-                category={navState.category}
-            />
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
+                    <Button onClick={() => setShowRankingCalc(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost"> <X className="w-6 h-6" /> </Button>
+                    {/* MODAL HEADER MODIFICADO: Colores del torneo y categoría agregada */}
+                    <div className="text-center mb-6">
+                        <Trophy className={`w-12 h-12 mx-auto mb-2 ${getTournamentStyle(navState.tournamentShort).trophyColor}`} />
+                        <h3 className={`text-2xl font-black uppercase ${getTournamentStyle(navState.tournamentShort).textColor}`}>Cálculo de Puntos</h3>
+                        <p className="text-sm text-slate-500 font-medium uppercase mt-1">
+                            Torneo: {getTournamentName(navState.tournamentShort)}
+                            <br/>
+                            <span className="text-xs opacity-80">{navState.category}</span>
+                        </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl border-2 border-slate-100 overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className={`${getTournamentStyle(navState.tournamentShort).color} text-white`}>
+                                <tr>
+                                    <th className="p-3 font-bold text-sm uppercase tracking-wider">Jugador</th>
+                                    <th className="p-3 font-bold text-sm uppercase tracking-wider text-right">Puntos</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {calculatedRanking.map((p, i) => (
+                                    <tr key={i} className="hover:bg-white transition-colors">
+                                        <td className="p-3 font-bold text-slate-700 uppercase text-sm">{p.name}</td>
+                                        <td className={`p-3 font-black text-right ${getTournamentStyle(navState.tournamentShort).textColor}`}>{p.points}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="mt-6 flex gap-4">
+                        <Button onClick={() => {
+                            const text = calculatedRanking.map(p => `${p.name}\t${p.points}`).join('\n');
+                            navigator.clipboard.writeText(text);
+                            alert("Tabla copiada al portapapeles");
+                        }} className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-12 rounded-xl"> <Copy className="mr-2 w-4 h-4" /> COPIAR TABLA </Button>
+                        <Button onClick={() => {
+                            let mensaje = `*RANKING CALCULADO - ${navState.tournamentShort}*\n\n`;
+                            calculatedRanking.forEach(p => { mensaje += `${p.name}: ${p.points}\n`; });
+                            window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+                        }} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold h-12 rounded-xl"> <Send className="mr-2 w-4 h-4" /> ENVIAR POR WHATSAPP </Button>
+                    </div>
+                </div>
+            </div>
         )}
-
-        {/* --- VIEW: RANKING ANUAL --- */}
         {navState.level === "ranking-view" && (
-           <RankingTable 
-              headers={headers} 
-              data={rankingData} 
-              category={navState.selectedCategory} 
-              year={navState.year} 
-           />
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center text-center">
+            <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wider text-center">{navState.selectedCategory} {navState.year}</h2>
+            </div>
+            {headers.length > 0 && rankingData.length > 0 ? (
+              <div className="overflow-x-auto text-center">
+                <table className="w-full text-lg font-bold text-center">
+                  <thead>
+                    <tr className="bg-[#b35a38] text-white">
+                      <th className="p-4 text-center font-black first:rounded-tl-xl text-center">POS</th>
+                      <th className="p-4 text-center font-black text-center text-center">JUGADOR</th>
+                      {headers.map((h, i) => (<th key={i} className="p-4 text-center font-black hidden sm:table-cell text-center">{h}</th>))}
+                      <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl text-center text-center">TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rankingData.map((p, i) => (
+                      <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center text-center">
+                        <td className="p-4 text-slate-400 text-center">{i + 1}</td>
+                        <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
+                        {p.points.map((val: any, idx: number) => (<td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell text-center">{val || 0}</td>))}
+                        <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">{p.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (<div className="h-64 flex items-center justify-center text-slate-300 uppercase font-black animate-pulse text-center">Cargando datos...</div>)}
+          </div>
         )}
       </div>
-
       <p 
         onClick={handleFooterClick}
         className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center cursor-pointer select-none active:scale-95 transition-transform"
