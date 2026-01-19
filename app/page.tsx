@@ -32,8 +32,9 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
+  // UPDATE: Agregados r6 y s6 para cuadro de 64
   const [bracketData, setBracketData] = useState<any>({ 
-    r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], 
+    r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], 
     winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} 
   });
   const [groupData, setGroupData] = useState<any[]>([])
@@ -48,7 +49,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
 
-  // --- LÓGICA DE NEGOCIO RESTAURADA ---
+  // --- LÓGICA DE NEGOCIO ---
 
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
@@ -161,7 +162,9 @@ export default function Home() {
             } else { 
                 semis = r2; cuartos = r1; finalists = r3 || []; 
             }
-
+            
+            // UPDATE: Manejo básico de puntos para 64 (r1 = dieciseisavos o treintaidosavos)
+            // Nota: Aquí se mantiene la lógica original, si quisieras puntos para ronda de 64, habría que agregarlos al baremo
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
             if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
@@ -804,8 +807,7 @@ export default function Home() {
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
 
-    // --- 2. MOSTRAR EL CUADRO EN PANTALLA (La parte nueva) ---
-    // Convertimos los partidos sueltos al formato que usa el BracketView (r1, s1, etc.)
+    // --- 2. MOSTRAR EL CUADRO EN PANTALLA ---
     const r1: string[] = [];
     const s1: string[] = [];
     const seeds: any = {};
@@ -814,7 +816,11 @@ export default function Home() {
         // Procesar Jugador 1
         if (match.p1) {
             r1.push(match.p1.name);
-            if (match.p1.rank > 0) seeds[match.p1.name] = match.p1.rank;
+            // UPDATE: Guardar etiqueta completa de zona si existe
+            if (match.p1.rank > 0) {
+                 const label = match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : match.p1.rank;
+                 seeds[match.p1.name] = label;
+            }
         } else { 
             r1.push("BYE"); 
         }
@@ -822,27 +828,29 @@ export default function Home() {
         // Procesar Jugador 2
         if (match.p2) {
             r1.push(match.p2.name);
-            if (match.p2.rank > 0) seeds[match.p2.name] = match.p2.rank;
+            // UPDATE: Guardar etiqueta completa de zona si existe
+            if (match.p2.rank > 0) {
+                 const label = match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : match.p2.rank;
+                 seeds[match.p2.name] = label;
+            }
         } else { 
             r1.push("BYE"); 
         }
 
-        // Scores vacíos (porque recién empieza)
+        // Scores vacíos
         s1.push(""); s1.push("");
     });
 
-    // Actualizamos los datos del Bracket para que se vea
     setBracketData({
         r1: r1, s1: s1,
-        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
+        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [],
         winner: "", runnerUp: "",
-        bracketSize: navState.bracketSize, // Usamos el tamaño del sorteo actual
-        hasData: true, // ¡Importante! Esto activa la vista del cuadro
+        bracketSize: navState.bracketSize, 
+        hasData: true, 
         canGenerate: false,
         seeds: seeds
     });
 
-    // Cambiamos de pantalla (de "generate-bracket" a "direct-bracket")
     setNavState({ ...navState, level: "direct-bracket" });
   }
 
@@ -867,7 +875,8 @@ export default function Home() {
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    // UPDATE: Reset inicial con r6/s6
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -900,29 +909,32 @@ export default function Home() {
 
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data;
-        const newR2 = [...r2]; const newR3 = [...r3];
-        if (bracketSize === 32) {
-            for (let i = 0; i < r1.length; i += 2) {
-                const p1 = r1[i]; const p2 = r1[i+1];
+        const advanceByes = (currentRound: string[], nextRound: string[]) => {
+            if (!currentRound || !nextRound) return;
+            for (let i = 0; i < currentRound.length; i += 2) {
+                const p1 = currentRound[i];
+                const p2 = currentRound[i+1];
                 const targetIdx = Math.floor(i / 2);
-                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
-                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
+                if (!nextRound[targetIdx] || nextRound[targetIdx] === "" || nextRound[targetIdx] === "-") {
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") {
+                        nextRound[targetIdx] = p1;
+                    } else if (p1 === "BYE" && p2 && p2 !== "BYE") {
+                        nextRound[targetIdx] = p2;
+                    }
                 }
             }
-            data.r2 = newR2;
+        };
+
+        // UPDATE: Cascada de byes incluyendo 64 (r1->r2)
+        if (bracketSize === 64) {
+             advanceByes(data.r1, data.r2);
+             advanceByes(data.r2, data.r3);
+        } else if (bracketSize === 32) {
+             advanceByes(data.r1, data.r2);
+        } else if (bracketSize === 16) {
+             advanceByes(data.r1, data.r2); // r1 son octavos aqui
         }
-        const roundPrev = bracketSize === 32 ? newR2 : r1;
-        const roundNext = bracketSize === 32 ? newR3 : r2; 
-        for (let i = 0; i < roundPrev.length; i += 2) {
-             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
-             const targetIdx = Math.floor(i / 2);
-             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
-                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
-             }
-        }
-        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
+
         return data;
     }
 
@@ -939,7 +951,9 @@ export default function Home() {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
           
           let bracketSize = 16; 
-          if (playersInCol1 > 16) bracketSize = 32;
+          // UPDATE: Detección de cuadro 64
+          if (playersInCol1 > 32) bracketSize = 64;
+          else if (playersInCol1 > 16) bracketSize = 32;
           else if (playersInCol1 <= 8) bracketSize = 8; 
 
           let seeds = {};
@@ -969,7 +983,9 @@ export default function Home() {
 
           let rawData: any = {};
           let winnerIdx = -1;
-          if (bracketSize === 32) winnerIdx = 10; 
+          // UPDATE: Indices para 64
+          if (bracketSize === 64) winnerIdx = 12;
+          else if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
@@ -978,7 +994,18 @@ export default function Home() {
           const getColData = (colIdx: number, limit: number) => rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
           const getScoreData = (colIdx: number, limit: number) => rows.map(r => r[colIdx] || "").slice(0, limit);
 
-          if (bracketSize === 32) {
+          if (bracketSize === 64) {
+            // UPDATE: Lectura de columnas para 64
+            rawData = { 
+                r1: getColData(0, 64), s1: getScoreData(1, 64),
+                r2: getColData(2, 32), s2: getScoreData(3, 32),
+                r3: getColData(4, 16), s3: getScoreData(5, 16),
+                r4: getColData(6, 8),  s4: getScoreData(7, 8),
+                r5: getColData(8, 4),  s5: getScoreData(9, 4), 
+                r6: getColData(10, 2), s6: getScoreData(11, 2),
+                winner: winner, runnerUp: runnerUp, bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
+            };
+          } else if (bracketSize === 32) {
             rawData = { 
                 r1: getColData(0, 32), s1: getScoreData(1, 32),
                 r2: getColData(2, 16), s2: getScoreData(3, 16),
@@ -1124,8 +1151,8 @@ export default function Home() {
              {/* Componente extraído de Partido Individual */}
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
-                    <>
-                        <GeneratedMatch key={i} match={match} />
+                    <div key={i} className="w-full max-w-md mx-auto">
+                        <GeneratedMatch match={match} />
                         {i === (generatedBracket.length / 2) - 1 && (
                             <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
@@ -1133,7 +1160,7 @@ export default function Home() {
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                             </div>
                         )}
-                    </>
+                    </div>
                 ))}
              </div>
 
