@@ -962,3 +962,21 @@ export const useTournamentData = () => {
         setNavState({ ...navState, level: nextLevel });
     }
   }
+
+  return {
+    navState, setNavState,
+    rankingData, headers,
+    bracketData, groupData,
+    isSorteoConfirmado, isLoading,
+    generatedBracket, isFixedData,
+    footerClicks, showRankingCalc, setShowRankingCalc,
+    calculatedRanking,
+    // Functions
+    fetchRankingData, fetchBracketData,
+    runDirectDraw, runATPDraw,
+    fetchGroupPhase, fetchQualifiersAndDraw,
+    calculateAndShowRanking, confirmarYEnviar,
+    enviarListaBasti, confirmarSorteoCuadro,
+    handleFooterClick, goBack
+  };
+};
