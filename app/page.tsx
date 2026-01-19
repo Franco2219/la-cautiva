@@ -134,10 +134,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
-
+  
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
-  const [showSorteoModal, setShowSorteoModal] = useState<any>(null);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
   const parseCSV = (text: string) => {
@@ -1061,17 +1060,10 @@ export default function Home() {
     let mensaje = `*SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
-        const p2Name = match.p2 ? match.p2.name : "TBD";
+        const p2Name = match.p2 ? match.p2.name : "TBD"; 
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
-
-    // Mostrar modal con el resultado del sorteo
-    setShowSorteoModal({
-      title: `SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}`,
-      category: navState.category,
-      bracket: generatedBracket,
-      message: mensaje
-    });
+    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -1661,42 +1653,6 @@ export default function Home() {
             )}
           </div>
         )}
-
-        {/* MODAL DE SORTEO DE CUADRO */}
-        {showSorteoModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
-              <Button onClick={() => setShowSorteoModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost">
-                <X className="w-6 h-6" />
-              </Button>
-              <div className="text-center mb-6">
-                <Trophy className={`w-12 h-12 mx-auto mb-2 ${getTournamentStyle(navState.tournamentShort).trophyColor}`} />
-                <h3 className={`text-2xl font-black uppercase ${getTournamentStyle(navState.tournamentShort).textColor}`}>{showSorteoModal.title}</h3>
-                <p className="text-sm text-slate-500 font-medium uppercase mt-1">Categoría: {showSorteoModal.category}</p>
-              </div>
-              <div className="space-y-4 mb-6">
-                {showSorteoModal.bracket.map((match: any, index: number) => (
-                  <div key={index} className="bg-slate-50 rounded-lg p-4 border-l-4 border-slate-300">
-                    <div className="text-xs text-slate-500 font-bold uppercase mb-2">Partido {index + 1}</div>
-                    <div className="space-y-1">
-                      <div className="text-slate-700 font-bold">{match.p1?.name || "TBD"}</div>
-                      <div className="text-slate-700 font-bold">{match.p2?.name || "TBD"}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={() => window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(showSorteoModal.message)}`, '_blank')} className="flex-1 bg-green-600 text-white font-bold">
-                  <Send className="mr-2 w-4 h-4" /> ENVIAR POR WHATSAPP
-                </Button>
-                <Button onClick={() => setShowSorteoModal(null)} variant="outline" className="flex-1 font-bold">
-                  CERRAR
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {showRankingCalc && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
