@@ -27,6 +27,58 @@ export const BracketView = ({
   const bracketStyle = getTournamentStyle(navState.tournamentShort);
   const tournamentName = getTournamentName(navState.tournamentShort);
 
+  // --- HELPER PARA OBTENER DATOS DE LA RONDA CORRECTA ---
+  // Esto normaliza los datos sin importar si el cuadro es de 64, 32 o 16.
+  const getSize = bracketData.bracketSize || 16;
+
+  const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
+      // Retorna [jugadores, scores, nextRoundJugadores]
+      if (roundName === 'r64') {
+          if (getSize === 64) return [bracketData.r1, bracketData.s1, bracketData.r2];
+          return [null, null, null];
+      }
+      if (roundName === 'r32') {
+          if (getSize === 64) return [bracketData.r2, bracketData.s2, bracketData.r3];
+          if (getSize === 32) return [bracketData.r1, bracketData.s1, bracketData.r2];
+          return [null, null, null];
+      }
+      if (roundName === 'r16') {
+          if (getSize === 64) return [bracketData.r3, bracketData.s3, bracketData.r4];
+          if (getSize === 32) return [bracketData.r2, bracketData.s2, bracketData.r3];
+          if (getSize === 16) return [bracketData.r1, bracketData.s1, bracketData.r2];
+          return [null, null, null];
+      }
+      if (roundName === 'qf') {
+          if (getSize === 64) return [bracketData.r4, bracketData.s4, bracketData.r5];
+          if (getSize === 32) return [bracketData.r3, bracketData.s3, bracketData.r4];
+          if (getSize === 16) return [bracketData.r2, bracketData.s2, bracketData.r3];
+          if (getSize === 8)  return [bracketData.r1, bracketData.s1, bracketData.r2];
+          return [null, null, null];
+      }
+      if (roundName === 'sf') {
+          if (getSize === 64) return [bracketData.r5, bracketData.s5, bracketData.r6];
+          if (getSize === 32) return [bracketData.r4, bracketData.s4, bracketData.r5];
+          if (getSize === 16) return [bracketData.r3, bracketData.s3, bracketData.r4];
+          if (getSize === 8)  return [bracketData.r2, bracketData.s2, bracketData.r3];
+          return [null, null, null];
+      }
+      return [null, null, null];
+  };
+
+  const renderSeed = (name: string) => {
+      if (!name || !bracketData.seeds) return null;
+      const seed = bracketData.seeds[name];
+      if (!seed) return null;
+      // Si el seed es un numero simple (ej: 1), agregamos punto. Si es texto (ej: 1º Z1), lo mostramos tal cual.
+      const label = isNaN(seed) ? seed : `${seed}.`;
+      
+      return (
+        <span className="text-[10px] text-orange-600 font-black mr-1 whitespace-nowrap">
+          {label}
+        </span>
+      );
+  }
+
   return (
     <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
       {/* Header del Bracket */}
@@ -62,16 +114,81 @@ export const BracketView = ({
 
       {bracketData.hasData ? (
         <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
-          {/* COLUMNA 1: 32 JUGADORES (Si aplica) */}
-          {bracketData.bracketSize === 32 && (
-            <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
-              {Array.from({ length: 16 }, (_, i) => i * 2).map((idx) => {
-                const p1 = bracketData.r1[idx];
-                const p2 = bracketData.r1[idx + 1];
-                const w1 = p1 && bracketData.r2.includes(p1);
-                const w2 = p2 && bracketData.r2.includes(p2);
-                const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
-                const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+          
+          {/* COLUMNA 0: 64 JUGADORES (Nueva lógica) */}
+          {getSize === 64 && (
+            <div className="flex flex-col justify-around min-w-[160px] md:min-w-0 md:flex-1 relative">
+              {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
+                const [r, s, nextR] = getRoundData('r64');
+                const p1 = r[idx];
+                const p2 = r[idx + 1];
+                const w1 = p1 && nextR.includes(p1);
+                const w2 = p2 && nextR.includes(p2);
+
+                return (
+                  <React.Fragment key={idx}>
+                    <div className="relative flex flex-col space-y-1 mb-1">
+                      <div
+                        className={`h-5 border-b-2 ${
+                          w1 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end relative bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p1 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w1
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[10px] md:text-[11px] uppercase truncate max-w-[150px]`}
+                        >
+                          {renderSeed(p1)}
+                          {p1 || ""}
+                        </span>
+                        <span className="text-black font-black text-[9px] ml-1">
+                          {s[idx]}
+                        </span>
+                      </div>
+                      <div
+                        className={`h-5 border-b-2 ${
+                          w2 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end relative bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p2 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w2
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[10px] md:text-[11px] uppercase truncate max-w-[150px]`}
+                        >
+                          {renderSeed(p2)}
+                          {p2 || ""}
+                        </span>
+                        <span className="text-black font-black text-[9px] ml-1">
+                          {s[idx + 1]}
+                        </span>
+                      </div>
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
+                    </div>
+                    {idx === 30 && <MiddleSpacer />}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          )}
+
+          {/* COLUMNA 1: 32 JUGADORES */}
+          {getSize >= 32 && (
+            <div className="flex flex-col justify-around min-w-[160px] md:min-w-0 md:flex-1 relative">
+              {Array.from({ length: 16 }, (_, i) => i * 2).map((idx, i) => {
+                const [r, s, nextR] = getRoundData('r32');
+                if (!r) return null;
+                const p1 = r[idx];
+                const p2 = r[idx + 1];
+                const w1 = p1 && nextR.includes(p1);
+                const w2 = p2 && nextR.includes(p2);
 
                 return (
                   <React.Fragment key={idx}>
@@ -90,15 +207,11 @@ export const BracketView = ({
                               : "text-slate-700 font-bold"
                           } text-[11px] md:text-xs uppercase truncate max-w-[160px]`}
                         >
-                          {seed1 ? (
-                            <span className="text-[10px] text-orange-600 font-black mr-1">
-                              {seed1}.
-                            </span>
-                          ) : null}
+                          {renderSeed(p1)}
                           {p1 || ""}
                         </span>
                         <span className="text-black font-black text-[10px] ml-1">
-                          {bracketData.s1[idx]}
+                          {s[idx]}
                         </span>
                       </div>
                       <div
@@ -115,20 +228,16 @@ export const BracketView = ({
                               : "text-slate-700 font-bold"
                           } text-[11px] md:text-xs uppercase truncate max-w-[160px]`}
                         >
-                          {seed2 ? (
-                            <span className="text-[10px] text-orange-600 font-black mr-1">
-                              {seed2}.
-                            </span>
-                          ) : null}
+                          {renderSeed(p2)}
                           {p2 || ""}
                         </span>
                         <span className="text-black font-black text-[10px] ml-1">
-                          {bracketData.s1[idx + 1]}
+                          {s[idx + 1]}
                         </span>
                       </div>
-                      <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] md:-right-[10px] w-[5px] md:w-[10px] h-[1px] bg-slate-300" />
                     </div>
-                    {idx === 14 && <MiddleSpacer />}
+                    {i === 15 && <MiddleSpacer />}
                   </React.Fragment>
                 );
               })}
@@ -136,29 +245,15 @@ export const BracketView = ({
           )}
 
           {/* COLUMNA 2: 16 JUGADORES (OCTAVOS) */}
-          {bracketData.bracketSize >= 16 && (
-            <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+          {getSize >= 16 && (
+            <div className="flex flex-col justify-around min-w-[160px] md:min-w-0 md:flex-1 relative">
               {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
-                const r =
-                  bracketData.bracketSize === 32
-                    ? bracketData.r2
-                    : bracketData.r1;
-                const s =
-                  bracketData.bracketSize === 32
-                    ? bracketData.s2
-                    : bracketData.s1;
-                const nextR =
-                  bracketData.bracketSize === 32
-                    ? bracketData.r3
-                    : bracketData.r2;
+                const [r, s, nextR] = getRoundData('r16');
+                if (!r) return null;
                 const p1 = r[idx];
                 const p2 = r[idx + 1];
                 const w1 = p1 && nextR.includes(p1);
                 const w2 = p2 && nextR.includes(p2);
-                const s1 = s[idx];
-                const s2 = s[idx + 1];
-                const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
-                const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
                 return (
                   <React.Fragment key={idx}>
@@ -177,15 +272,11 @@ export const BracketView = ({
                               : "text-slate-700 font-bold"
                           } text-xs md:text-sm uppercase truncate`}
                         >
-                          {seed1 ? (
-                            <span className="text-[11px] text-orange-600 font-black mr-1">
-                              {seed1}.
-                            </span>
-                          ) : null}
+                          {renderSeed(p1)}
                           {p1 || ""}
                         </span>
                         <span className="text-black font-black text-xs ml-1">
-                          {s1}
+                          {s[idx]}
                         </span>
                       </div>
                       <div
@@ -202,18 +293,14 @@ export const BracketView = ({
                               : "text-slate-700 font-bold"
                           } text-xs md:text-sm uppercase truncate`}
                         >
-                          {seed2 ? (
-                            <span className="text-[11px] text-orange-600 font-black mr-1">
-                              {seed2}.
-                            </span>
-                          ) : null}
+                           {renderSeed(p2)}
                           {p2 || ""}
                         </span>
                         <span className="text-black font-black text-xs ml-1">
-                          {s2}
+                          {s[idx + 1]}
                         </span>
                       </div>
-                      <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] md:-right-[10px] w-[5px] md:w-[10px] h-[1px] bg-slate-300" />
                     </div>
                     {i === 3 && <MiddleSpacer />}
                   </React.Fragment>
@@ -223,34 +310,13 @@ export const BracketView = ({
           )}
 
           {/* COLUMNA 3: CUARTOS DE FINAL */}
-          <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-around min-w-[160px] md:min-w-0 md:flex-1 relative">
             {[0, 2, 4, 6].map((idx, i) => {
-              const r =
-                bracketData.bracketSize === 32
-                  ? bracketData.r3
-                  : bracketData.bracketSize === 16
-                  ? bracketData.r2
-                  : bracketData.r1;
-              const s =
-                bracketData.bracketSize === 32
-                  ? bracketData.s3
-                  : bracketData.bracketSize === 16
-                  ? bracketData.s2
-                  : bracketData.s1;
-              const nextR =
-                bracketData.bracketSize === 32
-                  ? bracketData.r4
-                  : bracketData.bracketSize === 16
-                  ? bracketData.r3
-                  : bracketData.r2;
+              const [r, s, nextR] = getRoundData('qf');
               const p1 = r[idx];
               const p2 = r[idx + 1];
               const w1 = p1 && nextR.includes(p1);
               const w2 = p2 && nextR.includes(p2);
-              const s1 = s[idx];
-              const s2 = s[idx + 1];
-              const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
-              const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
               return (
                 <React.Fragment key={idx}>
@@ -269,15 +335,11 @@ export const BracketView = ({
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate`}
                       >
-                        {seed1 ? (
-                          <span className="text-[11px] text-orange-600 font-black mr-1">
-                            {seed1}.
-                          </span>
-                        ) : null}
+                        {renderSeed(p1)}
                         {p1 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s1}
+                        {s[idx]}
                       </span>
                     </div>
                     <div
@@ -294,18 +356,14 @@ export const BracketView = ({
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate`}
                       >
-                        {seed2 ? (
-                          <span className="text-[11px] text-orange-600 font-black mr-1">
-                            {seed2}.
-                          </span>
-                        ) : null}
+                         {renderSeed(p2)}
                         {p2 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s2}
+                        {s[idx + 1]}
                       </span>
                     </div>
-                    <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] md:-right-[10px] w-[5px] md:w-[10px] h-[1px] bg-slate-300" />
                   </div>
                   {i === 1 && <MiddleSpacer />}
                 </React.Fragment>
@@ -314,28 +372,30 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA 4: SEMIFINALES */}
-          <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-around min-w-[160px] md:min-w-0 md:flex-1 relative">
             {[0, 2].map((idx, i) => {
-              const r =
-                bracketData.bracketSize === 32
-                  ? bracketData.r4
-                  : bracketData.bracketSize === 16
-                  ? bracketData.r3
-                  : bracketData.r2;
-              const s =
-                bracketData.bracketSize === 32
-                  ? bracketData.s4
-                  : bracketData.bracketSize === 16
-                  ? bracketData.s3
-                  : bracketData.s2;
+              const [r, s] = getRoundData('sf');
               const p1 = r[idx];
               const p2 = r[idx + 1];
-              const w1 = p1 && p1 === bracketData.winner;
-              const w2 = p2 && p2 === bracketData.winner;
-              const s1 = s[idx];
-              const s2 = s[idx + 1];
-              const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
-              const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
+              // El ganador de la semi es quien sea el bracketData.winner o runnerUp en la final
+              // Pero visualmente, miramos si está en la siguiente ronda (Final)
+              // La final puede estar en r3, r4, r5 o r6 dependiendo del tamaño
+              // Una forma facil es chequear si p1 es bracketData.winner o bracketData.runnerUp
+              const isFinalist = (p: string) => {
+                 if (!p || p === "BYE") return false;
+                 if (p === bracketData.winner || p === bracketData.runnerUp) return true;
+                 // Tambien chequeamos si esta en la siguiente ronda (Final Round) explícitamente
+                 // Final round es r3 (8), r4 (16), r5 (32), r6 (64)
+                 let finals = [];
+                 if (getSize === 64) finals = bracketData.r6 || [];
+                 else if (getSize === 32) finals = bracketData.r5 || [];
+                 else if (getSize === 16) finals = bracketData.r4 || [];
+                 else finals = bracketData.r3 || [];
+                 return finals.includes(p);
+              };
+
+              const w1 = isFinalist(p1);
+              const w2 = isFinalist(p2);
 
               return (
                 <React.Fragment key={idx}>
@@ -354,15 +414,11 @@ export const BracketView = ({
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate`}
                       >
-                        {seed1 ? (
-                          <span className="text-[11px] text-orange-600 font-black mr-1">
-                            {seed1}.
-                          </span>
-                        ) : null}
+                         {renderSeed(p1)}
                         {p1 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s1}
+                        {s[idx]}
                       </span>
                     </div>
                     <div
@@ -379,18 +435,14 @@ export const BracketView = ({
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate`}
                       >
-                        {seed2 ? (
-                          <span className="text-[11px] text-orange-600 font-black mr-1">
-                            {seed2}.
-                          </span>
-                        ) : null}
+                         {renderSeed(p2)}
                         {p2 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s2}
+                        {s[idx + 1]}
                       </span>
                     </div>
-                    <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] md:-right-[10px] w-[5px] md:w-[10px] h-[1px] bg-slate-300" />
                   </div>
                   {i === 0 && <MiddleSpacer />}
                 </React.Fragment>
@@ -399,37 +451,29 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA 5: FINAL */}
-          <div className="flex flex-col justify-center min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[160px] md:min-w-0 md:flex-1 relative">
             {(() => {
               let topFinalistName = "";
               let botFinalistName = "";
-              if (
-                bracketData.bracketSize === 16 &&
-                bracketData.r4 &&
-                bracketData.r4.length >= 2
-              ) {
-                topFinalistName = bracketData.r4[0];
-                botFinalistName = bracketData.r4[1];
-              } else if (
-                bracketData.bracketSize === 32 &&
-                bracketData.r5 &&
-                bracketData.r5.length >= 2
-              ) {
-                topFinalistName = bracketData.r5[0];
-                botFinalistName = bracketData.r5[1];
-              } else if (
-                bracketData.bracketSize === 8 &&
-                bracketData.r3 &&
-                bracketData.r3.length >= 2
-              ) {
-                topFinalistName = bracketData.r3[0];
-                botFinalistName = bracketData.r3[1];
+              
+              // Buscamos los finalistas en el array correspondiente a la final
+              let finalRound = [];
+              if (getSize === 64) finalRound = bracketData.r6;
+              else if (getSize === 32) finalRound = bracketData.r5;
+              else if (getSize === 16) finalRound = bracketData.r4;
+              else finalRound = bracketData.r3;
+
+              if (finalRound && finalRound.length >= 2) {
+                  topFinalistName = finalRound[0];
+                  botFinalistName = finalRound[1];
               } else {
-                if (bracketData.winner) {
-                  topFinalistName = bracketData.winner;
-                  botFinalistName = bracketData.runnerUp;
-                }
+                  // Fallback si no hay array de final, usamos winner/runnerUp si existen
+                  if (bracketData.winner) {
+                      topFinalistName = bracketData.winner;
+                      botFinalistName = bracketData.runnerUp;
+                  }
               }
+
               const isTopWinner =
                 topFinalistName && topFinalistName === bracketData.winner;
               const isBotWinner =
@@ -470,7 +514,7 @@ export const BracketView = ({
                       {botFinalistName || ""}
                     </span>
                   </div>
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] md:-right-[10px] w-[5px] md:w-[10px] h-[1px] bg-slate-300" />
                 </div>
               );
             })()}
@@ -479,7 +523,7 @@ export const BracketView = ({
           {/* COLUMNA 6: CAMPEÓN */}
           <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
             <div className="relative flex flex-col items-center">
-              <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
+              <div className="h-px w-3 md:w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
               <Trophy
                 className={`w-14 h-14 ${bracketStyle.trophyColor} mb-2 animate-bounce`}
               />
