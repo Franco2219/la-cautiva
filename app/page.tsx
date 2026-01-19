@@ -32,9 +32,8 @@ export default function Home() {
   const [navState, setNavState] = useState<any>({ level: "home" })
   const [rankingData, setRankingData] = useState<any[]>([])
   const [headers, setHeaders] = useState<string[]>([])
-  // MODIFICADO: Agregados r6 y s6 para soporte de cuadros de 64 jugadores
   const [bracketData, setBracketData] = useState<any>({ 
-    r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], 
+    r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], 
     winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} 
   });
   const [groupData, setGroupData] = useState<any[]>([])
@@ -155,10 +154,7 @@ export default function Home() {
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
             let finalists: string[] = [];
 
-            if (bracketSize === 64) {
-                 // Si es 64, r6 es la final, r5 semis, r4 cuartos, r3 octavos, r2 dieciseis
-                 semis = r5 || []; cuartos = r4 || []; octavos = r3 || []; dieciseis = r2 || []; finalists = bracketData.r6 || [];
-            } else if (bracketSize === 32) {
+            if (bracketSize === 32) {
                 semis = r4; cuartos = r3; octavos = r2; dieciseis = r1; finalists = r5 || [];
             } else if (bracketSize === 16) {
                 semis = r3; cuartos = r2; octavos = r1; finalists = r4 || [];
@@ -166,10 +162,6 @@ export default function Home() {
                 semis = r2; cuartos = r1; finalists = r3 || []; 
             }
 
-            if (bracketSize === 64) {
-                 // Logica puntos 64 (ToDo: agregar r1 points si fuera necesario, por ahora dieciseis)
-                 dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
-            }
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
             if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
@@ -587,8 +579,6 @@ export default function Home() {
   const generatePlayoffBracket = (qualifiers: any[]) => {
     const totalPlayers = qualifiers.length;
 
-    // MODIFICADO: Ajustada la lógica para decidir tamaño del bracket
-    // Si hay más de 32 (ej: 40), va a 64.
     if (totalPlayers <= 32) {
         let bracketSize = 8;
         if (totalPlayers > 16) bracketSize = 32; 
@@ -653,7 +643,6 @@ export default function Home() {
         return { matches, bracketSize };
     } 
     else {
-        // Lógica para cuadro de 64
         const bracketSize = 64;
         const numMatches = 32;
         const byeCount = bracketSize - totalPlayers;
@@ -815,7 +804,8 @@ export default function Home() {
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
 
-    // --- 2. MOSTRAR EL CUADRO EN PANTALLA ---
+    // --- 2. MOSTRAR EL CUADRO EN PANTALLA (La parte nueva) ---
+    // Convertimos los partidos sueltos al formato que usa el BracketView (r1, s1, etc.)
     const r1: string[] = [];
     const s1: string[] = [];
     const seeds: any = {};
@@ -824,11 +814,7 @@ export default function Home() {
         // Procesar Jugador 1
         if (match.p1) {
             r1.push(match.p1.name);
-            // MODIFICADO: Guardar la etiqueta completa (ej. 1º Z1) en lugar de solo el rank
-            if (match.p1.rank > 0) {
-                 const label = match.p1.groupIndex !== undefined ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}` : match.p1.rank;
-                 seeds[match.p1.name] = label;
-            }
+            if (match.p1.rank > 0) seeds[match.p1.name] = match.p1.rank;
         } else { 
             r1.push("BYE"); 
         }
@@ -836,28 +822,27 @@ export default function Home() {
         // Procesar Jugador 2
         if (match.p2) {
             r1.push(match.p2.name);
-            if (match.p2.rank > 0) {
-                 const label = match.p2.groupIndex !== undefined ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}` : match.p2.rank;
-                 seeds[match.p2.name] = label;
-            }
+            if (match.p2.rank > 0) seeds[match.p2.name] = match.p2.rank;
         } else { 
             r1.push("BYE"); 
         }
 
-        // Scores vacíos
+        // Scores vacíos (porque recién empieza)
         s1.push(""); s1.push("");
     });
 
+    // Actualizamos los datos del Bracket para que se vea
     setBracketData({
         r1: r1, s1: s1,
-        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [],
+        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
         winner: "", runnerUp: "",
-        bracketSize: navState.bracketSize, 
-        hasData: true, 
+        bracketSize: navState.bracketSize, // Usamos el tamaño del sorteo actual
+        hasData: true, // ¡Importante! Esto activa la vista del cuadro
         canGenerate: false,
         seeds: seeds
     });
 
+    // Cambiamos de pantalla (de "generate-bracket" a "direct-bracket")
     setNavState({ ...navState, level: "direct-bracket" });
   }
 
@@ -882,8 +867,7 @@ export default function Home() {
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); 
-    // MODIFICADO: Reset con r6/s6
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -916,38 +900,29 @@ export default function Home() {
 
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data;
-        // MODIFICADO: Lógica generalizada para BYEs
-        // Si hay un BYE en la ronda actual, el oponente avanza automáticamente a la siguiente ronda
-        // Esto soluciona que "pase cualquiera". Solo pasa si el rival es explícitamente "BYE".
-        
-        const advanceByes = (currentRound: string[], nextRound: string[]) => {
-            if (!currentRound || !nextRound) return;
-            // Clonamos nextRound para no mutar directamente si no es necesario (aunque aquí mutamos 'data')
-            for (let i = 0; i < currentRound.length; i += 2) {
-                const p1 = currentRound[i];
-                const p2 = currentRound[i+1];
+        const newR2 = [...r2]; const newR3 = [...r3];
+        if (bracketSize === 32) {
+            for (let i = 0; i < r1.length; i += 2) {
+                const p1 = r1[i]; const p2 = r1[i+1];
                 const targetIdx = Math.floor(i / 2);
-                
-                // Solo avanzamos si el slot de la siguiente ronda está vacío
-                if (!nextRound[targetIdx] || nextRound[targetIdx] === "" || nextRound[targetIdx] === "-") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") {
-                        nextRound[targetIdx] = p1;
-                    } else if (p1 === "BYE" && p2 && p2 !== "BYE") {
-                        nextRound[targetIdx] = p2;
-                    }
+                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
+                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
                 }
             }
-        };
-
-        if (bracketSize === 64) {
-            advanceByes(data.r1, data.r2);
-            advanceByes(data.r2, data.r3); // Cascada opcional, pero r2 usualmente no tiene BYEs generados
-        } else if (bracketSize === 32) {
-            advanceByes(data.r1, data.r2);
-        } else if (bracketSize === 16) {
-            advanceByes(data.r1, data.r2); // Aquí r1 son octavos
+            data.r2 = newR2;
         }
-
+        const roundPrev = bracketSize === 32 ? newR2 : r1;
+        const roundNext = bracketSize === 32 ? newR3 : r2; 
+        for (let i = 0; i < roundPrev.length; i += 2) {
+             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
+             const targetIdx = Math.floor(i / 2);
+             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
+                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
+                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
+             }
+        }
+        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
         return data;
     }
 
@@ -964,14 +939,11 @@ export default function Home() {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
           
           let bracketSize = 16; 
-          // MODIFICADO: Detección correcta de cuadro de 64
-          if (playersInCol1 > 32) bracketSize = 64;
-          else if (playersInCol1 > 16) bracketSize = 32;
+          if (playersInCol1 > 16) bracketSize = 32;
           else if (playersInCol1 <= 8) bracketSize = 8; 
 
           let seeds = {};
           try {
-             // ... fetch seeds logic (same as before) ...
              const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
              const rankRes = await fetch(rankUrl);
              const rankTxt = await rankRes.text();
@@ -997,9 +969,7 @@ export default function Home() {
 
           let rawData: any = {};
           let winnerIdx = -1;
-          // MODIFICADO: Indices para cuadro de 64
-          if (bracketSize === 64) winnerIdx = 12;
-          else if (bracketSize === 32) winnerIdx = 10; 
+          if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
           
@@ -1008,18 +978,7 @@ export default function Home() {
           const getColData = (colIdx: number, limit: number) => rows.map(r => r[colIdx]).filter(c => c && c.trim() !== "" && c.trim() !== "-").slice(0, limit);
           const getScoreData = (colIdx: number, limit: number) => rows.map(r => r[colIdx] || "").slice(0, limit);
 
-          if (bracketSize === 64) {
-             // MODIFICADO: Lectura de cuadro de 64
-             rawData = { 
-                r1: getColData(0, 64), s1: getScoreData(1, 64),
-                r2: getColData(2, 32), s2: getScoreData(3, 32),
-                r3: getColData(4, 16), s3: getScoreData(5, 16),
-                r4: getColData(6, 8),  s4: getScoreData(7, 8),
-                r5: getColData(8, 4),  s5: getScoreData(9, 4),
-                r6: getColData(10, 2), s6: getScoreData(11, 2),
-                winner: winner, runnerUp: runnerUp, bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
-            };
-          } else if (bracketSize === 32) {
+          if (bracketSize === 32) {
             rawData = { 
                 r1: getColData(0, 32), s1: getScoreData(1, 32),
                 r2: getColData(2, 16), s2: getScoreData(3, 16),
@@ -1165,8 +1124,8 @@ export default function Home() {
              {/* Componente extraído de Partido Individual */}
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
-                    <div key={i} className="w-full max-w-md mx-auto">
-                        <GeneratedMatch match={match} />
+                    <>
+                        <GeneratedMatch key={i} match={match} />
                         {i === (generatedBracket.length / 2) - 1 && (
                             <div className="w-full max-w-md my-8 flex items-center gap-4 opacity-50">
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
@@ -1174,7 +1133,7 @@ export default function Home() {
                                 <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent flex-1" />
                             </div>
                         )}
-                    </div>
+                    </>
                 ))}
              </div>
 

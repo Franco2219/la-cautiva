@@ -36,6 +36,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   };
 
   const displayRanks = calculateRanks();
+  // Usamos la utilidad que ya moviste a utils.ts
   const style = getTournamentStyle(tournamentShort);
 
   return (
@@ -55,17 +56,9 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                 {group.players && group.players.map((p: string, i: number) => {
                   let shortName = p;
                   if (p) {
-                      // MODIFICADO: Quitamos el número inicial (ej "1. ") SOLO para el header
-                      // Regex: Busca al inicio (^) dígitos (\d+) seguidos de un punto (\.) y espacios (\s*)
-                      const nameWithoutNumber = p.replace(/^\d+\.\s*/, "");
-                      
-                      const clean = nameWithoutNumber.replace(/,/g, "").trim().split(/\s+/);
-                      if (clean.length > 1) {
-                          // Toma el primer apellido y la inicial del segundo nombre
-                          shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
-                      } else {
-                          shortName = clean[0];
-                      }
+                      const clean = p.replace(/,/g, "").trim().split(/\s+/);
+                      if (clean.length > 1) shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
+                      else shortName = clean[0];
                   }
                   return (
                     <th key={i} className={`p-3 border-r text-center font-black uppercase min-w-[80px] whitespace-nowrap ${style.textColor}`}>
@@ -86,9 +79,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
             <tbody>
               {group.players && group.players.map((p1: string, i: number) => (
                 <tr key={i} className="border-b">
-                  {/* Aquí mantenemos p1 original con el número "1. OLIVA..." */}
                   <td className={`p-3 border-r font-black bg-slate-50 uppercase text-left whitespace-nowrap ${style.textColor}`}>{p1}</td>
-                  
                   {group.players.map((p2: string, j: number) => (
                     <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
                       {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
