@@ -1,6 +1,16 @@
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 import { tournaments, TOURNAMENT_STYLES } from './constants';
 
-// Función para parsear CSV (usada en todas partes)
+// --- 1. FUNCIÓN NECESARIA PARA UI (BOTONES) ---
+// Esta es la función que faltaba y causaba el error
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// --- 2. FUNCIONES DEL TORNEO (NUESTRAS) ---
+
+// Función para parsear CSV
 export const parseCSV = (text: string) => {
   if (!text) return [];
   return text.split('\n').map(row => 
