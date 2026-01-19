@@ -464,7 +464,11 @@ export default function Home() {
         diff: ["", "", "", ""]
       }));
 
-      for (let i = 0; i < numGroups; i++) { if (entryList[i]) groups[i].players.push(entryList[i].name); }
+      for (let i = 0; i < numGroups; i++) { 
+        if (entryList[i]) {
+            groups[i].players.push(`${i + 1}. ${entryList[i].name}`); 
+        }
+    }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       let pIdx = 0;
       for (let g = 0; g < numGroups; g++) {
@@ -788,7 +792,10 @@ export default function Home() {
   }
 
   const confirmarSorteoCuadro = () => {
+    // Si no hay sorteo generado, no hacemos nada
     if (generatedBracket.length === 0) return;
+    
+    // --- 1. Enviar a WhatsApp (Igual que antes) ---
     let mensaje = `*SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
@@ -796,6 +803,47 @@ export default function Home() {
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+
+    // --- 2. MOSTRAR EL CUADRO EN PANTALLA (La parte nueva) ---
+    // Convertimos los partidos sueltos al formato que usa el BracketView (r1, s1, etc.)
+    const r1: string[] = [];
+    const s1: string[] = [];
+    const seeds: any = {};
+
+    generatedBracket.forEach(match => {
+        // Procesar Jugador 1
+        if (match.p1) {
+            r1.push(match.p1.name);
+            if (match.p1.rank > 0) seeds[match.p1.name] = match.p1.rank;
+        } else { 
+            r1.push("BYE"); 
+        }
+        
+        // Procesar Jugador 2
+        if (match.p2) {
+            r1.push(match.p2.name);
+            if (match.p2.rank > 0) seeds[match.p2.name] = match.p2.rank;
+        } else { 
+            r1.push("BYE"); 
+        }
+
+        // Scores vacíos (porque recién empieza)
+        s1.push(""); s1.push("");
+    });
+
+    // Actualizamos los datos del Bracket para que se vea
+    setBracketData({
+        r1: r1, s1: s1,
+        r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
+        winner: "", runnerUp: "",
+        bracketSize: navState.bracketSize, // Usamos el tamaño del sorteo actual
+        hasData: true, // ¡Importante! Esto activa la vista del cuadro
+        canGenerate: false,
+        seeds: seeds
+    });
+
+    // Cambiamos de pantalla (de "generate-bracket" a "direct-bracket")
+    setNavState({ ...navState, level: "direct-bracket" });
   }
 
   const fetchRankingData = async (categoryShort: string, year: string) => {

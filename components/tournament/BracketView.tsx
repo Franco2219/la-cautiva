@@ -514,7 +514,7 @@ export const BracketView = ({
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
                     }
-                    className="bg-orange-500 text-white font-bold px-8 shadow-lg"
+                    className={`${bracketStyle.color} text-white font-bold px-8 shadow-lg`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </Button>
@@ -526,7 +526,7 @@ export const BracketView = ({
                         navState.tournamentShort
                       )
                     }
-                    className="bg-orange-500 text-white font-bold px-8 shadow-lg"
+                    className={`${bracketStyle.color} text-white font-bold px-8 shadow-lg`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </Button>
