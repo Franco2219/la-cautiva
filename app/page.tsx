@@ -164,6 +164,7 @@ export default function Home() {
       return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
   };
 
+  // Función helper para obtener el nombre completo
   const getTournamentName = (shortName: string) => {
       const tour = tournaments.find(t => t.short === shortName);
       return tour ? tour.name : shortName;
@@ -207,6 +208,7 @@ export default function Home() {
       }
   };
 
+  // --- LÓGICA DE RANKING ---
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -630,8 +632,9 @@ export default function Home() {
         for (let i = 0; i < rows.length; i++) {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             
+            // CORRECCIÓN CRASH AO B2: Agregamos validación robusta de tipo para potentialP4
             const potentialP4 = rows[i+4] && rows[i+4][0];
-            const isNextHeader = potentialP4 && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
+            const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
             const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null;
 
             const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
@@ -698,6 +701,13 @@ export default function Home() {
         setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
     } finally { setIsLoading(false); }
   }
+
+  const confirmarYEnviar = () => {
+    let mensaje = `*SORTEO CONFIRMADO - ${getTournamentName(navState.currentTour)}*\n*Categoría:* ${navState.currentCat}\n\n`;
+    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
+    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    setIsSorteoConfirmado(true);
+  };
 
   const GroupTable = ({ group }: { group: any }) => {
     const totalPlayers = group.players.length;
