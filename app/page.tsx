@@ -134,7 +134,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [generatedBracket, setGeneratedBracket] = useState<any[]>([])
   const [isFixedData, setIsFixedData] = useState(false)
-  const [showSorteoModal, setShowSorteoModal] = useState<any>(null)
   
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
@@ -501,38 +500,22 @@ export default function Home() {
         
         const nonSeedsStartIndex = bracketSize === 64 ? 16 : 8;
         const nonSeeds = entryList.slice(nonSeedsStartIndex).map(p => ({ ...p, rank: 0 }));
-        nonSeeds.sort(() => Math.random() - 0.5);
-
-        let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null && x.name !== "BYE").length;
-        let countBot = slots.slice(bracketSize/2).filter(x => x !== null && x.name !== "BYE").length;
+        nonSeeds.sort(() => Math.random() - 0.5); 
+        
+        let countTop = slots.slice(0, bracketSize/2).filter(x => x !== null).length;
+        let countBot = slots.slice(bracketSize/2).filter(x => x !== null).length;
         let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
-
+        
         for (const player of nonSeeds) {
              const emptyTop = emptySlots.filter(i => i < bracketSize/2);
              const emptyBot = emptySlots.filter(i => i >= bracketSize/2);
              let targetIdx = -1;
-
-             // Priorizar balanceo: si un lado tiene menos jugadores reales, colocar ahí
-             if (countTop < countBot && emptyTop.length > 0) {
-                 targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-             } else if (countBot < countTop && emptyBot.length > 0) {
-                 targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-             } else if (countTop === countBot) {
-                 // Si están balanceados, elegir aleatoriamente entre ambos lados
-                 const allEmpty = [...emptyTop, ...emptyBot];
-                 if (allEmpty.length > 0) targetIdx = allEmpty[Math.floor(Math.random() * allEmpty.length)];
-             } else {
-                 // Fallback: elegir el lado con más espacios disponibles
-                 if (emptyTop.length >= emptyBot.length && emptyTop.length > 0) {
-                     targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
-                 } else if (emptyBot.length > 0) {
-                     targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
-                 }
-             }
+             if (countTop <= countBot && emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
+             else if (emptyBot.length > 0) targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)];
+             else if (emptyTop.length > 0) targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)];
 
              if (targetIdx !== -1) {
                  slots[targetIdx] = player;
-                 if (targetIdx < bracketSize/2) countTop++; else countBot++;
                  if (targetIdx < bracketSize/2) countTop++; else countBot++;
                  emptySlots = emptySlots.filter(i => i !== targetIdx);
              }
@@ -598,20 +581,14 @@ export default function Home() {
           }
       } else {
           const remainder = totalPlayers % 3;
-          if (remainder === 0) { groupsOf3 = totalPlayers / 3; }
-          else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; }
+          if (remainder === 0) { groupsOf3 = totalPlayers / 3; } 
+          else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } 
           else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; }
-
-          // Crear arrays separados para grupos de 3 y 2
-          let group3Capacities = [];
-          let group2Capacities = [];
-          for(let i=0; i<groupsOf3; i++) group3Capacities.push(3);
-          for(let i=0; i<groupsOf2; i++) group2Capacities.push(2);
-
-          // Mezclar los grupos de 3 aleatoriamente, pero colocar los de 2 al final
-          group3Capacities = group3Capacities.sort(() => Math.random() - 0.5);
-          capacities = [...group3Capacities, ...group2Capacities];
+          for(let i=0; i<groupsOf3; i++) capacities.push(3);
+          for(let i=0; i<groupsOf2; i++) capacities.push(2);
       }
+      
+      capacities = capacities.sort(() => Math.random() - 0.5);
       const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({
         groupName: `Zona ${i + 1}`,
@@ -1083,17 +1060,10 @@ export default function Home() {
     let mensaje = `*SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => {
         const p1Name = match.p1 ? match.p1.name : "TBD";
-        const p2Name = match.p2 ? match.p2.name : "TBD";
+        const p2Name = match.p2 ? match.p2.name : "TBD"; 
         mensaje += `${p1Name}\n${p2Name}\n`;
     });
-
-    // Mostrar modal con el resultado del sorteo
-    setShowSorteoModal({
-      title: `SORTEO CUADRO FINAL - ${getTournamentName(navState.tournamentShort)}`,
-      category: navState.category,
-      bracket: generatedBracket,
-      message: mensaje
-    });
+    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -1523,7 +1493,7 @@ export default function Home() {
                   </div>
                 )}
                 {bracketData.bracketSize >= 16 && (
-                <div className="flex flex-col relative min-w-[150px] md:min-w-0 md:flex-1" style={{height: '400px'}}>
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r2 : bracketData.r1;
                     const s = bracketData.bracketSize === 32 ? bracketData.s2 : bracketData.s1;
@@ -1535,31 +1505,31 @@ export default function Home() {
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
-                    // Posicionar basado en índice para mantener posiciones correctas
-                    const topPosition = (idx / 16) * 400; // Espaciado basado en índice
-
                     return (
-                      <div key={idx} className="absolute flex flex-col space-y-4" style={{top: `${topPosition}px`}}>
-                        <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
-                            <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
-                            </span>
-                            <span className="text-black font-black text-xs ml-1">{s1}</span>
+                      <>
+                        <div key={idx} className="relative flex flex-col space-y-4">
+                          <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s1}</span>
+                          </div>
+                          <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s2}</span>
+                          </div>
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                         </div>
-                        <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end relative bg-white`}>
-                            <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
-                            </span>
-                            <span className="text-black font-black text-xs ml-1">{s2}</span>
-                        </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      </div>
+                        {i === 3 && <MiddleSpacer />}
+                      </>
                     );
                   })}
                 </div>
                 )}
                 {/* ... (Resto de columnas de bracket) */}
-                <div className="flex flex-col relative min-w-[150px] md:min-w-0 md:flex-1" style={{height: '400px'}}>
+                <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
                   {[0, 2, 4, 6].map((idx, i) => {
                     const r = bracketData.bracketSize === 32 ? bracketData.r3 : (bracketData.bracketSize === 16 ? bracketData.r2 : bracketData.r1);
                     const s = bracketData.bracketSize === 32 ? bracketData.s3 : (bracketData.bracketSize === 16 ? bracketData.s2 : bracketData.s1);
@@ -1571,25 +1541,25 @@ export default function Home() {
                     const seed1 = bracketData.seeds ? bracketData.seeds[p1] : null;
                     const seed2 = bracketData.seeds ? bracketData.seeds[p2] : null;
 
-                    // Posicionar basado en índice para mantener posiciones correctas
-                    const topPosition = (idx / 8) * 400; // Espaciado basado en índice para cuartos
-
                     return (
-                      <div key={idx} className="absolute flex flex-col space-y-8" style={{top: `${topPosition}px`}}>
-                        <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
-                            </span>
-                            <span className="text-black font-black text-xs ml-1">{s1}</span>
+                      <>
+                        <div key={idx} className="relative flex flex-col space-y-8">
+                          <div className={`h-8 border-b-2 ${w1 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p1 === 'BYE' ? 'text-green-600 font-black' : (w1 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed1 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed1}.</span> : null}{p1 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s1}</span>
+                          </div>
+                          <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
+                              <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
+                                  {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
+                              </span>
+                              <span className="text-black font-black text-xs ml-1">{s2}</span>
+                          </div>
+                          <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                         </div>
-                        <div className={`h-8 border-b-2 ${w2 ? bracketStyle.borderColor : 'border-slate-300'} flex justify-between items-end bg-white relative text-center`}>
-                            <span className={`${p2 === 'BYE' ? 'text-green-600 font-black' : (w2 ? `${bracketStyle.textColor} font-black` : 'text-slate-700 font-bold')} text-xs md:text-sm uppercase truncate`}>
-                                {seed2 ? <span className="text-[11px] text-orange-600 font-black mr-1">{seed2}.</span> : null}{p2 || ""}
-                            </span>
-                            <span className="text-black font-black text-xs ml-1">{s2}</span>
-                        </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      </div>
+                        {i === 1 && <MiddleSpacer />}
+                      </>
                     );
                   })}
                 </div>
@@ -1672,9 +1642,9 @@ export default function Home() {
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className={`${getTournamentStyle(navState.tournamentShort).color} text-white font-bold px-8 shadow-lg`}> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             ) : (
-                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className={`${getTournamentStyle(navState.tournamentShort).color} text-white font-bold px-8 shadow-lg`}> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             )}
                         </div>
                     </div>
@@ -1759,41 +1729,6 @@ export default function Home() {
                 </table>
               </div>
             ) : (<div className="h-64 flex items-center justify-center text-slate-300 uppercase font-black animate-pulse text-center">Cargando datos...</div>)}
-          </div>
-        )}
-
-        {/* MODAL DE SORTEO DE CUADRO */}
-        {showSorteoModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative max-h-[80vh] overflow-y-auto">
-              <Button onClick={() => setShowSorteoModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500" variant="ghost">
-                <X className="w-6 h-6" />
-              </Button>
-              <div className="text-center mb-6">
-                <Trophy className={`w-12 h-12 mx-auto mb-2 ${getTournamentStyle(navState.tournamentShort).trophyColor}`} />
-                <h3 className={`text-2xl font-black uppercase ${getTournamentStyle(navState.tournamentShort).textColor}`}>{showSorteoModal.title}</h3>
-                <p className="text-sm text-slate-500 font-medium uppercase mt-1">Categoría: {showSorteoModal.category}</p>
-              </div>
-              <div className="space-y-4 mb-6">
-                {showSorteoModal.bracket.map((match: any, index: number) => (
-                  <div key={index} className="bg-slate-50 rounded-lg p-4 border-l-4 border-slate-300">
-                    <div className="text-xs text-slate-500 font-bold uppercase mb-2">Partido {index + 1}</div>
-                    <div className="space-y-1">
-                      <div className="text-slate-700 font-bold">{match.p1?.name || "TBD"}</div>
-                      <div className="text-slate-700 font-bold">{match.p2?.name || "TBD"}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={() => window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(showSorteoModal.message)}`, '_blank')} className="flex-1 bg-green-600 text-white font-bold">
-                  <Send className="mr-2 w-4 h-4" /> ENVIAR POR WHATSAPP
-                </Button>
-                <Button onClick={() => setShowSorteoModal(null)} variant="outline" className="flex-1 font-bold">
-                  CERRAR
-                </Button>
-              </div>
-            </div>
           </div>
         )}
       </div>
