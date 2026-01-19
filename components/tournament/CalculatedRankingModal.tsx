@@ -1,8 +1,8 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import { Trophy, X, Copy, Send } from "lucide-react";
-import { getTournamentStyle, getTournamentName } from "@/lib/utils";
-import { MI_TELEFONO } from "@/lib/constants";
+import { getTournamentStyle, getTournamentName } from "../../lib/utils";
+import { MI_TELEFONO } from "../../lib/constants";
 
 interface CalculatedRankingModalProps {
   ranking: { name: string; points: number }[];

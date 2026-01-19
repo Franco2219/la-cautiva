@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, AlertCircle, Shuffle, X, Copy, List } from "lucide-react"
 
-// --- 1. IMPORTS DE UTILIDADES Y CONSTANTES (Lo que ya creamos/crearemos) ---
+// --- CORRECCIÓN DE IMPORTS (RUTAS RELATIVAS) ---
 import { 
   ID_2025, 
   ID_DATOS_GENERALES, 
@@ -13,20 +13,19 @@ import {
   MI_TELEFONO, 
   TELEFONO_BASTI, 
   tournaments 
-} from "@/lib/constants"
+} from "../lib/constants" // Antes era "@/lib/constants"
 
 import { 
   parseCSV, 
   getTournamentName, 
   getTournamentStyle 
-} from "@/lib/utils"
+} from "../lib/utils" // Antes era "@/lib/utils"
 
-// --- 2. IMPORTS DE COMPONENTES VISUALES (Los que te pasaré luego) ---
-import { GroupTable } from "@/components/tournament/GroupTable"
-import { GeneratedMatch } from "@/components/tournament/GeneratedMatch"
-import { BracketView } from "@/components/tournament/BracketView"
-import { RankingTable } from "@/components/tournament/RankingTable"
-import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal"
+import { GroupTable } from "../components/tournament/GroupTable"
+import { GeneratedMatch } from "../components/tournament/GeneratedMatch"
+import { BracketView } from "../components/tournament/BracketView"
+import { RankingTable } from "../components/tournament/RankingTable"
+import { CalculatedRankingModal } from "../components/tournament/CalculatedRankingModal"
 
 export default function Home() {
   // --- ESTADOS (Se mantienen aquí para controlar la app) ---

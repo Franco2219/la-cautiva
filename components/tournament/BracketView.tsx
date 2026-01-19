@@ -1,9 +1,9 @@
 import React from "react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button"; 
 import { Trophy, AlertCircle, Shuffle } from "lucide-react";
-import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-import { tournaments } from "@/lib/constants";
+import { getTournamentName, getTournamentStyle } from "../../lib/utils";
+import { tournaments } from "../../lib/constants";
 
 interface BracketViewProps {
   bracketData: any;

@@ -1,5 +1,4 @@
-import React from "react";
-import { getTournamentStyle } from "@/lib/utils";
+import { getTournamentStyle } from "../../lib/utils";
 
 interface GroupTableProps {
   group: any;
