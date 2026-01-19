@@ -927,24 +927,38 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket" };
-    setNavState({ ...navState, level: levels[navState.level] || "home" });
-  }
+    
+    // Mapa de navegación
+    const levels: any = { 
+        "main-menu": "home", 
+        "year-selection": "main-menu", 
+        "category-selection": "main-menu", 
+        "tournament-selection": "category-selection", 
+        "tournament-phases": "tournament-selection", 
+        "group-phase": "tournament-phases", 
+        "bracket-phase": "tournament-phases", 
+        "ranking-view": "category-selection", 
+        "direct-bracket": "tournament-selection", 
+        "damas-empty": "category-selection", 
+        "generate-bracket": "direct-bracket" 
+    };
+    
+    const nextLevel = levels[navState.level] || "home";
 
-  return {
-    navState, setNavState,
-    rankingData, headers,
-    bracketData, groupData,
-    isSorteoConfirmado, isLoading,
-    generatedBracket, isFixedData,
-    footerClicks, showRankingCalc, setShowRankingCalc,
-    calculatedRanking,
-    // Functions
-    fetchRankingData, fetchBracketData,
-    runDirectDraw, runATPDraw,
-    fetchGroupPhase, fetchQualifiersAndDraw,
-    calculateAndShowRanking, confirmarYEnviar,
-    enviarListaBasti, confirmarSorteoCuadro,
-    handleFooterClick, goBack
-  };
-};
+    // --- CORRECCIÓN: LIMPIEZA DE ESTADO ---
+    if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
+        setNavState({ 
+            ...navState, 
+            level: nextLevel,
+            tournamentShort: undefined, // Borramos rastro de torneo Directo
+            currentTour: undefined,     // Borramos rastro de torneo Grupos
+            tournament: undefined,
+            hasGroups: false
+        });
+        // También limpiamos los datos visuales
+        setBracketData({ ...bracketData, hasData: false });
+        setGroupData([]);
+    } else {
+        setNavState({ ...navState, level: nextLevel });
+    }
+  }
