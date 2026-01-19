@@ -31,6 +31,8 @@ export default function Home() {
   } = useTournamentData();
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
+  
+  // CORRECCIÓN: Detectamos el torneo activo ya sea que estemos en grupos o en cuadro
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
 
@@ -120,7 +122,7 @@ export default function Home() {
           <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl text-center">
              <div className={`${currentStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic min-w-[300px] mx-auto sticky left-0`}>
                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">Sorteo {navState.bracketSize === 64 ? "32avos" : navState.bracketSize === 32 ? "16avos" : navState.bracketSize === 16 ? "Octavos" : "Cuartos"}</h2>
-               <p className="text-sm font-bold uppercase mt-1 opacity-90">{getTournamentName(navState.tournamentShort)} - {navState.category}</p>
+               <p className="text-sm font-bold uppercase mt-1 opacity-90">{getTournamentName(activeTour)} - {navState.category}</p>
              </div>
              <div className="flex flex-col items-center gap-2 mb-8">
                 {generatedBracket.map((match, i) => (
@@ -136,20 +138,20 @@ export default function Home() {
                     </div>
                 ))}
              </div>
-             <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
-                <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
-                {!isSorteoConfirmado && (
-                  <>
+             
+             {/* CORRECCIÓN: Botones ocultos si el sorteo está confirmado */}
+             {!isSorteoConfirmado && (
+                 <div className="flex flex-col md:flex-row gap-4 justify-center mt-8 sticky bottom-4 z-20">
+                    <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                     {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                        <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
                     ) : (
                        <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
                     )}
-                  </>
-                )}
-                <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
-                {!isSorteoConfirmado && <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>}
-             </div>
+                    <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
+                    <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
+                 </div>
+             )}
           </div>
         )}
 
@@ -178,11 +180,11 @@ export default function Home() {
             </div>
             <div className={`${currentStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.logo && <Image src={currentStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}</div>
-               <div className="flex-1"><h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(navState.currentTour)} - Fase de Grupos</h2><p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p></div>
+               <div className="flex-1"><h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(activeTour)} - Fase de Grupos</h2><p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p></div>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.pointsLogo && <Image src={currentStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}</div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              {groupData.map((group, idx) => <GroupTable key={idx} group={group} tournamentShort={navState.currentTour} />)}
+              {groupData.map((group, idx) => <GroupTable key={idx} group={group} tournamentShort={activeTour} />)}
             </div>
           </div>
         )}
@@ -209,7 +211,7 @@ export default function Home() {
           <CalculatedRankingModal 
             ranking={calculatedRanking} 
             onClose={() => setShowRankingCalc(false)} 
-            tournamentShort={navState.tournamentShort} 
+            tournamentShort={activeTour} 
             category={navState.category} 
           />
         )}
