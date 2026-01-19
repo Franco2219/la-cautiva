@@ -835,37 +835,34 @@ export default function Home() {
     else if (totalPlayers > 4) bracketSize = 8; 
     else bracketSize = 4; 
 
-    const byeCount = bracketSize - totalPlayers;
     const numMatches = bracketSize / 2;
 
     const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
     const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
     // --- NUEVA LÓGICA DE BYES Y BOLSA ---
+    // Total de lugares disponibles en P2 (rivales): bracketSize/2 - 8 (porque 8 tienen bye fijo).
     const maxFixedByes = 8;
-    const fixedByesCount = Math.min(byeCount, maxFixedByes);
-    const floatingByesCount = Math.max(0, byeCount - maxFixedByes);
+    // La cantidad de byes fijos depende de cuántos ganadores tengamos en el top 8
+    // Si tenemos menos de 8 ganadores, los BYEs "fijos" son menos.
+    const realFixedByesCount = Math.min(winners.length, maxFixedByes);
+    
+    // Total de slots en el cuadro = bracketSize.
+    // Slots ocupados = totalPlayers.
+    // Total de BYES = bracketSize - totalPlayers.
+    const totalByes = bracketSize - totalPlayers;
+    
+    // Byes que se asignan directamente al rival del ganador (1-8)
+    const fixedByesAssigned = Math.min(totalByes, realFixedByesCount);
+    
+    // Byes que quedan "flotando" para ser sorteados
+    const floatingByesCount = totalByes - fixedByesAssigned;
 
-    // Identificar a los ganadores que tienen BYE asegurado (Top 8 como máximo)
-    const fixedByeWinners = winners.slice(0, fixedByesCount);
+    const fixedByeWinners = winners.slice(0, fixedByesAssigned);
     const fixedByeWinnersIndices = new Set(fixedByeWinners.map(w => w.groupIndex));
 
-    const remainingWinners = winners.slice(fixedByesCount);
+    const remainingWinners = winners.slice(fixedByesAssigned);
     const floatingByes = Array(floatingByesCount).fill(null).map(() => ({ name: "BYE", rank: 0, groupIndex: -1 }));
-
-    // Bolsa mezclada: SOLO SEGUNDOS Y BYES FLOTANTES
-    // IMPORTANTE: Ordenar la bolsa para que los BYEs queden AL FINAL (índice 0, ya que usamos pop())
-    // y los jugadores reales queden al principio para ser sacados último? NO.
-    // Usamos pop(), saca del final del array. 
-    // Queremos sacar jugadores reales PRIMERO para llenar P1.
-    // Entonces: [BYE, BYE, ..., PLAYER, PLAYER].
-    const bag = [...runners, ...floatingByes].sort((a, b) => {
-        const isByeA = a.name === "BYE";
-        const isByeB = b.name === "BYE";
-        if (isByeA && !isByeB) return -1; // Bye va antes (fondo)
-        if (!isByeA && isByeB) return 1;  // Player va despues (tope)
-        return Math.random() - 0.5; // Mezclar iguales
-    });
 
     let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
 
@@ -874,12 +871,10 @@ export default function Home() {
     const restrictedMatches = new Set();
     const top4Indices: number[] = [];
 
-    // Pre-calcular dónde irán Z1-Z4
     if (winners[0]) top4Indices.push(0); // Top
     if (winners[1]) top4Indices.push(numMatches - 1); // Bottom
     const mid1 = (numMatches / 2) - 1;
     const mid2 = numMatches / 2;
-    // Z3 y Z4 van a los medios
     if (winners.length >= 3) top4Indices.push(mid1);
     if (winners.length >= 4) top4Indices.push(mid2);
 
@@ -914,11 +909,9 @@ export default function Home() {
     }
     availableP1Indices.sort(() => Math.random() - 0.5);
 
-    // Separar índices seguros de peligrosos
     const safeIndices = availableP1Indices.filter(idx => !restrictedMatches.has(idx));
     const dangerousIndices = availableP1Indices.filter(idx => restrictedMatches.has(idx));
 
-    // Los primeros 4 de los restantes (Z5-Z8) tienen prioridad para ir a zona segura
     const winners5to8 = remainingWinnersToPlace.slice(0, 4);
     const winnersRest = remainingWinnersToPlace.slice(4);
 
@@ -926,11 +919,10 @@ export default function Home() {
         if (safeIndices.length > 0) {
             placeWinner(w, safeIndices.pop()!);
         } else if (dangerousIndices.length > 0) {
-            placeWinner(w, dangerousIndices.pop()!); // Fallback si no hay lugar seguro
+            placeWinner(w, dangerousIndices.pop()!); 
         }
     });
 
-    // El resto va donde sea
     const finalAvailable = [...safeIndices, ...dangerousIndices].sort(() => Math.random() - 0.5);
     winnersRest.forEach(w => {
          if (finalAvailable.length > 0) {
@@ -938,31 +930,68 @@ export default function Home() {
          }
     });
 
-    // --- PASO 4: LLENAR RIVALES Y HUECOS CON LA BOLSA (PRIORIDAD PLAYERS) ---
+    // --- PASO 4: LLENAR HUECOS CON LÓGICA ANTI-BYE Y BALANCEADA ---
     
-    for (let i = 0; i < numMatches; i++) {
-        // Caso A: Ya hay un P1 (es un Ganador).
-        if (matches[i].p1 && !matches[i].p2) {
-             if (bag.length > 0) matches[i].p2 = bag.pop();
-             else matches[i].p2 = { name: "BYE", rank: 0 }; 
-        }
-        // Caso B: P1 está vacío (No hay Ganador en esta llave).
-        else if (!matches[i].p1) {
-            // Llenar P1 primero. Como la bolsa tiene Players al final, sacamos Player.
-            if (bag.length > 0) matches[i].p1 = bag.pop();
-            else matches[i].p1 = { name: "BYE", rank: 0 };
+    // 1. Llenar todos los P1 vacíos con SEGUNDOS (Runners) para evitar BYE vs BYE.
+    // Usamos runnersPool.
+    const runnersPool = [...runners].sort(() => Math.random() - 0.5);
+    
+    // Identificar qué partidos NO tienen P1 todavía
+    let matchesWithoutP1 = matches.map((m, i) => i).filter(i => matches[i].p1 === null);
+    
+    // Separar en Top y Bottom para balancear la carga
+    let topEmpty = matchesWithoutP1.filter(i => i < numMatches / 2);
+    let botEmpty = matchesWithoutP1.filter(i => i >= numMatches / 2);
+    // Mezclar
+    topEmpty.sort(() => Math.random() - 0.5);
+    botEmpty.sort(() => Math.random() - 0.5);
 
-            // Luego llenar P2
-            if (bag.length > 0) matches[i].p2 = bag.pop();
-            else matches[i].p2 = { name: "BYE", rank: 0 };
+    // Llenar alternadamente Top y Bottom con Runners
+    while ((topEmpty.length > 0 || botEmpty.length > 0) && runnersPool.length > 0) {
+        if (topEmpty.length > 0 && runnersPool.length > 0) {
+            matches[topEmpty.pop()!].p1 = runnersPool.pop();
+        }
+        if (botEmpty.length > 0 && runnersPool.length > 0) {
+            matches[botEmpty.pop()!].p1 = runnersPool.pop();
+        }
+    }
+    
+    // Si todavía quedan P1 vacíos (muy raro, significaría poquísimos jugadores), van BYE
+    const remainingEmptyP1 = [...topEmpty, ...botEmpty];
+    remainingEmptyP1.forEach(idx => {
+        matches[idx].p1 = { name: "BYE", rank: 0 };
+    });
+
+    // 2. Llenar los P2 restantes (que no son Fixed Byes)
+    // Bolsa final: Runners que sobraron + Byes flotantes
+    const finalBag = [...runnersPool, ...floatingByes].sort(() => Math.random() - 0.5);
+    
+    let matchesNeedsP2 = matches.map((m, i) => i).filter(i => matches[i].p2 === null);
+    
+    // También balanceamos Top y Bottom para que los BYEs (que están en finalBag) no caigan todos en un lado
+    let topNeedsP2 = matchesNeedsP2.filter(i => i < numMatches / 2);
+    let botNeedsP2 = matchesNeedsP2.filter(i => i >= numMatches / 2);
+    
+    topNeedsP2.sort(() => Math.random() - 0.5);
+    botNeedsP2.sort(() => Math.random() - 0.5);
+
+    // Distribuir la bolsa final alternadamente
+    while (topNeedsP2.length > 0 || botNeedsP2.length > 0) {
+        let item = finalBag.length > 0 ? finalBag.pop() : { name: "BYE", rank: 0 };
+        
+        // Intentar mantener equilibrio: tirar una vez arriba, una vez abajo
+        if (topNeedsP2.length > 0 && (botNeedsP2.length === 0 || Math.random() > 0.5)) {
+             matches[topNeedsP2.pop()!].p2 = item;
+        } else if (botNeedsP2.length > 0) {
+             matches[botNeedsP2.pop()!].p2 = item;
         }
     }
 
-    // Limpieza final
+    // Limpieza estética final
     matches.forEach(m => {
         if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
         if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
-        // Estética: Si es Bye vs Player (raro en P1), invertir para que se vea lindo
+        // Invertir si P1 es BYE y P2 es Player (para que se vea mejor, el player pasa arriba)
         if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
             const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
         }
