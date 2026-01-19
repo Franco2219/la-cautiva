@@ -31,7 +31,8 @@ export default function Home() {
   } = useTournamentData();
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
-  const currentStyle = getTournamentStyle(navState.tournamentShort);
+  const activeTour = navState.tournamentShort || navState.currentTour;
+  const currentStyle = getTournamentStyle(activeTour);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
