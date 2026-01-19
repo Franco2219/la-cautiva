@@ -1642,9 +1642,9 @@ export default function Home() {
                         <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
                         <div className="flex gap-2 justify-center">
                             {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className={`${getTournamentStyle(navState.tournamentShort).color} text-white font-bold px-8 shadow-lg`}> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             ) : (
-                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold px-8 shadow-lg"> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
+                            <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className={`${getTournamentStyle(navState.tournamentShort).color} text-white font-bold px-8 shadow-lg`}> <Shuffle className="mr-2 w-4 h-4" /> Sortear </Button>
                             )}
                         </div>
                     </div>
