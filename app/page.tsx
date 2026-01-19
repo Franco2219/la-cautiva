@@ -632,30 +632,19 @@ export default function Home() {
         while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) poolBottom.push(poolFree.pop());
         poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
 
-        matches.forEach((m, index) => {
-          if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
-          if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
-
-          // Lógica corregida: 
-          // - Mitad superior del cuadro (index < mitad): Jugador Arriba, BYE Abajo.
-          // - Mitad inferior del cuadro (index >= mitad): BYE Arriba, Jugador Abajo.
-          const isBottomHalf = index >= matches.length / 2;
-
-          if (isBottomHalf) {
-              // Si estamos abajo y el jugador está arriba (P1) y el BYE abajo (P2), los invertimos
-              if (m.p1.name !== "BYE" && m.p2.name === "BYE") {
-                  const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
-              }
-          } else {
-              // Si estamos arriba, forzamos al jugador a ir arriba (P1)
-              if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
-                  const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
-              }
-          }
-      });
-
-      return { matches, bracketSize };
-  }
+        matches.forEach((match, index) => {
+            const isTopHalf = index < halfMatches;
+            let pool = isTopHalf ? poolTop : poolBottom;
+            if (match.p1) {
+                if (playersWithBye.has(match.p1.name)) { match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; } 
+                else { if (pool.length > 0) match.p2 = pool.pop(); else match.p2 = { name: "", rank: 0 }; }
+            } else {
+                if (pool.length >= 2) { match.p1 = pool.pop(); match.p2 = pool.pop(); } 
+                else if (pool.length === 1) { match.p1 = pool.pop(); match.p2 = { name: "BYE", rank: 0 }; }
+            }
+        });
+        return { matches, bracketSize };
+    } 
     else {
         const bracketSize = 64;
         const numMatches = 32;
