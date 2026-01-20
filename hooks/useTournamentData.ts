@@ -56,6 +56,7 @@ export const useTournamentData = () => {
       const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
       const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
+      // Prioridad Byes
       const playersWithBye = new Set();
       const priorityByes = Math.min(winners.length, byeCount);
       for(let i=0; i < priorityByes; i++) {
@@ -95,6 +96,7 @@ export const useTournamentData = () => {
       
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+      // Usamos sort random para encontrar huecos vacíos de forma orgánica
       const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
       
       otherWinners.forEach(w => {
@@ -129,7 +131,7 @@ export const useTournamentData = () => {
       let poolBottom = [...mustGoBottom];
       let poolFree = [...freeAgents];
 
-      // Balanceo
+      // Balanceo numérico
       const countReal = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1?.name !== "BYE" && m.p1 ? 1 : 0) + (m.p2?.name !== "BYE" && m.p2 ? 1 : 0), 0);
       let loadTop = countReal(topMatches) + poolTop.length;
       let loadBot = countReal(bottomMatches) + poolBottom.length;
@@ -142,27 +144,32 @@ export const useTournamentData = () => {
       const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
       poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
 
-      const fillHalf = (matchList: any[], pool: any[]) => {
+      // FUNCION DE LLENADO ORGANICO (ALEATORIO)
+      const fillHalfRandomly = (matchList: any[], pool: any[]) => {
+          // Creamos indices barajados
+          let indices = Array.from({length: matchList.length}, (_, i) => i).sort(() => Math.random() - 0.5);
+
           // Fase 1: Huecos vacíos (Anti Bye-Bye)
-          matchList.forEach(m => {
-              if(!m.p1 && !m.p2 && pool.length > 0) m.p1 = pool.pop();
-          });
+          for(let i of indices) {
+              if(!matchList[i].p1 && !matchList[i].p2 && pool.length > 0) matchList[i].p1 = pool.pop();
+          }
           // Fase 2: Contra Seeds
-          matchList.forEach(m => {
-              if(m.p1 && !m.p2 && m.p1.name !== "BYE" && pool.length > 0) m.p2 = pool.pop();
-              else if(!m.p1 && m.p2 && m.p2.name !== "BYE" && pool.length > 0) m.p1 = pool.pop();
-          });
+          for(let i of indices) {
+              if(matchList[i].p1 && !matchList[i].p2 && matchList[i].p1.name !== "BYE" && pool.length > 0) matchList[i].p2 = pool.pop();
+              else if(!matchList[i].p1 && matchList[i].p2 && matchList[i].p2.name !== "BYE" && pool.length > 0) matchList[i].p1 = pool.pop();
+          }
           // Fase 3: Relleno final
-          matchList.forEach(m => {
+          for(let i of indices) {
               if(pool.length === 0) return;
-              if(!m.p1) m.p1 = pool.pop();
-              else if(!m.p2) m.p2 = pool.pop();
-          });
+              if(!matchList[i].p1) matchList[i].p1 = pool.pop();
+              else if(!matchList[i].p2) matchList[i].p2 = pool.pop();
+          }
       };
 
-      fillHalf(topMatches, poolTop);
-      fillHalf(bottomMatches, poolBottom);
+      fillHalfRandomly(topMatches, poolTop);
+      fillHalfRandomly(bottomMatches, poolBottom);
 
+      // Limpieza final y visual
       matches.forEach(m => {
           if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
           if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
@@ -439,13 +446,17 @@ export const useTournamentData = () => {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // Functions
-    fetchRankingData, // <--- ESTO ES CRUCIAL QUE ESTÉ AQUÍ
+    fetchRankingData, // <--- IMPORTANTE: La función se exporta aquí
+    confirmarYEnviar, // <--- IMPORTANTE: La función se exporta aquí
+    enviarListaBasti,
+    runDirectDraw,
+    runATPDraw,
+    fetchGroupPhase,
+    fetchQualifiersAndDraw,
+    calculateAndShowRanking,
+    confirmarSorteoCuadro,
     fetchBracketData,
-    runDirectDraw, runATPDraw,
-    fetchGroupPhase, fetchQualifiersAndDraw,
-    calculateAndShowRanking, confirmarYEnviar,
-    enviarListaBasti, confirmarSorteoCuadro,
-    handleFooterClick, goBack
+    handleFooterClick,
+    goBack
   };
 };
