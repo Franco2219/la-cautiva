@@ -15,7 +15,6 @@ import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
 export default function Home() {
-  // --- INICIO DE LA LISTA DE VARIABLES ---
   const {
     navState, setNavState,
     rankingData, headers,
@@ -24,18 +23,15 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    
-    // 👇👇👇 ¡ESTA ES LA LÍNEA CLAVE! TIENE QUE ESTAR AQUÍ 👇👇👇
-    fetchRankingData, 
-    // 👆👆👆 SI ESTA PALABRA FALTA, VERCEL TE DARÁ ERROR 👆👆👆
-
+    // --- ESTA ES LA LÍNEA QUE FALTABA Y CAUSABA EL ERROR ---
+    fetchRankingData,
+    // -------------------------------------------------------
     fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
     confirmarYEnviar, enviarListaBasti, confirmarSorteoCuadro,
     handleFooterClick, goBack
   } = useTournamentData();
-  // --- FIN DE LA LISTA DE VARIABLES ---
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
@@ -72,10 +68,7 @@ export default function Home() {
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
-                  else if (navState.type === "ranking") { 
-                      fetchRankingData(catShort, navState.year); 
-                      setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); 
-                  }
+                  else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
                 }} className={buttonStyle}>{cat}</Button>
               ))}
@@ -125,6 +118,8 @@ export default function Home() {
           )}
         </div>
 
+        {/* VISTAS ESPECÍFICAS */}
+        
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
              {(() => {
@@ -135,47 +130,24 @@ export default function Home() {
                 generatedBracket.forEach((match) => {
                     const p1Name = match.p1 ? match.p1.name : "BYE";
                     const p2Name = match.p2 ? match.p2.name : "BYE";
-                    
-                    previewR1.push(p1Name);
-                    previewR1.push(p2Name);
-                    previewS1.push("");
-                    previewS1.push("");
+                    previewR1.push(p1Name); previewR1.push(p2Name);
+                    previewS1.push(""); previewS1.push("");
 
                     if (match.p1 && match.p1.rank) {
-                        const label = match.p1.groupIndex !== undefined 
-                            ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` 
-                            : `${match.p1.rank}`;
+                        const label = match.p1.groupIndex !== undefined ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` : `${match.p1.rank}`;
                         previewSeeds[p1Name] = label;
                     }
                     if (match.p2 && match.p2.rank) {
-                        const label = match.p2.groupIndex !== undefined 
-                            ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}`
-                            : `${match.p2.rank}`;
+                        const label = match.p2.groupIndex !== undefined ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}` : `${match.p2.rank}`;
                         previewSeeds[p2Name] = label;
                     }
                 });
 
-                const previewData = {
-                    bracketSize: navState.bracketSize,
-                    r1: previewR1, 
-                    s1: previewS1,
-                    r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
-                    winner: "", 
-                    runnerUp: "",
-                    hasData: true,
-                    seeds: previewSeeds,
-                    canGenerate: false
-                };
+                const previewData = { bracketSize: navState.bracketSize, r1: previewR1, s1: previewS1, r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", hasData: true, seeds: previewSeeds, canGenerate: false };
 
                 return (
                     <div className="w-full">
-                        <BracketView 
-                            bracketData={previewData}
-                            navState={navState}
-                            runDirectDraw={runDirectDraw}
-                            fetchQualifiersAndDraw={fetchQualifiersAndDraw}
-                        />
-
+                        <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
@@ -229,30 +201,15 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView 
-              bracketData={bracketData} 
-              navState={navState} 
-              runDirectDraw={runDirectDraw} 
-              fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
-           />
+           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
         )}
 
         {navState.level === "ranking-view" && (
-           <RankingTable 
-             headers={headers} 
-             data={rankingData} 
-             category={navState.selectedCategory} 
-             year={navState.year} 
-           />
+           <RankingTable headers={headers} data={rankingData} category={navState.selectedCategory} year={navState.year} />
         )}
 
         {showRankingCalc && (
-          <CalculatedRankingModal 
-            ranking={calculatedRanking} 
-            onClose={() => setShowRankingCalc(false)} 
-            tournamentShort={activeTour} 
-            category={navState.category} 
-          />
+          <CalculatedRankingModal ranking={calculatedRanking} onClose={() => setShowRankingCalc(false)} tournamentShort={activeTour} category={navState.category} />
         )}
 
       </div>
