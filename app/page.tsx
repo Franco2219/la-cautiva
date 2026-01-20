@@ -15,8 +15,7 @@ import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
 export default function Home() {
-  // --- AQUÍ ESTÁ LA CLAVE DEL ERROR ---
-  // Tienes que asegurarte de que 'fetchRankingData' esté en esta lista:
+  // --- INICIO DE LA LISTA DE VARIABLES ---
   const {
     navState, setNavState,
     rankingData, headers,
@@ -25,14 +24,18 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // Funciones
-    fetchRankingData, // <--- ¡ESTA ES LA QUE FALTABA!
+    
+    // 👇👇👇 ¡ESTA ES LA LÍNEA CLAVE! TIENE QUE ESTAR AQUÍ 👇👇👇
+    fetchRankingData, 
+    // 👆👆👆 SI ESTA PALABRA FALTA, VERCEL TE DARÁ ERROR 👆👆👆
+
     fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
     confirmarYEnviar, enviarListaBasti, confirmarSorteoCuadro,
     handleFooterClick, goBack
   } = useTournamentData();
+  // --- FIN DE LA LISTA DE VARIABLES ---
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
