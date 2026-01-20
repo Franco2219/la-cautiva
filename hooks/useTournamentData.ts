@@ -208,6 +208,13 @@ export const useTournamentData = () => {
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
+  const confirmarYEnviar = () => {
+    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
+    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
+    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    setIsSorteoConfirmado(true);
+  };
+
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
@@ -446,17 +453,15 @@ export const useTournamentData = () => {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    fetchRankingData, // <--- IMPORTANTE: La función se exporta aquí
-    confirmarYEnviar, // <--- IMPORTANTE: La función se exporta aquí
-    enviarListaBasti,
-    runDirectDraw,
-    runATPDraw,
-    fetchGroupPhase,
-    fetchQualifiersAndDraw,
-    calculateAndShowRanking,
-    confirmarSorteoCuadro,
+    // Functions (Importadas en Page.tsx)
+    fetchRankingData, 
     fetchBracketData,
-    handleFooterClick,
-    goBack
+    runDirectDraw, runATPDraw,
+    fetchGroupPhase, fetchQualifiersAndDraw,
+    calculateAndShowRanking, 
+    confirmarYEnviar,  // <--- ESTÁ AQUÍ
+    enviarListaBasti, 
+    confirmarSorteoCuadro,
+    handleFooterClick, goBack
   };
 };
