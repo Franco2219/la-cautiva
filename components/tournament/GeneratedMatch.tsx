@@ -13,10 +13,10 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
       {/* Jugador 1 */}
       <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
         {match.p1 && (
-          <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">
+          <span className="text-orange-500 font-black text-lg w-20 text-right whitespace-nowrap">
             {match.p1.rank && match.p1.rank > 0
               ? match.p1.groupIndex !== undefined
-                ? `${match.p1.rank}º Z${match.p1.groupIndex + 1}`
+                ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}`
                 : `${match.p1.rank}.`
               : ""}
           </span>
@@ -33,10 +33,10 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
       {/* Jugador 2 */}
       <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
         {match.p2 && match.p2.name !== "BYE" && (
-          <span className="text-orange-500 font-black text-lg w-16 text-right whitespace-nowrap">
+          <span className="text-orange-500 font-black text-lg w-20 text-right whitespace-nowrap">
             {match.p2.rank && match.p2.rank > 0
               ? match.p2.groupIndex !== undefined
-                ? `${match.p2.rank}º Z${match.p2.groupIndex + 1}`
+                ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}`
                 : `${match.p2.rank}.`
               : ""}
           </span>

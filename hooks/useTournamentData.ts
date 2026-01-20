@@ -20,166 +20,183 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // --- FUNCIONES AUXILIARES DE LÓGICA ---
+  // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
       const totalPlayers = qualifiers.length;
-      if (totalPlayers <= 32) {
-          let bracketSize = 8;
-          if (totalPlayers > 16) bracketSize = 32; 
-          else if (totalPlayers > 8) bracketSize = 16; 
-          else if (totalPlayers > 4) bracketSize = 8; 
-          else bracketSize = 4; 
-  
-          const byeCount = bracketSize - totalPlayers;
-          const numMatches = bracketSize / 2;
-          const halfMatches = numMatches / 2;
-  
-          const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-          const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
-  
-          const playersWithBye = new Set();
-          for(let i=0; i < byeCount; i++) {
-              if(winners[i]) playersWithBye.add(winners[i].name);
-              else if(runners[i - winners.length]) playersWithBye.add(runners[i - winners.length].name);
-          }
-          let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-          const wZ1 = winners.find(w => w.groupIndex === 0);
-          const wZ2 = winners.find(w => w.groupIndex === 1);
-          const wZ3 = winners.find(w => w.groupIndex === 2);
-          const wZ4 = winners.find(w => w.groupIndex === 3);
-          const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
-  
-          const idxTop = 0; const idxBottom = numMatches - 1;
-          const idxMidTop = halfMatches - 1; const idxMidBottom = halfMatches; 
-  
-          if (wZ1) matches[idxTop].p1 = wZ1;
-          if (wZ2) matches[idxBottom].p1 = wZ2;
-          const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
-          if (mids.length > 0) matches[idxMidTop].p1 = mids[0];
-          if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
-          matches.forEach(m => { if (!m.p1 && otherWinners.length > 0) m.p1 = otherWinners.pop(); });
-  
-          const topHalfMatches = matches.slice(0, halfMatches);
-          const bottomHalfMatches = matches.slice(halfMatches);
-          const zonesInTop = new Set(topHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
-          const zonesInBottom = new Set(bottomHalfMatches.map(m => m.p1?.groupIndex).filter(i => i !== undefined));
-          const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
-          const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
-          const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
-          const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
-          let poolTop = shuffle([...mustGoTop]); let poolBottom = shuffle([...mustGoBottom]); let poolFree = shuffle([...freeAgents]);
-  
-          while (poolTop.length < halfMatches && poolFree.length > 0) poolTop.push(poolFree.pop());
-          while (poolBottom.length < (numMatches - halfMatches) && poolFree.length > 0) poolBottom.push(poolFree.pop());
-          poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
-  
-          matches.forEach((match, index) => {
-              const isTopHalf = index < halfMatches;
-              let pool = isTopHalf ? poolTop : poolBottom;
-              if (match.p1) {
-                  if (playersWithBye.has(match.p1.name)) { match.p2 = { name: "BYE", rank: 0, groupIndex: -1 }; } 
-                  else { if (pool.length > 0) match.p2 = pool.pop(); else match.p2 = { name: "", rank: 0 }; }
-              } else {
-                  if (pool.length >= 2) { match.p1 = pool.pop(); match.p2 = pool.pop(); } 
-                  else if (pool.length === 1) { match.p1 = pool.pop(); match.p2 = { name: "BYE", rank: 0 }; }
-              }
-          });
-          return { matches, bracketSize };
-      } else {
-          const bracketSize = 64;
-          const numMatches = 32; 
-          const byeCount = bracketSize - totalPlayers;
-          const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-          const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
-          const maxPriorityByes = 8;
-          const assignedByesCount = Math.min(byeCount, maxPriorityByes);
-          const priorityByeZones = new Set();
-          for(let i=0; i<assignedByesCount; i++) {
-              if(winners[i]) priorityByeZones.add(winners[i].groupIndex);
-          }
-          let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-          const placeP1 = (winner: any, index: number) => {
-              if (!winner) return;
-              matches[index].p1 = winner;
-              if (priorityByeZones.has(winner.groupIndex)) {
-                  matches[index].p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-              }
-          };
-          if (winners[0]) placeP1(winners[0], 0); 
-          if (winners[1]) placeP1(winners[1], numMatches - 1); 
-          const mids = [winners[2], winners[3]].filter(Boolean); 
-          if (mids.length > 0) {
-              if (Math.random() > 0.5) mids.reverse();
-              if (mids[0]) placeP1(mids[0], (numMatches/2) - 1);
-              if (mids[1]) placeP1(mids[1], (numMatches/2));
-          }
-          const safeIndices = [7, 8, 23, 24].sort(() => Math.random() - 0.5);
-          const z5to8 = winners.slice(4, 8); 
-          z5to8.forEach(w => {
-              if (safeIndices.length > 0) placeP1(w, safeIndices.pop()!);
-              else { 
-                  const emptyIdx = matches.findIndex(m => m.p1 === null);
-                  if (emptyIdx !== -1) placeP1(w, emptyIdx);
-              }
-          });
-          const remainingWinners = winners.slice(8);
-          const emptyIndicesP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
-          remainingWinners.forEach(w => {
-              if (emptyIndicesP1.length > 0) placeP1(w, emptyIndicesP1.pop()!);
-          });
-          const runnersTop: any[] = [];
-          const runnersBot: any[] = [];
-          const runnersFree: any[] = []; 
-          runners.forEach(r => {
-              const winnerMatchIndex = matches.findIndex(m => m.p1 && m.p1.groupIndex === r.groupIndex);
-              if (winnerMatchIndex !== -1) {
-                  if (winnerMatchIndex < numMatches / 2) runnersBot.push(r); 
-                  else runnersTop.push(r); 
-              } else {
-                  runnersFree.push(r);
-              }
-          });
-          runnersTop.sort(() => Math.random() - 0.5);
-          runnersBot.sort(() => Math.random() - 0.5);
-          runnersFree.sort(() => Math.random() - 0.5);
-          for(let i=0; i < numMatches/2; i++) {
-              if (!matches[i].p1) {
-                  if(runnersTop.length > 0) matches[i].p1 = runnersTop.pop();
-                  else if(runnersFree.length > 0) matches[i].p1 = runnersFree.pop();
-              }
-          }
-          for(let i=numMatches/2; i < numMatches; i++) {
-              if (!matches[i].p1) {
-                  if(runnersBot.length > 0) matches[i].p1 = runnersBot.pop();
-                  else if(runnersFree.length > 0) matches[i].p1 = runnersFree.pop();
-              }
-          }
-          const remainingP1Slots = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1);
-          const allRemainingRunners = [...runnersTop, ...runnersBot, ...runnersFree].sort(() => Math.random() - 0.5);
-          remainingP1Slots.forEach(idx => {
-              if (allRemainingRunners.length > 0) matches[idx].p1 = allRemainingRunners.pop();
-              else matches[idx].p1 = { name: "BYE", rank: 0 }; 
-          });
-          let currentByesPlaced = matches.filter(m => m.p2 && m.p2.name === "BYE").length;
-          let byesNeeded = byeCount - currentByesPlaced;
-          const finalPool = [...allRemainingRunners];
-          for(let k=0; k<byesNeeded; k++) finalPool.push({ name: "BYE", rank: 0, groupIndex: -1 });
-          finalPool.sort(() => Math.random() - 0.5);
-          const emptyP2Indices = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
-          emptyP2Indices.forEach(idx => {
-              if (finalPool.length > 0) matches[idx].p2 = finalPool.pop();
-              else matches[idx].p2 = { name: "BYE", rank: 0 };
-          });
-          matches.forEach(m => {
-              if (!m.p1) m.p1 = { name: "BYE", rank: 0 };
-              if (!m.p2) m.p2 = { name: "BYE", rank: 0 };
-              if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
-                  const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
-              }
-          });
-          return { matches, bracketSize };
+      
+      // Determinamos el tamaño del cuadro
+      let bracketSize = 4;
+      if (totalPlayers > 32) bracketSize = 64;
+      else if (totalPlayers > 16) bracketSize = 32; 
+      else if (totalPlayers > 8) bracketSize = 16; 
+      else if (totalPlayers > 4) bracketSize = 8; 
+
+      const numMatches = bracketSize / 2;
+      const halfMatches = numMatches / 2;
+      const byeCount = bracketSize - totalPlayers;
+
+      // Separamos ganadores (Seeds) y segundos (Runners)
+      // Asumimos que qualifier.rank 1 es Ganador de Grupo (Seed)
+      const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+      const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+
+      // Identificar qué jugadores/zonas tendrán BYE (prioridad a los mejores clasificados)
+      // En este caso, prioridad a los ganadores de las primeras zonas
+      const playersWithBye = new Set();
+      const priorityByes = Math.min(winners.length, byeCount);
+      for(let i=0; i < priorityByes; i++) {
+          if(winners[i]) playersWithBye.add(winners[i].name);
       }
+      // Si sobran byes, van para los runners (raro pero posible)
+      if (byeCount > priorityByes) {
+          for(let i=0; i < (byeCount - priorityByes); i++) {
+              if(runners[i]) playersWithBye.add(runners[i].name);
+          }
+      }
+
+      let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+      
+      // --- POSICIONAMIENTO DE SEEDS (GANADORES) ---
+      
+      const wZ1 = winners.find(w => w.groupIndex === 0);
+      const wZ2 = winners.find(w => w.groupIndex === 1);
+      const wZ3 = winners.find(w => w.groupIndex === 2);
+      const wZ4 = winners.find(w => w.groupIndex === 3);
+      // El resto de ganadores
+      const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+
+      const idxTop = 0; 
+      const idxBottom = numMatches - 1;
+      const idxMidTop = halfMatches - 1; 
+      const idxMidBottom = halfMatches; 
+
+      // 1. Seed 1 (Z1): Arriba de todo (p1)
+      if (wZ1) matches[idxTop].p1 = wZ1;
+      
+      // 2. Seed 2 (Z2): Abajo de todo (p2) - CORRECCIÓN SOLICITADA
+      if (wZ2) matches[idxBottom].p2 = wZ2; 
+      
+      // 3. Seeds 3 y 4: Sorteados en los extremos del medio
+      const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+      
+      // Seed 3/4 A: Cierra la mitad superior (p2)
+      if (mids.length > 0) matches[idxMidTop].p2 = mids[0];
+      
+      // Seed 3/4 B: Abre la mitad inferior (p1)
+      if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
+      
+      // 4. Ubicar resto de Ganadores (Seeds 5-8, etc.)
+      // Buscamos huecos libres en p1 o p2 (preferencia p1 para estética, salvo que sea bottom bracket)
+      // Estrategia simplificada: llenar huecos p1 disponibles, luego p2
+      const availableSlotsP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+      const availableSlotsP2 = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+
+      otherWinners.forEach(w => {
+          if (availableSlotsP1.length > 0) matches[availableSlotsP1.pop()!].p1 = w;
+          else if (availableSlotsP2.length > 0) matches[availableSlotsP2.pop()!].p2 = w;
+      });
+
+      // --- POSICIONAMIENTO DE RUNNERS (SEGUNDOS) ---
+      
+      const topHalfMatches = matches.slice(0, halfMatches);
+      const bottomHalfMatches = matches.slice(halfMatches);
+      
+      // Función auxiliar para ver qué zonas ya están en una mitad
+      const getZonesInHalf = (matchList: any[]) => {
+          const zones = new Set();
+          matchList.forEach(m => {
+              if (m.p1 && m.p1.groupIndex !== undefined) zones.add(m.p1.groupIndex);
+              if (m.p2 && m.p2.groupIndex !== undefined) zones.add(m.p2.groupIndex);
+          });
+          return zones;
+      };
+
+      const zonesInTop = getZonesInHalf(topHalfMatches);
+      const zonesInBottom = getZonesInHalf(bottomHalfMatches);
+      
+      // Separar runners: Los que deben ir abajo (porque su ganador está arriba) y viceversa
+      const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
+      const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
+      const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
+      
+      const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
+      let poolTop = shuffle([...mustGoTop]); 
+      let poolBottom = shuffle([...mustGoBottom]); 
+      let poolFree = shuffle([...freeAgents]);
+
+      // Repartir agentes libres para balancear numéricamente las mitades
+      // Contamos cuántos lugares vacíos (null) hay en cada mitad
+      const countEmpty = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1 === null ? 1 : 0) + (m.p2 === null ? 1 : 0), 0);
+      let emptyTop = countEmpty(topHalfMatches);
+      let emptyBottom = countEmpty(bottomHalfMatches);
+
+      // Pre-asignamos mentalmente los pools obligatorios
+      emptyTop -= poolTop.length;
+      emptyBottom -= poolBottom.length;
+
+      while (poolFree.length > 0) {
+         if (emptyTop > emptyBottom) {
+             poolTop.push(poolFree.pop());
+             emptyTop--;
+         } else {
+             poolBottom.push(poolFree.pop());
+             emptyBottom--;
+         }
+      }
+      
+      poolTop = shuffle(poolTop); 
+      poolBottom = shuffle(poolBottom);
+
+      // --- LLENADO FINAL ---
+      const fillMatches = (matchList: any[], pool: any[]) => {
+          matchList.forEach(m => {
+              // Prioridad: llenar huecos contra un Seed existente
+              if (m.p1 && !m.p2) {
+                  if (playersWithBye.has(m.p1.name)) {
+                      m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+                  } else if (pool.length > 0) {
+                      m.p2 = pool.pop();
+                  }
+              }
+              else if (!m.p1 && m.p2) {
+                  if (playersWithBye.has(m.p2.name)) {
+                      m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+                  } else if (pool.length > 0) {
+                      m.p1 = pool.pop();
+                  }
+              }
+          });
+          // Segunda pasada: llenar huecos donde no hay nadie (si quedan pools)
+          matchList.forEach(m => {
+              if (!m.p1 && !m.p2 && pool.length > 0) {
+                  m.p1 = pool.pop();
+                  if (pool.length > 0) m.p2 = pool.pop();
+                  else m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+              }
+          });
+      };
+
+      fillMatches(topHalfMatches, poolTop);
+      fillMatches(bottomHalfMatches, poolBottom);
+
+      // Limpieza final de slots que sigan vacíos
+      matches.forEach(m => {
+          if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+          if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+          
+          // REGLA ESTÉTICA FINAL:
+          // Si p1 es BYE y p2 es Jugador, invertimos para que el jugador quede arriba.
+          // EXCEPCIÓN IMPORTANTE: Si p2 es el SEED 2 (o Seed 3/4 en posición baja), NO invertimos,
+          // porque queremos que el Seed 2 esté en la línea inferior del cuadro.
+          const isFixedSeedP2 = (m.p2.rank === 1 || m.p2.rank === 2 || m.p2.rank === 3 || m.p2.rank === 4);
+          
+          if (!isFixedSeedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
+              const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
+          }
+      });
+
+      return { matches, bracketSize };
   }
 
   // --- ACCIONES PÚBLICAS ---
