@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
-import { tournaments } from "@/lib/constants"; // Importamos configuración desde constantes
-import { useTournamentData } from "@/hooks/useTournamentData"; // Importamos la lógica (el cerebro)
+import { tournaments } from "@/lib/constants"; 
+import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 
 // Componentes extraídos
@@ -15,7 +15,8 @@ import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
 export default function Home() {
-  // DESESTRUCTURACIÓN DEL HOOK (Aquí traemos todas las variables y funciones necesarias)
+  // --- AQUÍ ESTÁ LA CLAVE DEL ERROR ---
+  // Tienes que asegurarte de que 'fetchRankingData' esté en esta lista:
   const {
     navState, setNavState,
     rankingData, headers,
@@ -24,9 +25,8 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    
-    // --- FUNCIONES (Asegurate que fetchRankingData esté aquí) ---
-    fetchRankingData, 
+    // Funciones
+    fetchRankingData, // <--- ¡ESTA ES LA QUE FALTABA!
     fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
@@ -36,7 +36,6 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
-  // Detectamos el torneo activo ya sea que estemos en grupos o en cuadro
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
 
@@ -71,7 +70,6 @@ export default function Home() {
                   const catShort = cat.replace("Categoría ", "");
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { 
-                      // AQUÍ SE USA LA FUNCIÓN QUE DABA ERROR
                       fetchRankingData(catShort, navState.year); 
                       setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); 
                   }
@@ -124,11 +122,8 @@ export default function Home() {
           )}
         </div>
 
-        {/* VISTAS ESPECÍFICAS */}
-        
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
-             {/* LÓGICA VISUAL: Transformamos datos para que el BracketView muestre "ZN" */}
              {(() => {
                 const previewR1: string[] = [];
                 const previewS1: string[] = [];
@@ -143,7 +138,6 @@ export default function Home() {
                     previewS1.push("");
                     previewS1.push("");
 
-                    // Formato ZN para la vista previa
                     if (match.p1 && match.p1.rank) {
                         const label = match.p1.groupIndex !== undefined 
                             ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` 
