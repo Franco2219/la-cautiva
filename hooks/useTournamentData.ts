@@ -20,198 +20,302 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // --- LÓGICA DEL CUADRO DE ELIMINACIÓN (Rules 1-5 Applied) ---
+  // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   
   const generatePlayoffBracket = (qualifiers: any[]) => {
       const totalPlayers = qualifiers.length;
-      
-      let bracketSize = 4;
-      if (totalPlayers > 32) bracketSize = 64;
-      else if (totalPlayers > 16) bracketSize = 32; 
-      else if (totalPlayers > 8) bracketSize = 16; 
-      else if (totalPlayers > 4) bracketSize = 8; 
 
-      const numMatches = bracketSize / 2;
-      const halfMatches = numMatches / 2;
-      const byeCount = bracketSize - totalPlayers;
-
-      // Separar Winners (Rank 1) y Runners (Rank 2)
-      const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-      const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
-
-      // --- REGLA 3: Prioridad de Byes (Zonas 1-8) ---
-      const priorityByePlayers = new Set();
-      const maxPriority = Math.min(winners.length, 8); // Solo hasta zona 8
-      const assignedByesCount = Math.min(byeCount, maxPriority);
-      
-      for(let i=0; i < assignedByesCount; i++) {
-          if(winners[i]) priorityByePlayers.add(winners[i].name);
-      }
-      
-      // Byes restantes (Bolsa general)
-      let floatingByes = byeCount - assignedByesCount;
-
-      let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
-      
-      // Helper para asignar Seed + Su Bye (si tiene)
-      const placeSeed = (seed: any, index: number, slot: 'p1' | 'p2') => {
-          if(!seed) return;
-          if(slot === 'p1') matches[index].p1 = seed;
-          else matches[index].p2 = seed;
-
-          if(priorityByePlayers.has(seed.name)) {
-              if(slot === 'p1') matches[index].p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-              else matches[index].p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+      // ============================================================
+      // BLOQUE 1: TORNEOS CHICOS (<= 32 Jugadores)
+      // ============================================================
+      if (totalPlayers <= 32) {
+          let bracketSize = 8;
+          if (totalPlayers > 16) bracketSize = 32; 
+          else if (totalPlayers > 8) bracketSize = 16; 
+          else if (totalPlayers > 4) bracketSize = 8; 
+          else bracketSize = 4; 
+  
+          const byeCount = bracketSize - totalPlayers;
+          const numMatches = bracketSize / 2;
+          const halfMatches = numMatches / 2;
+  
+          const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+          const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+  
+          // CORRECCIÓN BYES: Prioridad estricta a los ganadores de zona (1 al 8)
+          const playersWithBye = new Set();
+          const priorityByes = Math.min(winners.length, byeCount);
+          for(let i=0; i < priorityByes; i++) {
+              if(winners[i]) playersWithBye.add(winners[i].name);
           }
-      };
-
-      // --- REGLA 1: Posiciones Fijas Z1-Z8 ---
-      
-      const wZ1 = winners.find(w => w.groupIndex === 0);
-      const wZ2 = winners.find(w => w.groupIndex === 1);
-      const wZ3 = winners.find(w => w.groupIndex === 2);
-      const wZ4 = winners.find(w => w.groupIndex === 3);
-      
-      const idxTop = 0; 
-      const idxBottom = numMatches - 1;
-      const idxMidTop = halfMatches - 1; 
-      const idxMidBottom = halfMatches; 
-
-      // 1. Seed 1 (Z1) -> Arriba (p1)
-      if (wZ1) placeSeed(wZ1, idxTop, 'p1');
-      
-      // 2. Seed 2 (Z2) -> Abajo (p2)
-      if (wZ2) placeSeed(wZ2, idxBottom, 'p2'); 
-      
-      // 3. Seeds 3 y 4 -> Sorteados en los extremos del medio
-      const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
-      if (mids.length > 0) placeSeed(mids[0], idxMidTop, 'p2'); // Cierra mitad superior
-      if (mids.length > 1) placeSeed(mids[1], idxMidBottom, 'p1'); // Abre mitad inferior
-      
-      // 4. Seeds 5, 6, 7, 8 -> 2 Arriba, 2 Abajo. NO cruzarse con 1-4.
-      // Indices ocupados por 1-4: idxTop, idxBottom, idxMidTop, idxMidBottom.
-      const occupiedIndices = new Set([idxTop, idxBottom, idxMidTop, idxMidBottom]);
-      
-      const z5to8 = winners.filter(w => w.groupIndex >= 4 && w.groupIndex <= 7).sort(() => Math.random() - 0.5);
-      
-      // Dividir 2 para arriba y 2 para abajo
-      const seedsTopHalf = z5to8.slice(0, Math.ceil(z5to8.length / 2));
-      const seedsBotHalf = z5to8.slice(Math.ceil(z5to8.length / 2));
-
-      const getSafeSlots = (start: number, end: number) => {
-          const slots = [];
-          for(let i=start; i<end; i++) {
-              if(!occupiedIndices.has(i)) slots.push(i);
-          }
-          return slots.sort(() => Math.random() - 0.5);
-      };
-
-      const validSlotsTop = getSafeSlots(0, halfMatches);
-      const validSlotsBot = getSafeSlots(halfMatches, numMatches);
-
-      seedsTopHalf.forEach(w => {
-          if(validSlotsTop.length > 0) placeSeed(w, validSlotsTop.pop()!, 'p1'); // Preferencia P1
-      });
-      seedsBotHalf.forEach(w => {
-          if(validSlotsBot.length > 0) placeSeed(w, validSlotsBot.pop()!, 'p1');
-      });
-
-      // 5. Resto de Ganadores (Z9+)
-      const otherWinners = winners.filter(w => w.groupIndex > 7).sort(() => Math.random() - 0.5);
-      
-      // Llenar huecos libres en cualquier lado
-      const allEmptySlots = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
-      // Si no hay huecos vacíos, buscamos huecos donde falte P1 (raro)
-      const partialSlotsP1 = matches.map((m, i) => (!m.p1 && m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
-
-      otherWinners.forEach(w => {
-          if(allEmptySlots.length > 0) {
-              const idx = allEmptySlots.pop()!;
-              placeSeed(w, idx, 'p1');
-          } else if(partialSlotsP1.length > 0) {
-              const idx = partialSlotsP1.pop()!;
-              placeSeed(w, idx, 'p1');
-          }
-      });
-
-      // --- REGLA 4: Balanceo de Runners ---
-      // Contar carga actual de jugadores REALES (no Byes)
-      const countReal = (matchList: any[]) => matchList.reduce((acc, m) => {
-          const p1Real = m.p1 && m.p1.name !== "BYE" ? 1 : 0;
-          const p2Real = m.p2 && m.p2.name !== "BYE" ? 1 : 0;
-          return acc + p1Real + p2Real;
-      }, 0);
-
-      let realTop = countReal(matches.slice(0, halfMatches));
-      let realBot = countReal(matches.slice(halfMatches));
-
-      // Dividir Runners para balancear
-      const poolRunners = [...runners]; // Copia para sacar elementos
-      const runnersTopDest: any[] = [];
-      const runnersBotDest: any[] = [];
-
-      while(poolRunners.length > 0) {
-          const r = poolRunners.pop();
-          if(realTop <= realBot) {
-              runnersTopDest.push(r);
-              realTop++;
-          } else {
-              runnersBotDest.push(r);
-              realBot++;
-          }
-      }
-
-      // --- REGLA 2 y 5: Llenado Inteligente (No 1vs1, No Bye-vs-Bye) ---
-      
-      const fillZone = (startIdx: number, endIdx: number, pool: any[]) => {
-          // Fase A: Llenar llaves VACÍAS (Evita Bye vs Bye)
-          for(let i=startIdx; i<endIdx; i++) {
-              if(!matches[i].p1 && !matches[i].p2 && pool.length > 0) {
-                  matches[i].p1 = pool.pop();
+          if (byeCount > priorityByes) {
+              for(let i=0; i < (byeCount - priorityByes); i++) {
+                  if(runners[i]) playersWithBye.add(runners[i].name);
               }
           }
-          // Fase B: Enfrentar a Seeds (Evita 1vs1 porque 1 ya está puesto, ponemos 2)
-          for(let i=startIdx; i<endIdx; i++) {
-              if(pool.length === 0) break;
+
+          let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+          
+          const wZ1 = winners.find(w => w.groupIndex === 0);
+          const wZ2 = winners.find(w => w.groupIndex === 1);
+          const wZ3 = winners.find(w => w.groupIndex === 2);
+          const wZ4 = winners.find(w => w.groupIndex === 3);
+          const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+  
+          const idxTop = 0; 
+          const idxBottom = numMatches - 1;
+          const idxMidTop = halfMatches - 1; 
+          const idxMidBottom = halfMatches; 
+  
+          // Seed 1 va Arriba
+          if (wZ1) matches[idxTop].p1 = wZ1;
+          
+          // Seed 2 va ABAJO
+          if (wZ2) matches[idxBottom].p2 = wZ2;
+          
+          const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+          if (mids.length > 0) matches[idxMidTop].p2 = mids[0];
+          if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
+          
+          // Llenar el resto de ganadores (aleatorio para evitar agrupamiento)
+          const availableSlotsP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+          const availableSlotsP2 = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+
+          otherWinners.forEach(w => {
+              if (availableSlotsP1.length > 0) matches[availableSlotsP1.pop()!].p1 = w;
+              else if (availableSlotsP2.length > 0) matches[availableSlotsP2.pop()!].p2 = w;
+          });
+  
+          const topHalfMatches = matches.slice(0, halfMatches);
+          const bottomHalfMatches = matches.slice(halfMatches);
+          
+          const getZones = (matchList: any[]) => {
+              const zones = new Set();
+              matchList.forEach(m => {
+                  if (m.p1 && m.p1.groupIndex !== undefined) zones.add(m.p1.groupIndex);
+                  if (m.p2 && m.p2.groupIndex !== undefined) zones.add(m.p2.groupIndex);
+              });
+              return zones;
+          };
+
+          const zonesInTop = getZones(topHalfMatches);
+          const zonesInBottom = getZones(bottomHalfMatches);
+          
+          const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
+          const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
+          const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
+          
+          const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
+          let poolTop = shuffle([...mustGoTop]); 
+          let poolBottom = shuffle([...mustGoBottom]); 
+          let poolFree = shuffle([...freeAgents]);
+  
+          // Balanceo de agentes libres
+          const slotsInTop = halfMatches * 2;
+          const filledInTop = topHalfMatches.reduce((acc, m) => acc + (m.p1 ? 1 : 0) + (m.p2 ? 1 : 0), 0);
+          const spaceTop = slotsInTop - filledInTop;
+
+          const slotsInBottom = (numMatches - halfMatches) * 2;
+          const filledInBottom = bottomHalfMatches.reduce((acc, m) => acc + (m.p1 ? 1 : 0) + (m.p2 ? 1 : 0), 0);
+          const spaceBottom = slotsInBottom - filledInBottom;
+
+          while (poolFree.length > 0) {
+             const pendingTop = poolTop.length;
+             const pendingBottom = poolBottom.length;
+             if ((spaceTop - pendingTop) > (spaceBottom - pendingBottom)) {
+                 poolTop.push(poolFree.pop());
+             } else {
+                 poolBottom.push(poolFree.pop());
+             }
+          }
+          poolTop = shuffle(poolTop); 
+          poolBottom = shuffle(poolBottom);
+  
+          // Lógica de llenado para evitar Bye vs Bye
+          const fillMatchesStrict = (matchList: any[], pool: any[]) => {
+              // CORRECCIÓN VISUAL: Barajar la lista de partidos para no llenar siempre los de arriba primero
+              const shuffledMatches = [...matchList].sort(() => Math.random() - 0.5);
+
+              // 1. Llenar llaves vacías primero
+              shuffledMatches.forEach(m => {
+                  if (!m.p1 && !m.p2 && pool.length > 0) m.p1 = pool.pop();
+              });
+              // 2. Llenar contra Seeds que NO tengan Bye
+              shuffledMatches.forEach(m => {
+                  if (m.p1 && !m.p2 && !playersWithBye.has(m.p1.name) && pool.length > 0) m.p2 = pool.pop();
+                  else if (!m.p1 && m.p2 && !playersWithBye.has(m.p2.name) && pool.length > 0) m.p1 = pool.pop();
+              });
+              // 3. Relleno final
+              shuffledMatches.forEach(m => {
+                  if (!m.p1 && pool.length > 0) m.p1 = pool.pop();
+                  if (!m.p2 && pool.length > 0) m.p2 = pool.pop();
+              });
+          };
+
+          fillMatchesStrict(topHalfMatches, poolTop);
+          fillMatchesStrict(bottomHalfMatches, poolBottom);
+
+          matches.forEach(m => {
+              if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+              if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
+              // Estética: Si P1 es Bye y P2 Jugador, invertir (Salvo Seed 2 fijo en P2)
+              const isFixedP2 = (m.p2.rank === 1 || m.p2.rank === 2);
+              if (!isFixedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
+                  const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
+              }
+          });
+
+          return { matches, bracketSize };
+      } 
+      
+      // ============================================================
+      // BLOQUE 2: TORNEOS GRANDES (> 32 Jugadores)
+      // ============================================================
+      else {
+          const bracketSize = 64;
+          const numMatches = 32; 
+          const byeCount = bracketSize - totalPlayers;
+  
+          const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
+          const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
+  
+          // Prioridad estricta para Winners Z1-Z8
+          const maxPriorityByes = 8;
+          const assignedByesCount = Math.min(byeCount, maxPriorityByes);
+          const priorityByeZones = new Set();
+          for(let i=0; i<assignedByesCount; i++) {
+              if(winners[i]) priorityByeZones.add(winners[i].groupIndex);
+          }
+          const playersWithBye = new Set();
+          for(let i=0; i<assignedByesCount; i++) { if(winners[i]) playersWithBye.add(winners[i].name); }
+          
+          let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+  
+          const placeP1 = (winner: any, index: number, slot: 'p1' | 'p2') => {
+              if (!winner) return;
+              if (slot === 'p1') matches[index].p1 = winner;
+              else matches[index].p2 = winner;
+          };
+  
+          // Seed 1 (Z1): Arriba
+          if (winners[0]) placeP1(winners[0], 0, 'p1'); 
+          // Seed 2 (Z2): Abajo
+          if (winners[1]) placeP1(winners[1], numMatches - 1, 'p2'); 
+          
+          const mids = [winners[2], winners[3]].filter(Boolean); 
+          if (mids.length > 0) {
+              if (Math.random() > 0.5) mids.reverse();
+              if (mids[0]) placeP1(mids[0], (numMatches/2) - 1, 'p2');
+              if (mids[1]) placeP1(mids[1], (numMatches/2), 'p1');
+          }
+  
+          const safeIndices = [7, 8, 23, 24].sort(() => Math.random() - 0.5);
+          const z5to8 = winners.slice(4, 8); 
+          z5to8.forEach(w => {
+              if (safeIndices.length > 0) placeP1(w, safeIndices.pop()!, 'p1');
+              else { 
+                  const emptyIdx = matches.findIndex(m => m.p1 === null && m.p2 === null);
+                  if (emptyIdx !== -1) placeP1(w, emptyIdx, 'p1');
+              }
+          });
+  
+          const remainingWinners = winners.slice(8);
+          // Aleatorizar orden de llenado para ganadores restantes
+          const emptyIndicesP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+          
+          remainingWinners.forEach(w => {
+              if (emptyIndicesP1.length > 0) placeP1(w, emptyIndicesP1.pop()!, 'p1');
+          });
+  
+          const runnersTop: any[] = [];
+          const runnersBot: any[] = [];
+          const runnersFree: any[] = []; 
+          
+          const findWinnerHalf = (groupIndex: number) => {
+              const idx = matches.findIndex(m => (m.p1 && m.p1.groupIndex === groupIndex) || (m.p2 && m.p2.groupIndex === groupIndex));
+              if (idx === -1) return null;
+              return idx < numMatches / 2 ? 'top' : 'bottom';
+          };
+
+          runners.forEach(r => {
+              const winnerHalf = findWinnerHalf(r.groupIndex);
+              if (winnerHalf === 'top') runnersBot.push(r);
+              else if (winnerHalf === 'bottom') runnersTop.push(r);
+              else runnersFree.push(r);
+          });
+  
+          runnersTop.sort(() => Math.random() - 0.5);
+          runnersBot.sort(() => Math.random() - 0.5);
+          runnersFree.sort(() => Math.random() - 0.5);
+          
+          // Llenado inteligente Y ORGÁNICO (Indices aleatorios)
+          const fillZone = (startIdx: number, endIdx: number, pool: any[]) => {
+              // Creamos un array de indices y lo mezclamos para no llenar en orden secuencial
+              let indices = [];
+              for(let i=startIdx; i<endIdx; i++) indices.push(i);
+              indices.sort(() => Math.random() - 0.5);
+
+              // Fase A: Llenar llaves VACÍAS (Evita Bye vs Bye)
+              for(let i of indices) {
+                  if(!matches[i].p1 && !matches[i].p2 && pool.length > 0) {
+                      matches[i].p1 = pool.pop();
+                  }
+              }
+              // Fase B: Enfrentar a Seeds (Evita 1vs1)
+              for(let i of indices) {
+                  if(pool.length === 0) break;
+                  
+                  if(matches[i].p1 && !matches[i].p2 && !priorityByePlayers.has(matches[i].p1.name)) {
+                      matches[i].p2 = pool.pop();
+                  }
+                  else if(!matches[i].p1 && matches[i].p2 && !priorityByePlayers.has(matches[i].p2.name)) {
+                      matches[i].p1 = pool.pop();
+                  }
+              }
+              // Fase C: Relleno final
+              for(let i of indices) {
+                  if(pool.length === 0) break;
+                  if(!matches[i].p1) matches[i].p1 = pool.pop();
+                  else if(!matches[i].p2) matches[i].p2 = pool.pop();
+              }
+          };
+
+          // Repartir Free Agents
+          const topMatches = matches.slice(0, numMatches/2);
+          const botMatches = matches.slice(numMatches/2);
+          const slotsTop = topMatches.filter(m => !m.p1 || !m.p2).length; 
+          const slotsBot = botMatches.filter(m => !m.p1 || !m.p2).length;
+          
+          while (runnersFree.length > 0) {
+              if (slotsTop > slotsBot) runnersTop.push(runnersFree.pop());
+              else runnersBot.push(runnersFree.pop());
+          }
+
+          fillZone(0, numMatches/2, runnersTop);
+          fillZone(numMatches/2, numMatches, runnersBot);
+
+          const allRemaining = [...runnersTop, ...runnersBot, ...runnersFree];
+          // Si sobró gente (por bugs de cálculo), forzar entrada aleatoria
+          const allIndices = Array.from({length: numMatches}, (_, i) => i).sort(() => Math.random() - 0.5);
+          allIndices.forEach(i => {
+              if (!matches[i].p1 && allRemaining.length > 0) matches[i].p1 = allRemaining.pop();
+              if (!matches[i].p2 && allRemaining.length > 0) matches[i].p2 = allRemaining.pop();
+          });
+
+          // Rellenar con BYEs reales
+          matches.forEach(m => {
+              if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+              if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
               
-              // Si hay P1 (Seed) y le falta rival, y NO tiene Bye asignado
-              if(matches[i].p1 && !matches[i].p2 && !priorityByePlayers.has(matches[i].p1.name)) {
-                  matches[i].p2 = pool.pop();
+              // Estética: Si P1 es BYE y P2 Jugador, invertir.
+              const isFixedP2 = (m.p2.rank === 1 || m.p2.rank === 2);
+              if (!isFixedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
+                  const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
               }
-              // Si hay P2 (Seed) y le falta P1, y NO tiene Bye asignado
-              else if(!matches[i].p1 && matches[i].p2 && !priorityByePlayers.has(matches[i].p2.name)) {
-                  matches[i].p1 = pool.pop();
-              }
-          }
-          // Fase C: Relleno final (Si sobraron runners o si falló algo)
-          for(let i=startIdx; i<endIdx; i++) {
-              if(pool.length === 0) break;
-              if(!matches[i].p1) matches[i].p1 = pool.pop();
-              else if(!matches[i].p2) matches[i].p2 = pool.pop();
-          }
-      };
-
-      fillZone(0, halfMatches, runnersTopDest);
-      fillZone(halfMatches, numMatches, runnersBotDest);
-
-      // --- LIMPIEZA FINAL Y BYES FLOTANTES ---
-      // Si quedan huecos vacíos y tenemos floatingByes, los usamos.
-      // Si no hay floatingByes, es un BYE forzoso por falta de jugadores.
-      
-      matches.forEach(m => {
-          if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
-          if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-          
-          // Estética: Si P1 es BYE y P2 Jugador, invertir.
-          // EXCEPCIÓN: Si P2 es un Seed Fijo (1-4), NO lo movemos.
-          const isFixedSeedP2 = (m.p2.rank === 1 || m.p2.rank === 2 || m.p2.rank === 3 || m.p2.rank === 4);
-          
-          if (!isFixedSeedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
-              const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
-          }
-      });
-
-      return { matches, bracketSize };
+          });
+  
+          return { matches, bracketSize };
+      }
   }
 
   // --- ACCIONES PÚBLICAS ---
@@ -572,389 +676,6 @@ export const useTournamentData = () => {
         setGeneratedBracket(matches);
         setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
-  }
-
-  const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
-    setIsLoading(true);
-    setIsSorteoConfirmado(false);
-    setIsFixedData(false);
-    try {
-      const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-      const rankRes = await fetch(rankUrl);
-      const rankCsv = await rankRes.text();
-      const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({
-        name: row[1] || "",
-        total: row[11] ? parseInt(row[11]) : 0
-      })).filter(p => p.name !== "");
-
-      const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-      const inscRes = await fetch(inscUrl);
-      const inscCsv = await inscRes.text();
-      const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => 
-        cols[0] === tournamentShort && cols[1] === categoryShort
-      ).map(cols => cols[2]);
-
-      if (filteredInscriptos.length === 0) {
-        alert(`No hay inscriptos para ${tournamentShort} (${categoryShort}) en la pestaña Inscriptos.`);
-        setIsLoading(false);
-        return;
-      }
-
-      const entryList = filteredInscriptos.map(n => {
-        const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
-        return { name: n, points: p ? p.total : 0 };
-      }).sort((a, b) => b.points - a.points);
-
-      const totalPlayers = entryList.length;
-      if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
-
-      let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
-
-      if (tournamentShort === "Masters") {
-          groupsOf4 = Math.floor(totalPlayers / 4);
-          const remainder = totalPlayers % 4;
-          for(let i=0; i<groupsOf4; i++) capacities.push(4);
-          if (remainder === 3) capacities.push(3);
-          else if (remainder === 2) capacities.push(2);
-          else if (remainder === 1) {
-              if (capacities.length > 0) capacities[capacities.length - 1] += 1; 
-              else capacities.push(1);
-          }
-      } else {
-          const remainder = totalPlayers % 3;
-          if (remainder === 0) { groupsOf3 = totalPlayers / 3; } 
-          else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } 
-          else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; }
-          for(let i=0; i<groupsOf3; i++) capacities.push(3);
-          for(let i=0; i<groupsOf2; i++) capacities.push(2);
-      }
-      
-      capacities = capacities.sort((a, b) => b - a);
-      
-      const numGroups = capacities.length;
-      let groups = capacities.map((cap, i) => ({
-        groupName: `Zona ${i + 1}`,
-        capacity: cap,
-        players: [],
-        results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]],
-        positions: ["-", "-", "-", "-"],
-        points: ["", "", "", ""],
-        diff: ["", "", "", ""]
-      }));
-
-      for (let i = 0; i < numGroups; i++) { if (entryList[i]) groups[i].players.push(entryList[i].name); }
-      const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
-      let pIdx = 0;
-      for (let g = 0; g < numGroups; g++) {
-        while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) {
-          groups[g].players.push(restOfPlayers[pIdx].name);
-          pIdx++;
-        }
-      }
-      setGroupData(groups);
-      setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
-    } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
-  }
-
-  const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
-    setIsLoading(true);
-    setGroupData([]);
-    setIsSorteoConfirmado(false);
-    setIsFixedData(false);
-    try {
-      const sheetName = `Grupos ${tournamentShort} ${categoryShort}`;
-      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      const res = await fetch(url);
-      const csvText = await res.text();
-      let foundGroups = false;
-
-      if (res.ok && !csvText.includes("<!DOCTYPE html>") && (csvText.includes("Zona") || csvText.includes("Grupo"))) {
-        const rows = parseCSV(csvText);
-        const parsedGroups = [];
-        for (let i = 0; i < rows.length; i++) {
-          if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
-            
-            const potentialP4 = rows[i+4] && rows[i+4][0];
-            const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*"));
-            const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null;
-
-            const playersRaw = [rows[i+1], rows[i+2], rows[i+3]];
-            if (p4) playersRaw.push(p4);
-
-            const validPlayersIndices: number[] = [];
-            const players: string[] = [];
-            const positions: string[] = [];
-            const points: string[] = [];
-            const diff: string[] = [];
-            const gamesDiff: string[] = []; 
-
-            playersRaw.forEach((row, index) => {
-                const pName = row && row[0] ? row[0] : "";
-                if (pName && pName !== "-" && pName !== "" && 
-                    !pName.toLowerCase().includes("zona") && 
-                    !pName.toLowerCase().includes("grupo") &&
-                    !pName.includes("*")) {
-                    
-                    players.push(pName);
-                    let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); 
-                    let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts);
-                    let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif);
-                    let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames);
-                    validPlayersIndices.push(index); 
-                }
-            });
-
-            const results: string[][] = [];
-            for (let x = 0; x < validPlayersIndices.length; x++) {
-                const rowResults: string[] = [];
-                const rowIndex = validPlayersIndices[x]; 
-                for (let y = 0; y < validPlayersIndices.length; y++) {
-                    const colIndex = validPlayersIndices[y];
-                    const res = rows[i + 1 + rowIndex][1 + colIndex]; 
-                    rowResults.push(res);
-                }
-                results.push(rowResults);
-            }
-            parsedGroups.push({
-              groupName: rows[i][0],
-              players: players,
-              results: results,
-              positions: positions,
-              points: points,
-              diff: diff,
-              gamesDiff: gamesDiff
-            });
-          }
-        }
-        
-        if (parsedGroups.length > 0) {
-          setGroupData(parsedGroups);
-          setIsSorteoConfirmado(true);
-          setIsFixedData(true);
-          foundGroups = true;
-          setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: true });
-        }
-      } 
-      if (!foundGroups) {
-        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
-      }
-    } catch (e) {
-        setNavState({ ...navState, level: "tournament-phases", currentCat: categoryShort, currentTour: tournamentShort, hasGroups: false });
-    } finally { setIsLoading(false); }
-  }
-
-  const confirmarYEnviar = () => {
-    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
-    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    setIsSorteoConfirmado(true);
-  };
-
-  const fetchQualifiersAndDraw = async (category: string, tournamentShort: string) => {
-      setIsLoading(true);
-      setGeneratedBracket([]);
-      setIsSorteoConfirmado(false);
-      const sheetName = `Grupos ${tournamentShort} ${category}`;
-      const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-      try {
-          const response = await fetch(url);
-          const csvText = await response.text();
-          const rows = parseCSV(csvText);
-          let qualifiers = [];
-          for(let i = 0; i < 50; i++) { 
-              if (rows[i]) {
-                  const winnerName = rows[i][12]; 
-                  const runnerName = rows[i][13]; 
-                  if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) {
-                      qualifiers.push({ name: winnerName, rank: 1, groupIndex: i });
-                  }
-                  if (runnerName && runnerName !== "-" && runnerName !== "" && !runnerName.toLowerCase().includes("2do")) {
-                      qualifiers.push({ name: runnerName, rank: 2, groupIndex: i });
-                  }
-              }
-          }
-          if (qualifiers.length >= 3) { 
-             const result = generatePlayoffBracket(qualifiers);
-             if (result) {
-                 setGeneratedBracket(result.matches);
-                 setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize });
-             }
-          } else { alert("No se encontraron clasificados para sortear"); }
-      } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
-  }
-
-  const confirmarSorteoCuadro = () => {
-    if (generatedBracket.length === 0) return;
-    let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
-    generatedBracket.forEach((match) => {
-        const p1Name = match.p1 ? match.p1.name : "TBD";
-        const p2Name = match.p2 ? match.p2.name : "TBD"; 
-        mensaje += `${p1Name}\n${p2Name}\n`;
-    });
-    window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    setIsSorteoConfirmado(true);
-  }
-
-  const fetchRankingData = async (categoryShort: string, year: string) => {
-    setIsLoading(true); setRankingData([]); setHeaders([]);
-    const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
-    try {
-      const response = await fetch(url);
-      const csvText = await response.text();
-      const rows = parseCSV(csvText);
-      if (rows.length > 0) {
-        setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
-        setRankingData(rows.slice(1).map(row => ({
-          name: row[1],
-          points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
-          total: year === "2025" ? (parseInt(row[9]) || 0) : (parseInt(row[11]) || 0)
-        })).filter(p => p.name).sort((a, b) => b.total - a.total));
-      }
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
-  }
-
-  const fetchBracketData = async (category: string, tournamentShort: string) => {
-    setIsLoading(true); 
-    setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
-    const checkCanGenerate = async () => {
-        const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
-        if (isDirect) {
-            const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-            try {
-                const res = await fetch(urlInscriptos);
-                const txt = await res.text();
-                const rows = parseCSV(txt);
-                const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length;
-                setBracketData({ hasData: false, canGenerate: count >= 4 });
-            } catch (e) { setBracketData({ hasData: false, canGenerate: false }); }
-        } else {
-            const sheetNameGroups = `Grupos ${tournamentShort} ${category}`;
-            const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
-            try {
-                const resGroups = await fetch(urlGroups);
-                const txtGroups = await resGroups.text();
-                const rowsGroups = parseCSV(txtGroups);
-                let foundQualifiers = false;
-                for(let i=0; i<Math.min(rowsGroups.length, 50); i++) {
-                    const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-";
-                    const hasQualifiersList = rowsGroups[i] && rowsGroups[i][12] && rowsGroups[i][12] !== "" && rowsGroups[i][12] !== "-";
-                    if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; }
-                }
-                setBracketData({ hasData: false, canGenerate: foundQualifiers });
-            } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
-        }
-    };
-
-    const processByes = (data: any) => {
-        const { r1, r2, r3, r4, bracketSize } = data;
-        const newR2 = [...r2]; const newR3 = [...r3];
-        if (bracketSize === 32) {
-            for (let i = 0; i < r1.length; i += 2) {
-                const p1 = r1[i]; const p2 = r1[i+1];
-                const targetIdx = Math.floor(i / 2);
-                if (!newR2[targetIdx] || newR2[targetIdx] === "") {
-                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1;
-                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2;
-                }
-            }
-            data.r2 = newR2;
-        }
-        const roundPrev = bracketSize === 32 ? newR2 : r1;
-        const roundNext = bracketSize === 32 ? newR3 : r2; 
-        for (let i = 0; i < roundPrev.length; i += 2) {
-             const p1 = roundPrev[i]; const p2 = roundPrev[i+1];
-             const targetIdx = Math.floor(i / 2);
-             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") {
-                 if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1;
-                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2;
-             }
-        }
-        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; }
-        return data;
-    }
-
-    try {
-      const response = await fetch(urlBracket);
-      const csvText = await response.text();
-      const rows = parseCSV(csvText);
-      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : "";
-      const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"];
-      const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k));
-      const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
-
-      if (hasContent) {
-          const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length;
-          let bracketSize = 16; 
-          if (playersInCol1 > 16) bracketSize = 32;
-          else if (playersInCol1 <= 8) bracketSize = 8; 
-
-          let seeds = {};
-          try {
-             const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-             const rankRes = await fetch(rankUrl);
-             const rankTxt = await rankRes.text();
-             const playersRanking = parseCSV(rankTxt).slice(1).map(row => ({
-               name: row[1] || "",
-               total: row[11] ? parseInt(row[11]) : 0
-             })).filter(p => p.name !== "");
-             const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-             const inscRes = await fetch(inscUrl);
-             const inscTxt = await inscRes.text();
-             const filteredInscriptos = parseCSV(inscTxt).slice(1).filter(cols => 
-               cols[0] === tournamentShort && cols[1] === category
-             ).map(cols => cols[2]);
-             const entryList = filteredInscriptos.map(n => {
-                 const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase()));
-                 return { name: n, points: p ? p.total : 0 };
-             }).sort((a, b) => b.points - a.points);
-             const top8 = entryList.slice(0, 8);
-             const seedMap: any = {};
-             top8.forEach((p, i) => { if (p.name) seedMap[p.name] = i + 1; });
-             seeds = seedMap;
-          } catch(e) { console.log("Error fetching seeds", e); }
-
-          let rawData: any = {};
-          let winnerIdx = -1;
-          if (bracketSize === 32) winnerIdx = 10; 
-          else if (bracketSize === 16) winnerIdx = 8; 
-          else if (bracketSize === 8) winnerIdx = 6; 
-          
-          const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : "";
-          const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
-          const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : "");
-          const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
-
-          if (bracketSize === 32) {
-            rawData = { 
-                r1: getColData(0, 32), s1: getScoreData(1, 32),
-                r2: getColData(2, 16), s2: getScoreData(3, 16),
-                r3: getColData(4, 8),  s3: getScoreData(5, 8),
-                r4: getColData(6, 4),  s4: getScoreData(7, 4),
-                r5: getColData(8, 2),  s5: getScoreData(9, 2), 
-                winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds 
-            };
-          } else if (bracketSize === 16) {
-            rawData = { 
-                r1: getColData(0, 16), s1: getScoreData(1, 16),
-                r2: getColData(2, 8),  s2: getScoreData(3, 8),
-                r3: getColData(4, 4),  s3: getScoreData(5, 4),
-                r4: getColData(6, 2),  s4: getScoreData(7, 2), 
-                winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds 
-            };
-          } else {
-            rawData = { 
-                r1: getColData(0, 8), s1: getScoreData(1, 8),
-                r2: getColData(2, 4), s2: getScoreData(3, 4),
-                r3: getColData(4, 2), s3: getScoreData(5, 2), 
-                r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds 
-            };
-          }
-          if (bracketSize !== 8) rawData = processByes(rawData); 
-          setBracketData(rawData);
-      } else { await checkCanGenerate(); }
-    } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
 
   const goBack = () => {
