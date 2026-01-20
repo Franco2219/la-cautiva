@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
-import { tournaments, TOURNAMENT_STYLES } from "@/lib/constants";
-import { useTournamentData } from "@/hooks/useTournamentData";
+import { tournaments } from "@/lib/constants"; // Importamos configuración desde constantes
+import { useTournamentData } from "@/hooks/useTournamentData"; // Importamos la lógica (el cerebro)
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 
 // Componentes extraídos
@@ -15,6 +15,7 @@ import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
 export default function Home() {
+  // DESESTRUCTURACIÓN DEL HOOK (Aquí traemos todas las variables y funciones necesarias)
   const {
     navState, setNavState,
     rankingData, headers,
@@ -23,8 +24,9 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // --- CORRECCIÓN: Agregamos fetchRankingData a la lista ---
-    fetchRankingData,
+    
+    // --- FUNCIONES (Asegurate que fetchRankingData esté aquí) ---
+    fetchRankingData, 
     fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
@@ -68,7 +70,11 @@ export default function Home() {
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
-                  else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
+                  else if (navState.type === "ranking") { 
+                      // AQUÍ SE USA LA FUNCIÓN QUE DABA ERROR
+                      fetchRankingData(catShort, navState.year); 
+                      setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); 
+                  }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
                 }} className={buttonStyle}>{cat}</Button>
               ))}
