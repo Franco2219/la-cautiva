@@ -23,7 +23,7 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // --- AQUÍ ESTABA EL ERROR: Asegúrate de que fetchRankingData esté en esta lista ---
+    // --- AQUÍ ESTABA EL ERROR: Faltaba importar esta función del hook ---
     fetchRankingData, 
     fetchBracketData,
     runDirectDraw, runATPDraw,
@@ -34,6 +34,7 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
+  // Detectamos el torneo activo ya sea que estemos en grupos o en cuadro
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
 
