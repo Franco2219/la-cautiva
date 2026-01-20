@@ -25,7 +25,6 @@ export const useTournamentData = () => {
   const generatePlayoffBracket = (qualifiers: any[]) => {
       const totalPlayers = qualifiers.length;
       
-      // Determinamos el tamaño del cuadro
       let bracketSize = 4;
       if (totalPlayers > 32) bracketSize = 64;
       else if (totalPlayers > 16) bracketSize = 32; 
@@ -36,19 +35,15 @@ export const useTournamentData = () => {
       const halfMatches = numMatches / 2;
       const byeCount = bracketSize - totalPlayers;
 
-      // Separamos ganadores (Seeds) y segundos (Runners)
-      // Asumimos que qualifier.rank 1 es Ganador de Grupo (Seed)
       const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
       const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
-      // Identificar qué jugadores/zonas tendrán BYE (prioridad a los mejores clasificados)
-      // En este caso, prioridad a los ganadores de las primeras zonas
+      // Byes con prioridad para los mejores ganadores
       const playersWithBye = new Set();
       const priorityByes = Math.min(winners.length, byeCount);
       for(let i=0; i < priorityByes; i++) {
           if(winners[i]) playersWithBye.add(winners[i].name);
       }
-      // Si sobran byes, van para los runners (raro pero posible)
       if (byeCount > priorityByes) {
           for(let i=0; i < (byeCount - priorityByes); i++) {
               if(runners[i]) playersWithBye.add(runners[i].name);
@@ -57,13 +52,11 @@ export const useTournamentData = () => {
 
       let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
       
-      // --- POSICIONAMIENTO DE SEEDS (GANADORES) ---
-      
+      // --- 1. POSICIONAMIENTO DE SEEDS (GANADORES) ---
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
       const wZ4 = winners.find(w => w.groupIndex === 3);
-      // El resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
 
       const idxTop = 0; 
@@ -71,24 +64,15 @@ export const useTournamentData = () => {
       const idxMidTop = halfMatches - 1; 
       const idxMidBottom = halfMatches; 
 
-      // 1. Seed 1 (Z1): Arriba de todo (p1)
-      if (wZ1) matches[idxTop].p1 = wZ1;
+      // Fijos
+      if (wZ1) matches[idxTop].p1 = wZ1; // Seed 1 Arriba
+      if (wZ2) matches[idxBottom].p2 = wZ2; // Seed 2 Abajo (P2 para que quede en la linea inferior)
       
-      // 2. Seed 2 (Z2): Abajo de todo (p2) - CORRECCIÓN SOLICITADA
-      if (wZ2) matches[idxBottom].p2 = wZ2; 
-      
-      // 3. Seeds 3 y 4: Sorteados en los extremos del medio
       const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+      if (mids.length > 0) matches[idxMidTop].p2 = mids[0]; // Cierra mitad superior
+      if (mids.length > 1) matches[idxMidBottom].p1 = mids[1]; // Abre mitad inferior
       
-      // Seed 3/4 A: Cierra la mitad superior (p2)
-      if (mids.length > 0) matches[idxMidTop].p2 = mids[0];
-      
-      // Seed 3/4 B: Abre la mitad inferior (p1)
-      if (mids.length > 1) matches[idxMidBottom].p1 = mids[1];
-      
-      // 4. Ubicar resto de Ganadores (Seeds 5-8, etc.)
-      // Buscamos huecos libres en p1 o p2 (preferencia p1 para estética, salvo que sea bottom bracket)
-      // Estrategia simplificada: llenar huecos p1 disponibles, luego p2
+      // Resto de Ganadores: Llenar huecos libres (preferencia P1)
       const availableSlotsP1 = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
       const availableSlotsP2 = matches.map((m, i) => m.p2 === null ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
 
@@ -97,12 +81,11 @@ export const useTournamentData = () => {
           else if (availableSlotsP2.length > 0) matches[availableSlotsP2.pop()!].p2 = w;
       });
 
-      // --- POSICIONAMIENTO DE RUNNERS (SEGUNDOS) ---
-      
+      // --- 2. POSICIONAMIENTO DE RUNNERS (SEGUNDOS) ---
+      // Separamos por mitad para evitar cruces tempranos de la misma zona
       const topHalfMatches = matches.slice(0, halfMatches);
       const bottomHalfMatches = matches.slice(halfMatches);
       
-      // Función auxiliar para ver qué zonas ya están en una mitad
       const getZonesInHalf = (matchList: any[]) => {
           const zones = new Set();
           matchList.forEach(m => {
@@ -115,7 +98,6 @@ export const useTournamentData = () => {
       const zonesInTop = getZonesInHalf(topHalfMatches);
       const zonesInBottom = getZonesInHalf(bottomHalfMatches);
       
-      // Separar runners: Los que deben ir abajo (porque su ganador está arriba) y viceversa
       const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
       const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
       const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
@@ -125,70 +107,76 @@ export const useTournamentData = () => {
       let poolBottom = shuffle([...mustGoBottom]); 
       let poolFree = shuffle([...freeAgents]);
 
-      // Repartir agentes libres para balancear numéricamente las mitades
-      // Contamos cuántos lugares vacíos (null) hay en cada mitad
-      const countEmpty = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1 === null ? 1 : 0) + (m.p2 === null ? 1 : 0), 0);
-      let emptyTop = countEmpty(topHalfMatches);
-      let emptyBottom = countEmpty(bottomHalfMatches);
+      // --- 3. LOGICA ANTI-BYE REFORZADA ---
+      // Objetivo: Antes de emparejar, asegurar que TODAS las llaves tengan al menos 1 jugador.
+      // Si llenamos P2 donde P1 es Seed, dejamos P1 vacíos en otras llaves -> Bye vs Bye.
+      
+      const fillEmptySlots = (matchList: any[], pool: any[]) => {
+          // Paso A: Llenar llaves COMPLETAMENTE VACÍAS (ni P1 ni P2)
+          // Esto evita el Bye vs Bye distribuyendo jugadores a llaves nuevas primero.
+          matchList.forEach(m => {
+              if (!m.p1 && !m.p2 && pool.length > 0) {
+                  m.p1 = pool.pop(); // Prioridad P1 para estética
+              }
+          });
 
-      // Pre-asignamos mentalmente los pools obligatorios
-      emptyTop -= poolTop.length;
-      emptyBottom -= poolBottom.length;
+          // Paso B: Llenar huecos contra Seeds (Matches que ya tienen 1 jugador)
+          matchList.forEach(m => {
+              // Si hay P1 pero no P2
+              if (m.p1 && !m.p2 && pool.length > 0) {
+                  // Chequeo de BYE: Si el P1 tiene BYE asignado, no ponemos a nadie
+                  if (!playersWithBye.has(m.p1.name)) {
+                      m.p2 = pool.pop();
+                  }
+              }
+              // Si hay P2 (ej: Seed 2) pero no P1
+              else if (!m.p1 && m.p2 && pool.length > 0) {
+                  if (!playersWithBye.has(m.p2.name)) {
+                      m.p1 = pool.pop();
+                  }
+              }
+          });
 
+          // Paso C: Si todavía sobra gente, llenar los huecos restantes (ej: donde había un Bye asignado pero sobraron jugadores)
+          // Rara vez pasa si el cálculo de Bye es correcto, pero por seguridad:
+          matchList.forEach(m => {
+              if (!m.p1 && pool.length > 0) m.p1 = pool.pop();
+              if (!m.p2 && pool.length > 0) m.p2 = pool.pop();
+          });
+      };
+
+      // Repartir Free Agents para equilibrar cantidades disponibles
+      const slotsNeededTop = topHalfMatches.filter(m => !m.p1 && !m.p2).length; 
+      const slotsNeededBot = bottomHalfMatches.filter(m => !m.p1 && !m.p2).length;
+      
+      // Intentamos balancear los agentes libres hacia donde hay más huecos vacíos totales
       while (poolFree.length > 0) {
-         if (emptyTop > emptyBottom) {
+         // Contamos carga actual
+         const loadTop = poolTop.length;
+         const loadBot = poolBottom.length;
+         
+         // Preferencia: Donde faltan llenar huecos vacíos o donde hay menos carga
+         if (loadTop < loadBot || (loadTop === loadBot && slotsNeededTop > slotsNeededBot)) {
              poolTop.push(poolFree.pop());
-             emptyTop--;
          } else {
              poolBottom.push(poolFree.pop());
-             emptyBottom--;
          }
       }
       
       poolTop = shuffle(poolTop); 
       poolBottom = shuffle(poolBottom);
 
-      // --- LLENADO FINAL ---
-      const fillMatches = (matchList: any[], pool: any[]) => {
-          matchList.forEach(m => {
-              // Prioridad: llenar huecos contra un Seed existente
-              if (m.p1 && !m.p2) {
-                  if (playersWithBye.has(m.p1.name)) {
-                      m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-                  } else if (pool.length > 0) {
-                      m.p2 = pool.pop();
-                  }
-              }
-              else if (!m.p1 && m.p2) {
-                  if (playersWithBye.has(m.p2.name)) {
-                      m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
-                  } else if (pool.length > 0) {
-                      m.p1 = pool.pop();
-                  }
-              }
-          });
-          // Segunda pasada: llenar huecos donde no hay nadie (si quedan pools)
-          matchList.forEach(m => {
-              if (!m.p1 && !m.p2 && pool.length > 0) {
-                  m.p1 = pool.pop();
-                  if (pool.length > 0) m.p2 = pool.pop();
-                  else m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
-              }
-          });
-      };
+      // Ejecutar llenado inteligente
+      fillEmptySlots(topHalfMatches, poolTop);
+      fillEmptySlots(bottomHalfMatches, poolBottom);
 
-      fillMatches(topHalfMatches, poolTop);
-      fillMatches(bottomHalfMatches, poolBottom);
-
-      // Limpieza final de slots que sigan vacíos
+      // --- 4. LIMPIEZA FINAL ---
       matches.forEach(m => {
           if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
           if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
           
-          // REGLA ESTÉTICA FINAL:
-          // Si p1 es BYE y p2 es Jugador, invertimos para que el jugador quede arriba.
-          // EXCEPCIÓN IMPORTANTE: Si p2 es el SEED 2 (o Seed 3/4 en posición baja), NO invertimos,
-          // porque queremos que el Seed 2 esté en la línea inferior del cuadro.
+          // Estética: Si P1 es BYE y P2 Jugador, invertir para que el jugador quede en la línea de arriba.
+          // EXCEPCIÓN: Si P2 es un Seed Fijo (1, 2, 3, 4), NO lo movemos de su posición estratégica.
           const isFixedSeedP2 = (m.p2.rank === 1 || m.p2.rank === 2 || m.p2.rank === 3 || m.p2.rank === 4);
           
           if (!isFixedSeedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
