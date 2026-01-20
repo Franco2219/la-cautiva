@@ -23,7 +23,9 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    fetchRankingData, fetchBracketData,
+    // --- AQUÍ ESTABA EL ERROR: Asegúrate de que fetchRankingData esté en esta lista ---
+    fetchRankingData, 
+    fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
     confirmarYEnviar, enviarListaBasti, confirmarSorteoCuadro,
@@ -134,11 +136,11 @@ export default function Home() {
                     previewS1.push("");
                     previewS1.push("");
 
-                    // CORRECCIÓN ZN: Formateamos el seed aquí para que BracketView lo muestre tal cual
+                    // Formato ZN para la vista previa
                     if (match.p1 && match.p1.rank) {
                         const label = match.p1.groupIndex !== undefined 
-                            ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` // Formato Grupos
-                            : `${match.p1.rank}`; // Formato Directo
+                            ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` 
+                            : `${match.p1.rank}`;
                         previewSeeds[p1Name] = label;
                     }
                     if (match.p2 && match.p2.rank) {
