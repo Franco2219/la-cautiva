@@ -23,8 +23,8 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // --- AQUÍ ESTABA EL ERROR: Faltaba importar esta función del hook ---
-    fetchRankingData, 
+    // --- CORRECCIÓN: Agregamos fetchRankingData a la lista ---
+    fetchRankingData,
     fetchBracketData,
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
