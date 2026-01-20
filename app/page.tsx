@@ -9,7 +9,7 @@ import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
-import { GeneratedMatch } from "@/components/tournament/GeneratedMatch"; // Ya no se usa visualmente pero lo dejo por si acaso
+import { GeneratedMatch } from "@/components/tournament/GeneratedMatch";
 import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
@@ -32,7 +32,6 @@ export default function Home() {
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
-  // Detectamos el torneo activo ya sea que estemos en grupos o en cuadro
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
 
@@ -120,11 +119,8 @@ export default function Home() {
         
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
-             {/* CORRECCIÓN VISUAL: Transformamos los datos del sorteo al formato de BracketView 
-                para que se muestre como un cuadro de llaves y no como lista.
-             */}
+             {/* LÓGICA VISUAL: Transformamos datos para que el BracketView muestre "ZN" */}
              {(() => {
-                // 1. Preparamos los datos simulados para el BracketView
                 const previewR1: string[] = [];
                 const previewS1: string[] = [];
                 const previewSeeds: any = {};
@@ -135,38 +131,45 @@ export default function Home() {
                     
                     previewR1.push(p1Name);
                     previewR1.push(p2Name);
-                    // Rellenamos scores vacíos
                     previewS1.push("");
                     previewS1.push("");
 
-                    // Mapeamos los seeds si existen
-                    if (match.p1 && match.p1.rank) previewSeeds[p1Name] = match.p1.rank;
-                    if (match.p2 && match.p2.rank) previewSeeds[p2Name] = match.p2.rank;
+                    // CORRECCIÓN ZN: Formateamos el seed aquí para que BracketView lo muestre tal cual
+                    if (match.p1 && match.p1.rank) {
+                        const label = match.p1.groupIndex !== undefined 
+                            ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` // Formato Grupos
+                            : `${match.p1.rank}`; // Formato Directo
+                        previewSeeds[p1Name] = label;
+                    }
+                    if (match.p2 && match.p2.rank) {
+                        const label = match.p2.groupIndex !== undefined 
+                            ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}`
+                            : `${match.p2.rank}`;
+                        previewSeeds[p2Name] = label;
+                    }
                 });
 
                 const previewData = {
                     bracketSize: navState.bracketSize,
                     r1: previewR1, 
                     s1: previewS1,
-                    r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], // Resto vacío
+                    r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
                     winner: "", 
                     runnerUp: "",
-                    hasData: true, // Forzamos que se muestre
+                    hasData: true,
                     seeds: previewSeeds,
                     canGenerate: false
                 };
 
                 return (
                     <div className="w-full">
-                        {/* 2. Renderizamos el cuadro visual */}
                         <BracketView 
                             bracketData={previewData}
                             navState={navState}
-                            runDirectDraw={runDirectDraw} // Props requeridas aunque no se usen dentro en este modo
+                            runDirectDraw={runDirectDraw}
                             fetchQualifiersAndDraw={fetchQualifiersAndDraw}
                         />
 
-                        {/* 3. Panel de control (Solo visible si NO está confirmado) */}
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
