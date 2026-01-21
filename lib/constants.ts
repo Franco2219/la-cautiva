@@ -7,6 +7,7 @@ export const TELEFONO_BASTI = "5491123965949";
 
 export const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
+  { id: "adelaide 250", name: "Adelaide 250", short: "Adelaide 250", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", short: "AO", type: "full" }, 
@@ -16,7 +17,6 @@ export const tournaments = [
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
-  { id: "adelaide 250", name: "Adelaide 250", short: "Adelaide 250", type: "direct" },
 ];
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
@@ -39,6 +39,14 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         trophyColor: "text-blue-900", 
         logo: "/logos/adelaide.png", 
         pointsLogo: "/logos/pts_s8_500.png" 
+    },
+    "adelaide_250": {
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/adelaide.png", 
+        pointsLogo: "/logos/pts_s8_250.png" 
     },
     "ao": { 
         color: "bg-blue-900", 
@@ -116,14 +124,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logos/s8_250.png", 
         pointsLogo: "/logos/pts_s8_250.png" 
     },
-    "adelaide_250": {
-        color: "bg-blue-900", 
-        borderColor: "border-blue-900", 
-        textColor: "text-blue-900", 
-        trophyColor: "text-blue-900", 
-        logo: "/logos/adelaide.png", 
-        pointsLogo: "/logos/pts_s8_250.png" 
-    },
+    
     // FALLBACK
     "default": { 
         color: "bg-[#b35a38]", 
