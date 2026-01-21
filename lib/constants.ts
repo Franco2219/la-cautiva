@@ -7,7 +7,7 @@ export const TELEFONO_BASTI = "5491123965949";
 
 export const tournaments = [
   { id: "adelaide", name: "Adelaide", short: "Adelaide", type: "direct" },
-  { id: "adelaide 250", name: "Adelaide 250", short: "Adelaide 250", type: "direct" },
+  { id: "adelaide 250", name: "Adelaide 250", short: "adelaide 250", type: "direct" },
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", short: "AO", type: "full" }, 
