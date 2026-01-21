@@ -40,16 +40,15 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   const style = getTournamentStyle(tournamentShort);
 
   return (
-    // CORRECCIÓN AQUÍ: Agregamos 'md:' a overflow-hidden para que en notebooks no corte el contenido
-    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit md:overflow-hidden ${style.borderColor}`}>
+    // CAMBIO 1: Quitamos 'md:overflow-hidden' para permitir que el contenido fluya si es necesario
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit ${style.borderColor}`}>
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
-      <style jsx>{`
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-      <div className="overflow-x-auto w-full hide-scroll">
+      
+      {/* CAMBIO 2: Eliminamos la etiqueta <style jsx> y la clase 'hide-scroll' del div de abajo
+          Esto permite que la barra de desplazamiento aparezca automáticamente en notebooks cuando la tabla es ancha. */}
+      <div className="overflow-x-auto w-full">
           <table className="w-max min-w-full text-[11px] md:text-xs">
             <thead>
               <tr className="bg-slate-50 border-b">
