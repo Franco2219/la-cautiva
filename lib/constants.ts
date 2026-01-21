@@ -16,6 +16,7 @@ export const tournaments = [
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
+  { id: "adelaide 250", name: "Adelaide 250, short: "Adelaide 250", type: "direct" },
 ];
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---

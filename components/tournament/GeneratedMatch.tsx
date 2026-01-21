@@ -16,8 +16,8 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
           <span className="text-orange-500 font-black text-lg w-24 text-right whitespace-nowrap">
             {match.p1.rank && match.p1.rank > 0
               ? match.p1.groupIndex !== undefined
-                ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}`
-                : `${match.p1.rank}.`
+                ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` // Formato Grupos
+                : `${match.p1.rank}.` // Formato Directo (Aquí aparece el número)
               : ""}
           </span>
         )}
@@ -26,7 +26,7 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
             match.p1 ? "text-slate-800" : "text-slate-300"
           }`}
         >
-          {match.p1 ? match.p1.name : ""}
+          {match.p1 ? match.p1.name : "BYE"}
         </span>
       </div>
 
@@ -50,7 +50,7 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
               : "text-slate-300"
           }`}
         >
-          {match.p2 ? match.p2.name : ""}
+          {match.p2 ? match.p2.name : "BYE"}
         </span>
       </div>
     </div>
