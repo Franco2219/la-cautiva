@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button"; // Botones normales (grises/blancos)
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -15,57 +15,54 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
-// --- 1. DICCIONARIO DE COLORES (El "Traductor") ---
-// Esto asegura que el botón sepa qué color usar en el hover, venga como venga el dato.
-const colorMap: any = {
-  // Clases con nombres (si usaste estas en constants.ts)
-  "bg-blue-900": "#1e3a8a",
-  "bg-blue-950": "#172554",
-  "bg-green-700": "#15803d",
-  "bg-green-800": "#166534",
-  "bg-orange-600": "#ea580c",
-  "bg-red-600": "#dc2626",
-  
-  // Clases específicas de tus torneos (HEX)
-  "bg-[#1e3a8a]": "#1e3a8a", // Adelaide / US Open
-  "bg-[#172554]": "#172554", // Masters
-  "bg-[#00703C]": "#00703C", // Wimbledon
-  "bg-[#b35a38]": "#b35a38", // RG / Polvo
-  "bg-[#e10600]": "#e10600", // S8 500
-  "bg-[#0091d2]": "#0091d2", // AO / S8 250
-  "bg-[#003369]": "#003369", // US Open alt
-  "bg-[#002865]": "#002865", // Masters alt
-  "bg-[#00572e]": "#00572e"  // Indian Wells
-};
-
-// --- 2. BOTÓN DINÁMICO (El "Ejecutor") ---
+// --- BOTÓN DINÁMICO INTEGRADO ---
+// Este componente vive aquí para asegurar que tenga acceso a la lógica de colores sin dependencias externas.
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
-  
-  // Lógica blindada para encontrar el color:
-  // Paso A: Buscamos en el diccionario exacto
-  let finalColor = colorMap[colorClass];
 
-  // Paso B: Si no está en el mapa, intentamos extraer el HEX si viene formato [ ]
-  if (!finalColor) {
-      const match = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/);
-      if (match) finalColor = match[1];
+  // Diccionario local para traducir las clases de constants.ts a HEX real
+  const colorMap: Record<string, string> = {
+    "bg-blue-900": "#1e3a8a", // Adelaide, US Open, etc.
+    "bg-blue-950": "#172554", // Masters
+    "bg-[#00703C]": "#00703C", // Wimbledon
+    "bg-[#b35a38]": "#b35a38", // RG / Polvo
+    "bg-[#e10600]": "#e10600", // S8 500
+    "bg-[#0091d2]": "#0091d2", // AO / S8 250
+    "bg-[#003369]": "#003369", // US Open alt
+    "bg-[#002865]": "#002865", // Masters alt
+    "bg-[#00572e]": "#00572e"  // Indian Wells
+  };
+
+  // Determinamos el color hexadecimal exacto
+  let hexColor = "#ea580c"; // Fallback naranja por defecto
+
+  if (colorClass) {
+    if (colorMap[colorClass]) {
+      // Caso 1: Es una clase conocida (ej: bg-blue-900)
+      hexColor = colorMap[colorClass];
+    } else {
+      // Caso 2: Es una clase arbitraria con brackets (ej: bg-[#123456])
+      const match = colorClass.match(/\[(#[0-9a-fA-F]+)\]/);
+      if (match) {
+        hexColor = match[1];
+      }
+    }
   }
-
-  // Paso C: Fallback (Naranja) si todo falla
-  if (!finalColor) finalColor = "#ea580c"; 
 
   return (
     <button 
       onClick={onClick} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`${className} flex items-center justify-center rounded-xl transition-all duration-300 font-bold h-12 shadow-lg text-sm focus-visible:outline-none disabled:opacity-50 select-none`}
+      // Usamos style inline para tener prioridad máxima sobre Tailwind
       style={{
-        backgroundColor: isHovered ? "white" : finalColor, // Fondo: Blanco al pasar mouse, Color normal sino
-        color: isHovered ? finalColor : "white",           // Texto: Color al pasar mouse, Blanco sino
-        border: `2px solid ${finalColor}`,                 // Borde siempre del color para mantener estructura
+        backgroundColor: isHovered ? "white" : hexColor,
+        color: isHovered ? hexColor : "white",
+        border: `2px solid ${hexColor}`,
+        transition: "all 0.3s ease",
       }}
+      // Clases base para forma y tipografía
+      className={`${className} flex items-center justify-center rounded-xl font-bold h-12 shadow-lg text-sm focus-visible:outline-none disabled:opacity-50 select-none uppercase tracking-wide`}
     >
       {Icon && <Icon className="mr-2 w-4 h-4" />}
       {children}
@@ -186,7 +183,7 @@ export default function Home() {
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
              {(() => {
-                const previewR1: any[] = [];
+                const previewR1: any[] = []; // IMPORTANTE: Array de objetos
                 const previewS1: string[] = [];
                 const previewSeeds: any = {};
 
@@ -194,7 +191,7 @@ export default function Home() {
                     const p1Obj = match.p1 ? match.p1 : { name: "BYE", rank: 0 };
                     const p2Obj = match.p2 ? match.p2 : { name: "BYE", rank: 0 };
                     
-                    previewR1.push(p1Obj);
+                    previewR1.push(p1Obj); // Guardamos objeto completo para tener el rank
                     previewR1.push(p2Obj);
                     previewS1.push("");
                     previewS1.push("");
@@ -234,6 +231,7 @@ export default function Home() {
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                                 
+                                {/* USO DEL BOTÓN DINÁMICO */}
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                                   <DynamicButton 
                                     onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} 
