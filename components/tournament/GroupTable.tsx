@@ -40,16 +40,13 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   const style = getTournamentStyle(tournamentShort);
 
   return (
-    // CORRECCIÓN: Volvimos a agregar 'overflow-hidden' para que los bordes se vean perfectos (redondeados).
-    // El scroll se manejará en el div de abajo.
-    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
+    // AGREGAMOS 'print:break-inside-avoid' AL FINAL DE LAS CLASES PARA EVITAR CORTES AL IMPRIMIR
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor} print:break-inside-avoid`}>
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
       
-      {/* IMPORTANTE: Eliminamos <style jsx> con hide-scroll para que la barra de desplazamiento 
-         aparezca naturalmente en notebooks/PC si la tabla es ancha.
-      */}
+      {/* Eliminamos <style jsx> con hide-scroll para permitir scroll en pantallas normales */}
       
       <div className="overflow-x-auto w-full">
           <table className="w-max min-w-full text-[11px] md:text-xs">

@@ -9,7 +9,6 @@ import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
-import { GeneratedMatch } from "@/components/tournament/GeneratedMatch";
 import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
@@ -23,19 +22,17 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // --- LISTA COMPLETA DE FUNCIONES (NO BORRAR NADA DE ESTO) ---
     fetchRankingData,
     fetchBracketData,
     runDirectDraw, 
     runATPDraw,
     fetchGroupPhase, 
     fetchQualifiersAndDraw,
-    confirmarYEnviar, // <--- ESTO ARREGLA EL ERROR DE VERCEL
+    confirmarYEnviar,
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, 
     goBack,
-    calculateAndShowRanking
   } = useTournamentData();
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
@@ -45,6 +42,32 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
+      
+      {/* --- INICIO DEL BLOQUE DE IMPRESIÓN --- */}
+      <style jsx global>{`
+        @media print {
+          /* 1. Ocultar todos los botones e íconos interactivos */
+          button, .cursor-pointer { display: none !important; }
+          
+          /* 2. Forzar que se impriman los colores de fondo (headers naranjas/azules) */
+          body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
+          
+          /* 3. Quitar sombras para ahorrar tinta y limpiar visual */
+          .shadow-2xl, .shadow-lg, .shadow-md { box-shadow: none !important; border: 1px solid #ddd !important; }
+          
+          /* 4. Asegurar márgenes limpios y uso total del ancho */
+          @page { margin: 1.5cm; size: auto; }
+          .min-h-screen { min-height: 0 !important; }
+          .p-4, .p-8, .p-12 { padding: 0 !important; }
+          .max-w-6xl, .max-w-[95%] { max-width: 100% !important; width: 100% !important; }
+          
+          /* 5. Ajustar el grid para que si es necesario se ponga en 1 columna en papel vertical */
+          .grid { display: block !important; }
+          .grid > div { margin-bottom: 20px; }
+        }
+      `}</style>
+      {/* --- FIN DEL BLOQUE DE IMPRESIÓN --- */}
+
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
         {/* LOGO PRINCIPAL */}
