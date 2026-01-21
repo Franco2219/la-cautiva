@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/button"; // Botones normales (grises/blancos)
+import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -15,58 +15,34 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
-// --- BOTÓN DINÁMICO INTEGRADO ---
-// Este componente vive aquí para asegurar que tenga acceso a la lógica de colores sin dependencias externas.
+// --- BOTÓN DINÁMICO (HOVER EFECTO) ---
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Extraemos el código HEX de la clase de Tailwind (fallback: naranja)
+  const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
 
-  // Diccionario local para traducir las clases de constants.ts a HEX real
-  const colorMap: Record<string, string> = {
-    "bg-blue-900": "#1e3a8a", // Adelaide, US Open, etc.
-    "bg-blue-950": "#172554", // Masters
-    "bg-[#00703C]": "#00703C", // Wimbledon
-    "bg-[#b35a38]": "#b35a38", // RG / Polvo
-    "bg-[#e10600]": "#e10600", // S8 500
-    "bg-[#0091d2]": "#0091d2", // AO / S8 250
-    "bg-[#003369]": "#003369", // US Open alt
-    "bg-[#002865]": "#002865", // Masters alt
-    "bg-[#00572e]": "#00572e"  // Indian Wells
+  const baseStyle = {
+    backgroundColor: isHovered ? "white" : hexColor,
+    color: isHovered ? hexColor : "white",
+    border: `2px solid ${hexColor}`,
+    transition: "all 0.3s ease",
+    fontWeight: "bold",
+    height: "3rem", // h-12 equivalent
+    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
   };
 
-  // Determinamos el color hexadecimal exacto
-  let hexColor = "#ea580c"; // Fallback naranja por defecto
-
-  if (colorClass) {
-    if (colorMap[colorClass]) {
-      // Caso 1: Es una clase conocida (ej: bg-blue-900)
-      hexColor = colorMap[colorClass];
-    } else {
-      // Caso 2: Es una clase arbitraria con brackets (ej: bg-[#123456])
-      const match = colorClass.match(/\[(#[0-9a-fA-F]+)\]/);
-      if (match) {
-        hexColor = match[1];
-      }
-    }
-  }
-
   return (
-    <button 
+    <Button 
       onClick={onClick} 
+      className={`${className} border-0`} 
+      style={baseStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      // Usamos style inline para tener prioridad máxima sobre Tailwind
-      style={{
-        backgroundColor: isHovered ? "white" : hexColor,
-        color: isHovered ? hexColor : "white",
-        border: `2px solid ${hexColor}`,
-        transition: "all 0.3s ease",
-      }}
-      // Clases base para forma y tipografía
-      className={`${className} flex items-center justify-center rounded-xl font-bold h-12 shadow-lg text-sm focus-visible:outline-none disabled:opacity-50 select-none uppercase tracking-wide`}
     >
       {Icon && <Icon className="mr-2 w-4 h-4" />}
       {children}
-    </button>
+    </Button>
   );
 };
 
@@ -183,55 +159,36 @@ export default function Home() {
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
              {(() => {
-                const previewR1: any[] = []; // IMPORTANTE: Array de objetos
+                const previewR1: string[] = [];
                 const previewS1: string[] = [];
                 const previewSeeds: any = {};
 
                 generatedBracket.forEach((match) => {
-                    const p1Obj = match.p1 ? match.p1 : { name: "BYE", rank: 0 };
-                    const p2Obj = match.p2 ? match.p2 : { name: "BYE", rank: 0 };
-                    
-                    previewR1.push(p1Obj); // Guardamos objeto completo para tener el rank
-                    previewR1.push(p2Obj);
-                    previewS1.push("");
-                    previewS1.push("");
+                    const p1Name = match.p1 ? match.p1.name : "BYE";
+                    const p2Name = match.p2 ? match.p2.name : "BYE";
+                    previewR1.push(p1Name); previewR1.push(p2Name);
+                    previewS1.push(""); previewS1.push("");
 
                     if (match.p1 && match.p1.rank) {
                         const label = match.p1.groupIndex !== undefined ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` : `${match.p1.rank}`;
-                        previewSeeds[match.p1.name] = label;
+                        previewSeeds[p1Name] = label;
                     }
                     if (match.p2 && match.p2.rank) {
                         const label = match.p2.groupIndex !== undefined ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}` : `${match.p2.rank}`;
-                        previewSeeds[match.p2.name] = label;
+                        previewSeeds[p2Name] = label;
                     }
                 });
 
-                const previewData = {
-                    bracketSize: navState.bracketSize,
-                    r1: previewR1, 
-                    s1: previewS1,
-                    r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
-                    winner: "", 
-                    runnerUp: "",
-                    hasData: true,
-                    seeds: previewSeeds,
-                    canGenerate: false
-                };
+                const previewData = { bracketSize: navState.bracketSize, r1: previewR1, s1: previewS1, r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", hasData: true, seeds: previewSeeds, canGenerate: false };
 
                 return (
                     <div className="w-full">
-                        <BracketView 
-                            bracketData={previewData}
-                            navState={navState}
-                            runDirectDraw={runDirectDraw}
-                            fetchQualifiersAndDraw={fetchQualifiersAndDraw}
-                        />
-
+                        <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                                 
-                                {/* USO DEL BOTÓN DINÁMICO */}
+                                {/* USO DE BOTONES DINÁMICOS PARA SORTEAR */}
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                                   <DynamicButton 
                                     onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} 
@@ -280,7 +237,7 @@ export default function Home() {
                 <div className="flex space-x-2 text-center text-center">
                   <DynamicButton 
                     onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} 
-                    className="w-full"
+                    className=""
                     icon={Shuffle}
                     colorClass={currentStyle.color}
                   >
@@ -304,30 +261,15 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView 
-              bracketData={bracketData} 
-              navState={navState} 
-              runDirectDraw={runDirectDraw} 
-              fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
-           />
+           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
         )}
 
         {navState.level === "ranking-view" && (
-           <RankingTable 
-             headers={headers} 
-             data={rankingData} 
-             category={navState.selectedCategory} 
-             year={navState.year} 
-           />
+           <RankingTable headers={headers} data={rankingData} category={navState.selectedCategory} year={navState.year} />
         )}
 
         {showRankingCalc && (
-          <CalculatedRankingModal 
-            ranking={calculatedRanking} 
-            onClose={() => setShowRankingCalc(false)} 
-            tournamentShort={activeTour} 
-            category={navState.category} 
-          />
+          <CalculatedRankingModal ranking={calculatedRanking} onClose={() => setShowRankingCalc(false)} tournamentShort={activeTour} category={navState.category} />
         )}
 
       </div>
