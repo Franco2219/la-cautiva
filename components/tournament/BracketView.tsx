@@ -544,6 +544,11 @@ export const BracketView = ({
               <p className="font-medium text-slate-500 mb-4">
                 Se encontraron clasificados en el sistema.
               </p>
+              {bracketData.canGenerate ? (
+            <div className="mt-4">
+              <p className="font-medium text-slate-500 mb-4">
+                Se encontraron clasificados en el sistema.
+              </p>
               <div className="flex gap-2 justify-center">
                 {tournaments.find(
                   (t) => t.short === navState.tournamentShort
@@ -572,6 +577,8 @@ export const BracketView = ({
                   </Button>
                 )}
               </div>
+            </div>
+          ) : (
             </div>
           ) : (
             <p className="font-medium text-slate-500">
