@@ -553,28 +553,28 @@ export const BracketView = ({
                 {tournaments.find(
                   (t) => t.short === navState.tournamentShort
                 )?.type === "direct" ? (
-                  <Button
+                  /* OPCIÓN 1: Torneo Directo */
+                  <button
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
                     }
-                    // EDITAR ESTA LÍNEA:
-                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                  </Button>
+                  </button>
                 ) : (
-                  <Button
+                  /* OPCIÓN 2: Torneo con Clasificación (ATP) */
+                  <button
                     onClick={() =>
                       fetchQualifiersAndDraw(
                         navState.category,
                         navState.tournamentShort
                       )
                     }
-                    // EDITAR ESTA LÍNEA TAMBIÉN:
-                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
