@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/button"; // Mantenemos Button para los normales
+import { Button } from "@/components/ui/button"; // Este se usa para los botones grises normales
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -19,7 +19,7 @@ import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankin
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Extraemos el código HEX de la clase de Tailwind
+  // Extraemos el código HEX de la clase de Tailwind (fallback: naranja)
   const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
 
   return (
@@ -29,7 +29,7 @@ const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }:
       onMouseLeave={() => setIsHovered(false)}
       // Clases base de Tailwind para forma y tipografía
       className={`${className} flex items-center justify-center rounded-md transition-all duration-300 font-bold h-12 shadow-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
-      // Estilos en línea para el color dinámico
+      // Estilos en línea para el color dinámico (ESTO ASEGURA EL HOVER)
       style={{
         backgroundColor: isHovered ? "white" : hexColor,
         color: isHovered ? hexColor : "white",
@@ -154,32 +154,54 @@ export default function Home() {
         
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
+             {/* LÓGICA VISUAL: Transformamos datos para que el BracketView muestre "ZN" */}
              {(() => {
-                const previewR1: string[] = [];
+                const previewR1: any[] = []; // Cambiado a any[] para guardar objetos completos
                 const previewS1: string[] = [];
                 const previewSeeds: any = {};
 
                 generatedBracket.forEach((match) => {
-                    const p1Name = match.p1 ? match.p1.name : "BYE";
-                    const p2Name = match.p2 ? match.p2.name : "BYE";
-                    previewR1.push(p1Name); previewR1.push(p2Name);
-                    previewS1.push(""); previewS1.push("");
+                    // CORRECCIÓN CRÍTICA: Pasamos el objeto completo, no solo el nombre
+                    const p1Obj = match.p1 ? match.p1 : { name: "BYE", rank: 0 };
+                    const p2Obj = match.p2 ? match.p2 : { name: "BYE", rank: 0 };
+                    
+                    previewR1.push(p1Obj); // Guardamos objeto con rank
+                    previewR1.push(p2Obj); // Guardamos objeto con rank
+                    previewS1.push("");
+                    previewS1.push("");
 
+                    // Esto sigue igual por compatibilidad
                     if (match.p1 && match.p1.rank) {
                         const label = match.p1.groupIndex !== undefined ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` : `${match.p1.rank}`;
-                        previewSeeds[p1Name] = label;
+                        previewSeeds[match.p1.name] = label;
                     }
                     if (match.p2 && match.p2.rank) {
                         const label = match.p2.groupIndex !== undefined ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}` : `${match.p2.rank}`;
-                        previewSeeds[p2Name] = label;
+                        previewSeeds[match.p2.name] = label;
                     }
                 });
 
-                const previewData = { bracketSize: navState.bracketSize, r1: previewR1, s1: previewS1, r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", hasData: true, seeds: previewSeeds, canGenerate: false };
+                const previewData = {
+                    bracketSize: navState.bracketSize,
+                    r1: previewR1, // Ahora contiene objetos {name, rank}
+                    s1: previewS1,
+                    r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
+                    winner: "", 
+                    runnerUp: "",
+                    hasData: true,
+                    seeds: previewSeeds,
+                    canGenerate: false
+                };
 
                 return (
                     <div className="w-full">
-                        <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+                        <BracketView 
+                            bracketData={previewData}
+                            navState={navState}
+                            runDirectDraw={runDirectDraw}
+                            fetchQualifiersAndDraw={fetchQualifiersAndDraw}
+                        />
+
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
@@ -233,7 +255,7 @@ export default function Home() {
                 <div className="flex space-x-2 text-center text-center">
                   <DynamicButton 
                     onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} 
-                    className=""
+                    className="w-full" // Ajuste de ancho
                     icon={Shuffle}
                     colorClass={currentStyle.color}
                   >
@@ -257,15 +279,30 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+           <BracketView 
+              bracketData={bracketData} 
+              navState={navState} 
+              runDirectDraw={runDirectDraw} 
+              fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
+           />
         )}
 
         {navState.level === "ranking-view" && (
-           <RankingTable headers={headers} data={rankingData} category={navState.selectedCategory} year={navState.year} />
+           <RankingTable 
+             headers={headers} 
+             data={rankingData} 
+             category={navState.selectedCategory} 
+             year={navState.year} 
+           />
         )}
 
         {showRankingCalc && (
-          <CalculatedRankingModal ranking={calculatedRanking} onClose={() => setShowRankingCalc(false)} tournamentShort={activeTour} category={navState.category} />
+          <CalculatedRankingModal 
+            ranking={calculatedRanking} 
+            onClose={() => setShowRankingCalc(false)} 
+            tournamentShort={activeTour} 
+            category={navState.category} 
+          />
         )}
 
       </div>
