@@ -97,7 +97,6 @@ export const useTournamentData = () => {
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
       
-      // --- LÓGICA DE DISTRIBUCIÓN INTELIGENTE (64 JUGADORES) ---
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
              const blockCounts = Array(16).fill(0); 
@@ -113,7 +112,6 @@ export const useTournamentData = () => {
                  if (countA !== countB) return countA - countB;
                  return Math.random() - 0.5;
              });
-             
              if (candidates.length > 0) {
                  const idx = candidates[0];
                  matches[idx].p1 = w;
@@ -130,9 +128,7 @@ export const useTournamentData = () => {
               }
           });
       }
-      // ---------------------------------------------------------
 
-      // 2. RUNNERS Y RELLENO
       const topMatches = matches.slice(0, halfMatches);
       const bottomMatches = matches.slice(halfMatches);
       
@@ -156,7 +152,6 @@ export const useTournamentData = () => {
       let poolBottom = [...mustGoBottom];
       let poolFree = [...freeAgents];
 
-      // Balanceo numérico
       const countReal = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1?.name !== "BYE" && m.p1 ? 1 : 0) + (m.p2?.name !== "BYE" && m.p2 ? 1 : 0), 0);
       let loadTop = countReal(topMatches) + poolTop.length;
       let loadBot = countReal(bottomMatches) + poolBottom.length;
@@ -169,21 +164,15 @@ export const useTournamentData = () => {
       const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
       poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
 
-      // FUNCION DE LLENADO ORGANICO (ALEATORIO)
       const fillHalfRandomly = (matchList: any[], pool: any[]) => {
-          // Creamos indices barajados
           let indices = Array.from({length: matchList.length}, (_, i) => i).sort(() => Math.random() - 0.5);
-
-          // Fase 1: Huecos vacíos (Anti Bye-Bye)
           for(let i of indices) {
               if(!matchList[i].p1 && !matchList[i].p2 && pool.length > 0) matchList[i].p1 = pool.pop();
           }
-          // Fase 2: Contra Seeds
           for(let i of indices) {
               if(matchList[i].p1 && !matchList[i].p2 && matchList[i].p1.name !== "BYE" && pool.length > 0) matchList[i].p2 = pool.pop();
               else if(!matchList[i].p1 && matchList[i].p2 && matchList[i].p2.name !== "BYE" && pool.length > 0) matchList[i].p1 = pool.pop();
           }
-          // Fase 3: Relleno final
           for(let i of indices) {
               if(pool.length === 0) return;
               if(!matchList[i].p1) matchList[i].p1 = pool.pop();
@@ -194,7 +183,6 @@ export const useTournamentData = () => {
       fillHalfRandomly(topMatches, poolTop);
       fillHalfRandomly(bottomMatches, poolBottom);
 
-      // Limpieza final y visual
       matches.forEach(m => {
           if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
           if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
@@ -422,10 +410,18 @@ export const useTournamentData = () => {
       } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
   }
 
+  // --- CORRECCIÓN 1: INCLUIR (N) EN EL MENSAJE PARA QUE QUEDE GRABADO EN EXCEL ---
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
-    generatedBracket.forEach((match) => { const p1Name = match.p1 ? match.p1.name : "TBD"; const p2Name = match.p2 ? match.p2.name : "TBD"; mensaje += `${p1Name}\n${p2Name}\n`; });
+    generatedBracket.forEach((match) => { 
+        const p1 = match.p1;
+        const p2 = match.p2;
+        // Si tiene seed/rank, lo pegamos al nombre con formato "(1) NOMBRE"
+        const p1Name = p1 ? (p1.rank ? `(${p1.rank}) ${p1.name}` : p1.name) : "TBD";
+        const p2Name = p2 ? (p2.rank ? `(${p2.rank}) ${p2.name}` : p2.name) : "TBD";
+        mensaje += `${p1Name}\n${p2Name}\n`; 
+    });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
   }
@@ -474,34 +470,54 @@ export const useTournamentData = () => {
     }
 
     try {
-      const response = await fetch(urlBracket); const csvText = await response.text(); const rows = parseCSV(csvText); const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
+      const response = await fetch(urlBracket); const csvText = await response.text(); 
+      let rows = parseCSV(csvText);
+      const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
+      
+      // --- CORRECCIÓN 2: LIMPIEZA INTELIGENTE DE NOMBRES ---
+      // Si el Excel tiene "(1) Juan", extraemos el 1 y dejamos "Juan" limpio.
+      let hardcodedSeeds: any = {};
+      if (hasContent) {
+          rows = rows.map(row => row.map(cell => {
+              if (!cell || typeof cell !== 'string') return cell;
+              // Detecta "(1) Nombre" o "1. Nombre"
+              const match = cell.match(/^[\(]?(\d+)[\)\.]\s+(.+)/);
+              if (match) {
+                  const seed = parseInt(match[1]);
+                  const cleanName = match[2].trim();
+                  // Guardamos el seed hardcodeado
+                  hardcodedSeeds[cleanName] = seed;
+                  return cleanName; // Devolvemos nombre limpio para que la estética no se rompa
+              }
+              return cell;
+          }));
+      }
+      // -----------------------------------------------------
+
       if (hasContent) {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; 
           
           // --- CORRECCIÓN: Detección de tamaño 64 ---
           let bracketSize = 16; 
-          if (playersInCol1 > 32) bracketSize = 64; // IMPORTANTE
+          if (playersInCol1 > 32) bracketSize = 64; 
           else if (playersInCol1 > 16) bracketSize = 32; 
           else if (playersInCol1 <= 8) bracketSize = 8; 
           
-          let seeds: any = {};
+          // Iniciar seeds con los que encontramos en el Excel (tienen prioridad absoluta)
+          let seeds: any = { ...hardcodedSeeds };
           
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
-          // >>> NUEVA LOGICA: Seeds para DIRECT y FULL (ZN)
+          // Solo calculamos ranking dinámico si NO encontramos seeds hardcodeados para ese jugador
           if (tourType === "direct") {
             try {
                const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
                const rankRes = await fetch(rankUrl);
                const rankCsv = await rankRes.text();
                
-               // 1. Obtenemos ranking global completo (Nombre y Puntos)
                const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0}));
-               
-               // 2. Obtenemos los jugadores presentes en el cuadro (Columna 0)
                const playersInBracket = rows.map(r => r[0]).filter(n => n && n.trim() !== "" && n !== "-" && n !== "BYE");
                
-               // 3. Cruzamos los datos: Buscamos los puntos de SOLO los jugadores presentes
                const tournamentSeeds = playersInBracket.map(pName => {
                    const rankedPlayer = rankRows.find(rp => 
                        rp.name && (
@@ -513,17 +529,17 @@ export const useTournamentData = () => {
                    return { name: pName, total: rankedPlayer ? rankedPlayer.total : 0 };
                });
 
-               // 4. Ordenamos por puntos descendente para saber los seeds REALES del torneo
                tournamentSeeds.sort((a, b) => b.total - a.total);
 
-               // 5. Asignamos los seeds (Top 16 para cubrir cualquier tamaño)
-               tournamentSeeds.slice(0, 16).forEach((p, i) => {
-                   seeds[p.name] = i + 1;
+               // Solo asignamos si no existe ya un seed fijo (para no pisar el Excel)
+               tournamentSeeds.slice(0, 8).forEach((p, i) => {
+                   if (p.name && !seeds[p.name]) {
+                       seeds[p.name] = i + 1;
+                   }
                });
 
             } catch(e) { console.log("Error seeds direct", e); }
           } else {
-             // Lógica para torneos de grupos (mantiene lo de 1° ZN)
              try {
                 const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                 const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
@@ -532,7 +548,7 @@ export const useTournamentData = () => {
           }
 
           let rawData: any = {}; let winnerIdx = -1; 
-          if (bracketSize === 64) winnerIdx = 12; // IMPORTANTE
+          if (bracketSize === 64) winnerIdx = 12; 
           else if (bracketSize === 32) winnerIdx = 10; 
           else if (bracketSize === 16) winnerIdx = 8; 
           else if (bracketSize === 8) winnerIdx = 6; 
@@ -540,7 +556,6 @@ export const useTournamentData = () => {
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : ""; const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
           const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : ""); const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
           
-          // --- CORRECCIÓN: Bloque de lectura para 64 ---
           if (bracketSize === 64) {
               rawData = { 
                   r1: getColData(0, 64), s1: getScoreData(1, 64), 
@@ -548,7 +563,7 @@ export const useTournamentData = () => {
                   r3: getColData(4, 16), s3: getScoreData(5, 16), 
                   r4: getColData(6, 8),  s4: getScoreData(7, 8), 
                   r5: getColData(8, 4),  s5: getScoreData(9, 4), 
-                  r6: getColData(10, 2), s6: getScoreData(11, 2), // Finalists 
+                  r6: getColData(10, 2), s6: getScoreData(11, 2), 
                   winner: winner, runnerUp: runnerUp, 
                   bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
               };
