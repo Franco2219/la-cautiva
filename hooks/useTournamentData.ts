@@ -70,7 +70,7 @@ export const useTournamentData = () => {
 
       let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
       
-      // 1. SEEDS FIJOS
+      // 1. SEEDS FIJOS (Cabezas de serie 1, 2, 3, 4)
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
@@ -96,16 +96,50 @@ export const useTournamentData = () => {
       
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
-      // Usamos sort random para encontrar huecos vacíos de forma orgánica
-      const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
       
-      otherWinners.forEach(w => {
-          if (availableMatches.length > 0) {
-              const idx = availableMatches.pop()!;
-              matches[idx].p1 = w;
-              if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
-          }
-      });
+      // --- NUEVA LÓGICA SOLICITADA: Evitar cruces de 1ros en 2da ronda para cuadros de 64 ---
+      if (bracketSize === 64) {
+          otherWinners.forEach(w => {
+             // Calculamos cuántos ganadores (rank 1) hay ya en cada "bloque" de 2da ronda.
+             // Cada bloque de 2da ronda se alimenta de 2 partidos de 1ra ronda (indices par e impar: 0-1, 2-3, etc.)
+             const blockCounts = Array(16).fill(0); // 16 partidos en 2da ronda
+             matches.forEach((m, i) => {
+                 if ((m.p1 && m.p1.rank === 1) || (m.p2 && m.p2.rank === 1)) {
+                     blockCounts[Math.floor(i / 2)]++;
+                 }
+             });
+             
+             // Buscamos partidos vacíos disponibles
+             const candidates = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1);
+             
+             // Ordenamos los candidatos priorizando aquellos cuyo "bloque" aún no tenga un ganador (rank 1)
+             candidates.sort((a, b) => {
+                 const countA = blockCounts[Math.floor(a / 2)];
+                 const countB = blockCounts[Math.floor(b / 2)];
+                 // Si un bloque tiene menos ganadores, va primero (prioridad absoluta)
+                 if (countA !== countB) return countA - countB;
+                 // Si empatan, aleatorio
+                 return Math.random() - 0.5;
+             });
+             
+             if (candidates.length > 0) {
+                 const idx = candidates[0];
+                 matches[idx].p1 = w;
+                 if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
+             }
+          });
+      } else {
+          // Lógica estándar aleatoria para cuadros más chicos donde el cruce es inevitable o irrelevante
+          const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+          otherWinners.forEach(w => {
+              if (availableMatches.length > 0) {
+                  const idx = availableMatches.pop()!;
+                  matches[idx].p1 = w;
+                  if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
+              }
+          });
+      }
+      // -----------------------------------------------------------------------------------------
 
       // 2. RUNNERS Y RELLENO
       const topMatches = matches.slice(0, halfMatches);
