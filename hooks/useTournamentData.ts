@@ -423,24 +423,7 @@ export const useTournamentData = () => {
       const response = await fetch(urlBracket); const csvText = await response.text(); const rows = parseCSV(csvText); const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
       if (hasContent) {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; let bracketSize = 16; if (playersInCol1 > 16) bracketSize = 32; else if (playersInCol1 <= 8) bracketSize = 8; 
-          let seeds: any = {};
-          
-          // >>> NUEVA LOGICA: Solo para torneos DIRECT
-          const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
-          if (tourType === "direct") {
-            try {
-               const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-               const rankRes = await fetch(rankUrl);
-               const rankCsv = await rankRes.text();
-               const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0})).sort((a,b) => b.total - a.total);
-               // Top 8 del ranking
-               rankRows.slice(0, 8).forEach((p, i) => {
-                   if(p.name) seeds[p.name] = i + 1;
-               });
-            } catch(e) { console.log("No se pudieron cargar seeds para torneo directo", e); }
-          }
-          // <<< FIN NUEVA LOGICA
-
+          let seeds = {};
           let rawData: any = {}; let winnerIdx = -1; if (bracketSize === 32) winnerIdx = 10; else if (bracketSize === 16) winnerIdx = 8; else if (bracketSize === 8) winnerIdx = 6; 
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : ""; const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
           const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : ""); const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
@@ -476,7 +459,7 @@ export const useTournamentData = () => {
     runDirectDraw, runATPDraw,
     fetchGroupPhase, fetchQualifiersAndDraw,
     calculateAndShowRanking, 
-    confirmarYEnviar,  
+    confirmarYEnviar,  // <--- ESTÁ AQUÍ
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack
