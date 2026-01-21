@@ -1,6 +1,5 @@
 import React from "react";
 import Image from "next/image";
-import { Button } from "../ui/button"; 
 import { Trophy, AlertCircle, Shuffle } from "lucide-react";
 import { getTournamentName, getTournamentStyle } from "../../lib/utils";
 import { tournaments } from "../../lib/constants";
@@ -27,8 +26,13 @@ export const BracketView = ({
   const bracketStyle = getTournamentStyle(navState.tournamentShort);
   const tournamentName = getTournamentName(navState.tournamentShort);
   
-  // Normalizamos el tamaño
-  const getSize = bracketData.bracketSize || 16;
+  // CORRECCIÓN: Detección inteligente del tamaño.
+  // Si bracketSize viene mal o nulo, pero la lista de jugadores (r1) tiene más de 32 personas,
+  // forzamos el tamaño a 64 para que no se corte el cuadro.
+  let getSize = Number(bracketData.bracketSize) || 16;
+  if (bracketData.r1 && bracketData.r1.length > 32) {
+      getSize = 64;
+  }
 
   // Helper para mapear las rondas dinámicamente según el tamaño del cuadro
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
@@ -119,10 +123,10 @@ export const BracketView = ({
             <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r64');
-                const p1 = r[idx];
-                const p2 = r[idx + 1];
-                const w1 = p1 && nextR.includes(p1);
-                const w2 = p2 && nextR.includes(p2);
+                const p1 = r ? r[idx] : null;
+                const p2 = r ? r[idx + 1] : null;
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
 
                 return (
                   <React.Fragment key={idx}>
@@ -145,7 +149,7 @@ export const BracketView = ({
                           {p1 || ""}
                         </span>
                         <span className="text-black font-black text-[9px] ml-1">
-                          {s[idx]}
+                          {s ? s[idx] : ""}
                         </span>
                       </div>
                       <div
@@ -166,7 +170,7 @@ export const BracketView = ({
                           {p2 || ""}
                         </span>
                         <span className="text-black font-black text-[9px] ml-1">
-                          {s[idx + 1]}
+                          {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
@@ -186,8 +190,8 @@ export const BracketView = ({
                 if (!r) return null; // Safety check
                 const p1 = r[idx];
                 const p2 = r[idx + 1];
-                const w1 = p1 && nextR.includes(p1);
-                const w2 = p2 && nextR.includes(p2);
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
 
                 return (
                   <React.Fragment key={idx}>
@@ -210,7 +214,7 @@ export const BracketView = ({
                           {p1 || ""}
                         </span>
                         <span className="text-black font-black text-[10px] ml-1">
-                          {s[idx]}
+                          {s ? s[idx] : ""}
                         </span>
                       </div>
                       <div
@@ -231,7 +235,7 @@ export const BracketView = ({
                           {p2 || ""}
                         </span>
                         <span className="text-black font-black text-[10px] ml-1">
-                          {s[idx + 1]}
+                          {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
@@ -251,8 +255,8 @@ export const BracketView = ({
                 if (!r) return null;
                 const p1 = r[idx];
                 const p2 = r[idx + 1];
-                const w1 = p1 && nextR.includes(p1);
-                const w2 = p2 && nextR.includes(p2);
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
 
                 return (
                   <React.Fragment key={idx}>
@@ -275,7 +279,7 @@ export const BracketView = ({
                           {p1 || ""}
                         </span>
                         <span className="text-black font-black text-xs ml-1">
-                          {s[idx]}
+                          {s ? s[idx] : ""}
                         </span>
                       </div>
                       <div
@@ -296,7 +300,7 @@ export const BracketView = ({
                           {p2 || ""}
                         </span>
                         <span className="text-black font-black text-xs ml-1">
-                          {s[idx + 1]}
+                          {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
@@ -312,10 +316,10 @@ export const BracketView = ({
           <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
             {[0, 2, 4, 6].map((idx, i) => {
               const [r, s, nextR] = getRoundData('qf');
-              const p1 = r[idx];
-              const p2 = r[idx + 1];
-              const w1 = p1 && nextR.includes(p1);
-              const w2 = p2 && nextR.includes(p2);
+              const p1 = r ? r[idx] : null;
+              const p2 = r ? r[idx + 1] : null;
+              const w1 = p1 && nextR && nextR.includes(p1);
+              const w2 = p2 && nextR && nextR.includes(p2);
 
               return (
                 <React.Fragment key={idx}>
@@ -338,7 +342,7 @@ export const BracketView = ({
                         {p1 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s[idx]}
+                        {s ? s[idx] : ""}
                       </span>
                     </div>
                     <div
@@ -359,7 +363,7 @@ export const BracketView = ({
                         {p2 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s[idx + 1]}
+                        {s ? s[idx + 1] : ""}
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
@@ -374,8 +378,8 @@ export const BracketView = ({
           <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
             {[0, 2].map((idx, i) => {
               const [r, s] = getRoundData('sf');
-              const p1 = r[idx];
-              const p2 = r[idx + 1];
+              const p1 = r ? r[idx] : null;
+              const p2 = r ? r[idx + 1] : null;
 
               // Determinamos ganadores de Semis mirando si están en la final o si son el winner/runnerUp
               let finals = [];
@@ -414,7 +418,7 @@ export const BracketView = ({
                         {p1 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s[idx]}
+                        {s ? s[idx] : ""}
                       </span>
                     </div>
                     <div
@@ -435,7 +439,7 @@ export const BracketView = ({
                         {p2 || ""}
                       </span>
                       <span className="text-black font-black text-xs ml-1">
-                        {s[idx + 1]}
+                        {s ? s[idx + 1] : ""}
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
