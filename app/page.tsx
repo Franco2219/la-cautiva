@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/button"; // Este se usa para los botones grises normales
+import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -15,21 +15,40 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
-// --- BOTÓN DINÁMICO CORREGIDO (Usa <button> nativo para control total del hover) ---
+// --- MAPA DE COLORES PARA CORREGIR EL HOVER ---
+// Traductor para que el botón entienda tus colores de constants.ts
+const colorMap: any = {
+  "bg-blue-900": "#1e3a8a",
+  "bg-blue-950": "#172554",
+  "bg-[#00703C]": "#00703C",
+  "bg-[#b35a38]": "#b35a38",
+  "bg-[#e10600]": "#e10600",
+  "bg-[#0091d2]": "#0091d2",
+  "bg-[#003369]": "#003369",
+  "bg-[#002865]": "#002865",
+  "bg-[#00572e]": "#00572e"
+};
+
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Extraemos el código HEX de la clase de Tailwind (fallback: naranja)
-  const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
+  // 1. Intentamos sacar el HEX directo (si es [#...])
+  let hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1];
+  
+  // 2. Si no es HEX, buscamos en el mapa (para bg-blue-900, etc.)
+  if (!hexColor && colorMap[colorClass]) {
+      hexColor = colorMap[colorClass];
+  }
+  
+  // 3. Fallback final (Naranja) solo si falla todo
+  if (!hexColor) hexColor = "#ea580c"; 
 
   return (
     <button 
       onClick={onClick} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      // Clases base de Tailwind para forma y tipografía
-      className={`${className} flex items-center justify-center rounded-md transition-all duration-300 font-bold h-12 shadow-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
-      // Estilos en línea para el color dinámico (ESTO ASEGURA EL HOVER)
+      className={`${className} flex items-center justify-center rounded-md transition-all duration-300 font-bold h-12 shadow-lg text-sm focus-visible:outline-none disabled:opacity-50`}
       style={{
         backgroundColor: isHovered ? "white" : hexColor,
         color: isHovered ? hexColor : "white",
@@ -51,6 +70,7 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
+    // Funciones
     fetchRankingData,
     fetchBracketData,
     runDirectDraw, 
@@ -154,23 +174,21 @@ export default function Home() {
         
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
-             {/* LÓGICA VISUAL: Transformamos datos para que el BracketView muestre "ZN" */}
              {(() => {
-                const previewR1: any[] = []; // Cambiado a any[] para guardar objetos completos
+                const previewR1: any[] = [];
                 const previewS1: string[] = [];
                 const previewSeeds: any = {};
 
                 generatedBracket.forEach((match) => {
-                    // CORRECCIÓN CRÍTICA: Pasamos el objeto completo, no solo el nombre
+                    // CORRECCIÓN CRÍTICA: Pasamos el objeto completo (con rank), no solo el nombre string
                     const p1Obj = match.p1 ? match.p1 : { name: "BYE", rank: 0 };
                     const p2Obj = match.p2 ? match.p2 : { name: "BYE", rank: 0 };
                     
-                    previewR1.push(p1Obj); // Guardamos objeto con rank
-                    previewR1.push(p2Obj); // Guardamos objeto con rank
+                    previewR1.push(p1Obj); // <--- ESTO ARREGLA LOS NÚMEROS
+                    previewR1.push(p2Obj);
                     previewS1.push("");
                     previewS1.push("");
 
-                    // Esto sigue igual por compatibilidad
                     if (match.p1 && match.p1.rank) {
                         const label = match.p1.groupIndex !== undefined ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` : `${match.p1.rank}`;
                         previewSeeds[match.p1.name] = label;
@@ -183,7 +201,7 @@ export default function Home() {
 
                 const previewData = {
                     bracketSize: navState.bracketSize,
-                    r1: previewR1, // Ahora contiene objetos {name, rank}
+                    r1: previewR1, 
                     s1: previewS1,
                     r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [],
                     winner: "", 
@@ -206,7 +224,6 @@ export default function Home() {
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                                 
-                                {/* USO DE BOTONES DINÁMICOS PARA SORTEAR */}
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                                   <DynamicButton 
                                     onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} 
@@ -255,7 +272,7 @@ export default function Home() {
                 <div className="flex space-x-2 text-center text-center">
                   <DynamicButton 
                     onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} 
-                    className="w-full" // Ajuste de ancho
+                    className="w-full"
                     icon={Shuffle}
                     colorClass={currentStyle.color}
                   >
