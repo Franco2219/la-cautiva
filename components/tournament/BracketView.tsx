@@ -26,11 +26,21 @@ export const BracketView = ({
   const bracketStyle = getTournamentStyle(navState.tournamentShort);
   const tournamentName = getTournamentName(navState.tournamentShort);
   
-  // CORRECCIÓN: Detección inteligente del tamaño.
-  // Si bracketSize viene mal o nulo, pero la lista de jugadores (r1) tiene más de 32 personas,
-  // forzamos el tamaño a 64 para que no se corte el cuadro.
-  let getSize = Number(bracketData.bracketSize) || 16;
+  // --- CORRECCIÓN DEFINITIVA DE TAMAÑO ---
+  // Por defecto confiamos en el dato bracketSize, pero si es dudoso, usamos 32.
+  let getSize = Number(bracketData.bracketSize) || 32;
+
+  // Lógica de "Fuerza Bruta": Si la lista de la Ronda 1 tiene más de 32 elementos 
+  // (independientemente de bracketSize), TIENE que ser un cuadro de 64.
   if (bracketData.r1 && bracketData.r1.length > 32) {
+      getSize = 64;
+  }
+  
+  // Doble chequeo: Si el nombre del torneo sugiere Grand Slam (AO, US Open, etc) y no es qualy,
+  // y tenemos datos en r1, forzamos 64 para evitar errores visuales.
+  const isGrandSlam = ["AO", "US", "WB", "RG"].includes(navState.tournamentShort);
+  if (isGrandSlam && bracketData.r1 && bracketData.r1.length >= 32 && getSize < 64) {
+      // Si es Grand Slam y hay bastantes datos, ante la duda mostramos 64 para no ocultar la primera ronda
       getSize = 64;
   }
 
@@ -125,6 +135,7 @@ export const BracketView = ({
                 const [r, s, nextR] = getRoundData('r64');
                 const p1 = r ? r[idx] : null;
                 const p2 = r ? r[idx + 1] : null;
+                // Usamos verificaciones seguras (p1 && nextR && nextR.includes...) para evitar errores si la siguiente ronda está vacía
                 const w1 = p1 && nextR && nextR.includes(p1);
                 const w2 = p2 && nextR && nextR.includes(p2);
 
