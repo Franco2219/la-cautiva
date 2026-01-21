@@ -539,7 +539,7 @@ export const BracketView = ({
           <h3 className="text-2xl font-black uppercase tracking-wider mb-2">
             Cuadro no definido aún
           </h3>
-        {bracketData.canGenerate ? (
+          {bracketData.canGenerate ? (
             <div className="mt-4">
               <p className="font-medium text-slate-500 mb-4">
                 Se encontraron clasificados en el sistema.
@@ -548,28 +548,26 @@ export const BracketView = ({
                 {tournaments.find(
                   (t) => t.short === navState.tournamentShort
                 )?.type === "direct" ? (
-                  <Button
+                  <button
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
                     }
-                    // EDITAR ESTA LÍNEA:
-                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                  </Button>
+                  </button>
                 ) : (
-                  <Button
+                  <button
                     onClick={() =>
                       fetchQualifiersAndDraw(
                         navState.category,
                         navState.tournamentShort
                       )
                     }
-                    // EDITAR ESTA LÍNEA TAMBIÉN:
-                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
