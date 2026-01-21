@@ -552,7 +552,8 @@ export const BracketView = ({
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
                     }
-                    className={`${bracketStyle.color} text-white font-bold px-8 shadow-lg`}
+                    // EDITAR ESTA LÍNEA:
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </Button>
@@ -564,7 +565,8 @@ export const BracketView = ({
                         navState.tournamentShort
                       )
                     }
-                    className={`${bracketStyle.color} text-white font-bold px-8 shadow-lg`}
+                    // EDITAR ESTA LÍNEA TAMBIÉN:
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 shadow-lg`}
                   >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </Button>
