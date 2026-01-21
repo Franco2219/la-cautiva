@@ -337,9 +337,6 @@ export const useTournamentData = () => {
         for (let i = 0; i < bracketSize; i += 2) { 
             let p1 = slots[i]; 
             let p2 = slots[i+1]; 
-            // [FIX] ELIMINADO EL SWAP SI P1 ES BYE
-            // Esto asegura que el Seed #2 (que está en p2) se quede en el slot de abajo (16), 
-            // y no suba al slot 15 (anteúltimo) por estética.
             matches.push({ p1, p2 }); 
         }
         setGeneratedBracket(matches); setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
@@ -409,7 +406,7 @@ export const useTournamentData = () => {
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
-    setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
@@ -421,20 +418,49 @@ export const useTournamentData = () => {
             try { const resGroups = await fetch(urlGroups); const txtGroups = await resGroups.text(); const rowsGroups = parseCSV(txtGroups); let foundQualifiers = false; for(let i=0; i<Math.min(rowsGroups.length, 50); i++) { const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-"; const hasQualifiersList = rowsGroups[i] && rowsGroups[i][12] && rowsGroups[i][12] !== "" && rowsGroups[i][12] !== "-"; if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; } } setBracketData({ hasData: false, canGenerate: foundQualifiers }); } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
         }
     };
+    // CORRECCIÓN BYES: Soporte para cuadros de 32 y 64
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data; const newR2 = [...r2]; const newR3 = [...r3];
-        if (bracketSize === 32) { for (let i = 0; i < r1.length; i += 2) { const p1 = r1[i]; const p2 = r1[i+1]; const targetIdx = Math.floor(i / 2); if (!newR2[targetIdx] || newR2[targetIdx] === "") { if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1; else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2; } } data.r2 = newR2; }
-        const roundPrev = bracketSize === 32 ? newR2 : r1; const roundNext = bracketSize === 32 ? newR3 : r2; 
-        for (let i = 0; i < roundPrev.length; i += 2) { const p1 = roundPrev[i]; const p2 = roundPrev[i+1]; const targetIdx = Math.floor(i / 2); if (!roundNext[targetIdx] || roundNext[targetIdx] === "") { if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1; else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2; } }
-        if (bracketSize === 32) { data.r3 = newR3; } else { data.r2 = roundNext; } return data;
+        if (bracketSize === 32 || bracketSize === 64) { 
+            // Para 64 o 32, queremos pre-llenar la siguiente ronda (r2) con los ganadores del BYE de r1
+            for (let i = 0; i < r1.length; i += 2) { 
+                const p1 = r1[i]; const p2 = r1[i+1]; const targetIdx = Math.floor(i / 2); 
+                if (!newR2[targetIdx] || newR2[targetIdx] === "") { 
+                    if (p2 === "BYE" && p1 && p1 !== "BYE") newR2[targetIdx] = p1; 
+                    else if (p1 === "BYE" && p2 && p2 !== "BYE") newR2[targetIdx] = p2; 
+                } 
+            } 
+            data.r2 = newR2; 
+        }
+        
+        // Propagación genérica: Si estamos en 32, llenamos r3 desde r2. Si estamos en 64, llenamos r3 desde r2 (igual lógica)
+        const roundPrev = (bracketSize === 32 || bracketSize === 64) ? newR2 : r1; 
+        const roundNext = (bracketSize === 32 || bracketSize === 64) ? newR3 : r2; 
+        
+        for (let i = 0; i < roundPrev.length; i += 2) { 
+            const p1 = roundPrev[i]; const p2 = roundPrev[i+1]; const targetIdx = Math.floor(i / 2); 
+            if (!roundNext[targetIdx] || roundNext[targetIdx] === "") { 
+                if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1; 
+                else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2; 
+            } 
+        }
+        if (bracketSize === 32 || bracketSize === 64) { data.r3 = newR3; } else { data.r2 = roundNext; } 
+        return data;
     }
+
     try {
       const response = await fetch(urlBracket); const csvText = await response.text(); const rows = parseCSV(csvText); const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
       if (hasContent) {
-          const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; let bracketSize = 16; if (playersInCol1 > 16) bracketSize = 32; else if (playersInCol1 <= 8) bracketSize = 8; 
+          const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; 
+          
+          // --- CORRECCIÓN: Detección de tamaño 64 ---
+          let bracketSize = 16; 
+          if (playersInCol1 > 32) bracketSize = 64; // IMPORTANTE
+          else if (playersInCol1 > 16) bracketSize = 32; 
+          else if (playersInCol1 <= 8) bracketSize = 8; 
+          
           let seeds: any = {};
           
-          // >>> NUEVA LOGICA: Seeds para DIRECT y FULL (ZN)
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
           if (tourType === "direct") {
@@ -443,41 +469,44 @@ export const useTournamentData = () => {
                const rankRes = await fetch(rankUrl);
                const rankCsv = await rankRes.text();
                const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0})).sort((a,b) => b.total - a.total);
-               rankRows.slice(0, 8).forEach((p, i) => {
-                   if(p.name) seeds[p.name] = i + 1;
-               });
-            } catch(e) { console.log("No se pudieron cargar seeds para torneo directo", e); }
+               rankRows.slice(0, 8).forEach((p, i) => { if(p.name) seeds[p.name] = i + 1; });
+            } catch(e) { console.log("No seeds direct", e); }
           } else {
-             // LOGICA RECUPERADA PARA TORNEOS DE GRUPOS (ZN)
              try {
-                const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; 
-                const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
-                const res = await fetch(urlGroups);
-                const txt = await res.text();
-                const groupRows = parseCSV(txt);
-                for(let i = 0; i < 50; i++) { 
-                    if (groupRows[i]) { 
-                        const winnerName = groupRows[i][12]; 
-                        const runnerName = groupRows[i][13]; 
-                        if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) { 
-                            seeds[winnerName] = `1° ZN ${i + 1}`; 
-                        } 
-                        if (runnerName && runnerName !== "-" && runnerName !== "" && !runnerName.toLowerCase().includes("2do")) { 
-                            seeds[runnerName] = `2° ZN ${i + 1}`; 
-                        } 
-                    } 
-                }
-             } catch(e) { console.log("Error cargando seeds de grupos", e); }
+                const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
+                const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
+                for(let i = 0; i < 50; i++) { if (groupRows[i]) { const winnerName = groupRows[i][12]; const runnerName = groupRows[i][13]; if (winnerName && !winnerName.toLowerCase().includes("1ro")) seeds[winnerName] = `1° ZN ${i + 1}`; if (runnerName && !runnerName.toLowerCase().includes("2do")) seeds[runnerName] = `2° ZN ${i + 1}`; } }
+             } catch(e) { console.log("Error seeds grupos", e); }
           }
-          // <<< FIN NUEVA LOGICA
 
-          let rawData: any = {}; let winnerIdx = -1; if (bracketSize === 32) winnerIdx = 10; else if (bracketSize === 16) winnerIdx = 8; else if (bracketSize === 8) winnerIdx = 6; 
+          let rawData: any = {}; let winnerIdx = -1; 
+          if (bracketSize === 64) winnerIdx = 12; // IMPORTANTE
+          else if (bracketSize === 32) winnerIdx = 10; 
+          else if (bracketSize === 16) winnerIdx = 8; 
+          else if (bracketSize === 8) winnerIdx = 6; 
+          
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : ""; const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
           const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : ""); const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
-          if (bracketSize === 32) { rawData = { r1: getColData(0, 32), s1: getScoreData(1, 32), r2: getColData(2, 16), s2: getScoreData(3, 16), r3: getColData(4, 8),  s3: getScoreData(5, 8), r4: getColData(6, 4),  s4: getScoreData(7, 4), r5: getColData(8, 2),  s5: getScoreData(9, 2), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds }; } 
+          
+          // --- CORRECCIÓN: Bloque de lectura para 64 ---
+          if (bracketSize === 64) {
+              rawData = { 
+                  r1: getColData(0, 64), s1: getScoreData(1, 64), 
+                  r2: getColData(2, 32), s2: getScoreData(3, 32), 
+                  r3: getColData(4, 16), s3: getScoreData(5, 16), 
+                  r4: getColData(6, 8),  s4: getScoreData(7, 8), 
+                  r5: getColData(8, 4),  s5: getScoreData(9, 4), 
+                  r6: getColData(10, 2), s6: getScoreData(11, 2), // Finalists 
+                  winner: winner, runnerUp: runnerUp, 
+                  bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
+              };
+          }
+          else if (bracketSize === 32) { rawData = { r1: getColData(0, 32), s1: getScoreData(1, 32), r2: getColData(2, 16), s2: getScoreData(3, 16), r3: getColData(4, 8),  s3: getScoreData(5, 8), r4: getColData(6, 4),  s4: getScoreData(7, 4), r5: getColData(8, 2),  s5: getScoreData(9, 2), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds }; } 
           else if (bracketSize === 16) { rawData = { r1: getColData(0, 16), s1: getScoreData(1, 16), r2: getColData(2, 8),  s2: getScoreData(3, 8), r3: getColData(4, 4),  s3: getScoreData(5, 4), r4: getColData(6, 2),  s4: getScoreData(7, 2), winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds }; } 
           else { rawData = { r1: getColData(0, 8), s1: getScoreData(1, 8), r2: getColData(2, 4), s2: getScoreData(3, 4), r3: getColData(4, 2), s3: getScoreData(5, 2), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds }; }
-          if (bracketSize !== 8) rawData = processByes(rawData); setBracketData(rawData);
+          
+          if (bracketSize !== 8) rawData = processByes(rawData); 
+          setBracketData(rawData);
       } else { await checkCanGenerate(); }
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
