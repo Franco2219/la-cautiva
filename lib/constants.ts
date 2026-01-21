@@ -38,7 +38,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
         logo: "/logos/adelaide.png", 
-        pointsLogo: null 
+        pointsLogo: "/logos/pts_s8_500.png" 
     },
     "ao": { 
         color: "bg-blue-900", 
@@ -116,6 +116,13 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logos/s8_250.png", 
         pointsLogo: "/logos/pts_s8_250.png" 
     },
+    "adelaide_250: {
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/adelaide.png", 
+        pointsLogo: "/logos/pts_s8_250.png" 
 
     // FALLBACK
     "default": { 
