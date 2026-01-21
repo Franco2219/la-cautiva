@@ -261,7 +261,20 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+           <BracketView 
+              bracketData={{
+                ...bracketData,
+                // Inyectamos los seeds usando el rankingData disponible
+                seeds: bracketData.seeds || (rankingData || []).slice(0, 8).reduce((acc: any, curr: any, index: number) => {
+                    const name = curr.jugador || curr.name; 
+                    if (name) acc[name] = index + 1;
+                    return acc;
+                }, {})
+              }} 
+              navState={navState} 
+              runDirectDraw={runDirectDraw} 
+              fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
+           />
         )}
 
         {navState.level === "ranking-view" && (
