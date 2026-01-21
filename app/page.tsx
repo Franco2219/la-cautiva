@@ -120,12 +120,7 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      if (t.type === "direct") { 
-                        // [FIX] Cargamos el ranking también para tener los seeds disponibles
-                        fetchRankingData(navState.category, "2026"); 
-                        fetchBracketData(navState.category, t.short); 
-                        setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); 
-                      }
+                      if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
                   </Button>
@@ -141,8 +136,6 @@ export default function Home() {
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
                   <Button onClick={() => { 
                       const tourName = getTournamentName(navState.currentTour);
-                      // [FIX] Aseguramos cargar ranking al volver desde fases
-                      fetchRankingData(navState.currentCat, "2026");
                       fetchBracketData(navState.currentCat, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
@@ -152,8 +145,6 @@ export default function Home() {
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
                   <Button onClick={() => { 
                       const tourName = getTournamentName(navState.currentTour);
-                      // [FIX] Aseguramos cargar ranking al volver desde fases
-                      fetchRankingData(navState.currentCat, "2026");
                       fetchBracketData(navState.currentCat, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
@@ -270,20 +261,7 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView 
-              bracketData={{
-                ...bracketData,
-                // [FIX] Inyectamos los seeds usando el rankingData (ahora sí estará cargado)
-                seeds: bracketData.seeds || (rankingData || []).slice(0, 8).reduce((acc: any, curr: any, index: number) => {
-                    const name = curr.jugador || curr.name; 
-                    if (name) acc[name] = index + 1;
-                    return acc;
-                }, {})
-              }} 
-              navState={navState} 
-              runDirectDraw={runDirectDraw} 
-              fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
-           />
+           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
         )}
 
         {navState.level === "ranking-view" && (
