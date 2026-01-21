@@ -6,7 +6,7 @@ import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Li
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-import { useState } from "react";
+import { useState } from "react"; // Necesario para el hover
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -15,27 +15,26 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
-// --- BOTÓN DINÁMICO (HOVER EFECTO) ---
+// --- NUEVO COMPONENTE DE BOTÓN DINÁMICO ---
+// Extrae el color hexadecimal de la clase (ej: bg-[#123456]) y gestiona el hover
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Extraemos el código HEX de la clase de Tailwind (fallback: naranja)
+  // Extraemos el código HEX de la clase de Tailwind (ej: bg-[#00572e] -> #00572e)
+  // Si no encuentra un hex, usa un fallback naranja.
   const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
 
   const baseStyle = {
     backgroundColor: isHovered ? "white" : hexColor,
     color: isHovered ? hexColor : "white",
     border: `2px solid ${hexColor}`,
-    transition: "all 0.3s ease",
-    fontWeight: "bold",
-    height: "3rem", // h-12 equivalent
-    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+    transition: "all 0.3s ease"
   };
 
   return (
     <Button 
       onClick={onClick} 
-      className={`${className} border-0`} 
+      className={`${className} border-0`} // Quitamos bordes default para usar el nuestro
       style={baseStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -192,7 +191,7 @@ export default function Home() {
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                                   <DynamicButton 
                                     onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} 
-                                    className="px-8"
+                                    className="font-bold h-12 px-8 shadow-lg"
                                     icon={Shuffle}
                                     colorClass={currentStyle.color}
                                   >
@@ -201,7 +200,7 @@ export default function Home() {
                                 ) : (
                                   <DynamicButton 
                                     onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} 
-                                    className="px-8"
+                                    className="font-bold h-12 px-8 shadow-lg"
                                     icon={Shuffle}
                                     colorClass={currentStyle.color}
                                   >
@@ -237,7 +236,7 @@ export default function Home() {
                 <div className="flex space-x-2 text-center text-center">
                   <DynamicButton 
                     onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} 
-                    className=""
+                    className="font-bold h-12 shadow-lg"
                     icon={Shuffle}
                     colorClass={currentStyle.color}
                   >
