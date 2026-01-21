@@ -332,7 +332,16 @@ export const useTournamentData = () => {
         let countRealTop = slots.slice(0, bracketSize/2).filter(x => x && x.name !== "BYE").length; let countRealBot = slots.slice(bracketSize/2).filter(x => x && x.name !== "BYE").length; let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         for (const player of nonSeeds) { const emptyTop = emptySlots.filter(i => i < bracketSize/2); const emptyBot = emptySlots.filter(i => i >= bracketSize/2); let targetIdx = -1; if (countRealTop < countRealBot && emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (countRealBot < countRealTop && emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else { if (emptyTop.length > 0 && emptyBot.length > 0) { targetIdx = Math.random() > 0.5 ? emptyTop[Math.floor(Math.random() * emptyTop.length)] : emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else if (emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } } if (targetIdx !== -1) { slots[targetIdx] = player; if (targetIdx < bracketSize/2) countRealTop++; else countRealBot++; emptySlots = emptySlots.filter(i => i !== targetIdx); } }
         for (let i = 0; i < slots.length; i++) { if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 }; }
-        let matches = []; for (let i = 0; i < bracketSize; i += 2) { let p1 = slots[i]; let p2 = slots[i+1]; if (p1?.name === "BYE" && p2?.name !== "BYE") { let temp = p1; p1 = p2; p2 = temp; } matches.push({ p1, p2 }); }
+        
+        let matches = []; 
+        for (let i = 0; i < bracketSize; i += 2) { 
+            let p1 = slots[i]; 
+            let p2 = slots[i+1]; 
+            // [FIX] ELIMINADO EL SWAP SI P1 ES BYE
+            // Esto asegura que el Seed #2 (que está en p2) se quede en el slot de abajo (16), 
+            // y no suba al slot 15 (anteúltimo) por estética.
+            matches.push({ p1, p2 }); 
+        }
         setGeneratedBracket(matches); setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
