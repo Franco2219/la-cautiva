@@ -123,7 +123,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         trophyColor: "text-blue-900", 
         logo: "/logos/adelaide.png", 
         pointsLogo: "/logos/pts_s8_250.png" 
-
+    },
     // FALLBACK
     "default": { 
         color: "bg-[#b35a38]", 
