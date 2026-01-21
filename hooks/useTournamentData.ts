@@ -70,7 +70,7 @@ export const useTournamentData = () => {
 
       let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
       
-      // 1. SEEDS FIJOS (Cabezas de serie 1, 2, 3, 4)
+      // 1. SEEDS FIJOS
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
@@ -97,28 +97,20 @@ export const useTournamentData = () => {
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
       
-      // --- NUEVA LÓGICA SOLICITADA: Evitar cruces de 1ros en 2da ronda para cuadros de 64 ---
+      // --- LÓGICA DE DISTRIBUCIÓN INTELIGENTE (64 JUGADORES) ---
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
-             // Calculamos cuántos ganadores (rank 1) hay ya en cada "bloque" de 2da ronda.
-             // Cada bloque de 2da ronda se alimenta de 2 partidos de 1ra ronda (indices par e impar: 0-1, 2-3, etc.)
-             const blockCounts = Array(16).fill(0); // 16 partidos en 2da ronda
+             const blockCounts = Array(16).fill(0); 
              matches.forEach((m, i) => {
                  if ((m.p1 && m.p1.rank === 1) || (m.p2 && m.p2.rank === 1)) {
                      blockCounts[Math.floor(i / 2)]++;
                  }
              });
-             
-             // Buscamos partidos vacíos disponibles
              const candidates = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1);
-             
-             // Ordenamos los candidatos priorizando aquellos cuyo "bloque" aún no tenga un ganador (rank 1)
              candidates.sort((a, b) => {
                  const countA = blockCounts[Math.floor(a / 2)];
                  const countB = blockCounts[Math.floor(b / 2)];
-                 // Si un bloque tiene menos ganadores, va primero (prioridad absoluta)
                  if (countA !== countB) return countA - countB;
-                 // Si empatan, aleatorio
                  return Math.random() - 0.5;
              });
              
@@ -129,7 +121,6 @@ export const useTournamentData = () => {
              }
           });
       } else {
-          // Lógica estándar aleatoria para cuadros más chicos donde el cruce es inevitable o irrelevante
           const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
           otherWinners.forEach(w => {
               if (availableMatches.length > 0) {
@@ -139,7 +130,7 @@ export const useTournamentData = () => {
               }
           });
       }
-      // -----------------------------------------------------------------------------------------
+      // ---------------------------------------------------------
 
       // 2. RUNNERS Y RELLENO
       const topMatches = matches.slice(0, halfMatches);
@@ -497,15 +488,42 @@ export const useTournamentData = () => {
           
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
+          // >>> NUEVA LOGICA: Seeds para DIRECT y FULL (ZN)
           if (tourType === "direct") {
             try {
                const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
                const rankRes = await fetch(rankUrl);
                const rankCsv = await rankRes.text();
-               const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0})).sort((a,b) => b.total - a.total);
-               rankRows.slice(0, 8).forEach((p, i) => { if(p.name) seeds[p.name] = i + 1; });
-            } catch(e) { console.log("No seeds direct", e); }
+               
+               // 1. Obtenemos ranking global completo (Nombre y Puntos)
+               const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0}));
+               
+               // 2. Obtenemos los jugadores presentes en el cuadro (Columna 0)
+               const playersInBracket = rows.map(r => r[0]).filter(n => n && n.trim() !== "" && n !== "-" && n !== "BYE");
+               
+               // 3. Cruzamos los datos: Buscamos los puntos de SOLO los jugadores presentes
+               const tournamentSeeds = playersInBracket.map(pName => {
+                   const rankedPlayer = rankRows.find(rp => 
+                       rp.name && (
+                         rp.name.toLowerCase().trim() === pName.toLowerCase().trim() ||
+                         rp.name.toLowerCase().includes(pName.toLowerCase()) || 
+                         pName.toLowerCase().includes(rp.name.toLowerCase())
+                       )
+                   );
+                   return { name: pName, total: rankedPlayer ? rankedPlayer.total : 0 };
+               });
+
+               // 4. Ordenamos por puntos descendente para saber los seeds REALES del torneo
+               tournamentSeeds.sort((a, b) => b.total - a.total);
+
+               // 5. Asignamos los seeds (Top 16 para cubrir cualquier tamaño)
+               tournamentSeeds.slice(0, 16).forEach((p, i) => {
+                   seeds[p.name] = i + 1;
+               });
+
+            } catch(e) { console.log("Error seeds direct", e); }
           } else {
+             // Lógica para torneos de grupos (mantiene lo de 1° ZN)
              try {
                 const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                 const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
