@@ -8,19 +8,27 @@ interface MatchProps {
 }
 
 export const GeneratedMatch = ({ match }: MatchProps) => {
+  // Función auxiliar para determinar la etiqueta del seed
+  const getSeedLabel = (player: any) => {
+    // Si no hay jugador, no tiene ranking, es rank 0 o es BYE, no mostramos nada.
+    if (!player || !player.rank || player.rank === 0 || player.name === "BYE") return "";
+    
+    // Si tiene groupIndex, viene de fase de grupos (ej: "1 ZN 2")
+    if (player.groupIndex !== undefined && player.groupIndex !== null) {
+        return `${player.rank} ZN ${player.groupIndex + 1}`;
+    }
+    
+    // Si no, es un seed directo (ej: "1.") -> ESTO ES LO QUE PEDISTE
+    return `${player.rank}.`;
+  };
+
   return (
     <div className="relative flex flex-col space-y-4 mb-8 w-full max-w-md mx-auto">
       {/* Jugador 1 */}
       <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-        {match.p1 && match.p1.name !== "BYE" && (
-          <span className="text-orange-500 font-black text-lg w-24 text-right whitespace-nowrap">
-            {match.p1.rank && match.p1.rank > 0
-              ? match.p1.groupIndex !== undefined
-                ? `${match.p1.rank} ZN ${match.p1.groupIndex + 1}` // Formato Grupos (Full)
-                : `${match.p1.rank}.` // Formato Directo: "1."
-              : ""}
-          </span>
-        )}
+        <span className="text-orange-500 font-black text-lg w-24 text-right whitespace-nowrap">
+          {getSeedLabel(match.p1)}
+        </span>
         <span
           className={`font-black text-xl uppercase truncate ${
             match.p1 ? "text-slate-800" : "text-slate-300"
@@ -32,15 +40,9 @@ export const GeneratedMatch = ({ match }: MatchProps) => {
 
       {/* Jugador 2 */}
       <div className="flex items-center gap-4 border-b-2 border-slate-300 pb-2 relative bg-white">
-        {match.p2 && match.p2.name !== "BYE" && (
-          <span className="text-orange-500 font-black text-lg w-24 text-right whitespace-nowrap">
-            {match.p2.rank && match.p2.rank > 0
-              ? match.p2.groupIndex !== undefined
-                ? `${match.p2.rank} ZN ${match.p2.groupIndex + 1}` // Formato Grupos
-                : `${match.p2.rank}.` // Formato Directo
-              : ""}
-          </span>
-        )}
+        <span className="text-orange-500 font-black text-lg w-24 text-right whitespace-nowrap">
+          {getSeedLabel(match.p2)}
+        </span>
         <span
           className={`font-black text-xl uppercase truncate ${
             match.p2?.name === "BYE"

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Mantenemos Button para los normales
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -15,34 +15,30 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 
-// --- BOTÓN DINÁMICO (HOVER EFECTO) ---
+// --- BOTÓN DINÁMICO CORREGIDO (Usa <button> nativo para control total del hover) ---
 const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Extraemos el código HEX de la clase de Tailwind (fallback: naranja)
+  // Extraemos el código HEX de la clase de Tailwind
   const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
 
-  const baseStyle = {
-    backgroundColor: isHovered ? "white" : hexColor,
-    color: isHovered ? hexColor : "white",
-    border: `2px solid ${hexColor}`,
-    transition: "all 0.3s ease",
-    fontWeight: "bold",
-    height: "3rem", // h-12 equivalent
-    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
-  };
-
   return (
-    <Button 
+    <button 
       onClick={onClick} 
-      className={`${className} border-0`} 
-      style={baseStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      // Clases base de Tailwind para forma y tipografía
+      className={`${className} flex items-center justify-center rounded-md transition-all duration-300 font-bold h-12 shadow-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50`}
+      // Estilos en línea para el color dinámico
+      style={{
+        backgroundColor: isHovered ? "white" : hexColor,
+        color: isHovered ? hexColor : "white",
+        border: `2px solid ${hexColor}`,
+      }}
     >
       {Icon && <Icon className="mr-2 w-4 h-4" />}
       {children}
-    </Button>
+    </button>
   );
 };
 
