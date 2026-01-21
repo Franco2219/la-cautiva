@@ -210,7 +210,7 @@ export const useTournamentData = () => {
 
   const confirmarYEnviar = () => {
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    groupData.forEach(g => { mensaje += `${g.groupName}\n${g.players.join('\n')}\n`; });
+    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
   };

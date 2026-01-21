@@ -6,7 +6,6 @@ import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Li
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-import { useState } from "react"; // Necesario para el hover
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -14,36 +13,6 @@ import { GeneratedMatch } from "@/components/tournament/GeneratedMatch";
 import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
-
-// --- NUEVO COMPONENTE DE BOTÓN DINÁMICO ---
-// Extrae el color hexadecimal de la clase (ej: bg-[#123456]) y gestiona el hover
-const DynamicButton = ({ onClick, className, icon: Icon, children, colorClass }: any) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Extraemos el código HEX de la clase de Tailwind (ej: bg-[#00572e] -> #00572e)
-  // Si no encuentra un hex, usa un fallback naranja.
-  const hexColor = colorClass?.match(/\[(#[0-9a-fA-F]+)\]/)?.[1] || "#ea580c"; 
-
-  const baseStyle = {
-    backgroundColor: isHovered ? "white" : hexColor,
-    color: isHovered ? hexColor : "white",
-    border: `2px solid ${hexColor}`,
-    transition: "all 0.3s ease"
-  };
-
-  return (
-    <Button 
-      onClick={onClick} 
-      className={`${className} border-0`} // Quitamos bordes default para usar el nuestro
-      style={baseStyle}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {Icon && <Icon className="mr-2 w-4 h-4" />}
-      {children}
-    </Button>
-  );
-};
 
 export default function Home() {
   const {
@@ -54,13 +23,14 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
+    // --- LISTA COMPLETA DE FUNCIONES (NO BORRAR NADA DE ESTO) ---
     fetchRankingData,
     fetchBracketData,
     runDirectDraw, 
     runATPDraw,
     fetchGroupPhase, 
     fetchQualifiersAndDraw,
-    confirmarYEnviar,
+    confirmarYEnviar, // <--- ESTO ARREGLA EL ERROR DE VERCEL
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, 
@@ -153,8 +123,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* VISTAS ESPECÍFICAS */}
-        
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
              {(() => {
@@ -186,28 +154,11 @@ export default function Home() {
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
-                                
-                                {/* USO DE BOTONES DINÁMICOS PARA SORTEAR */}
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
-                                  <DynamicButton 
-                                    onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} 
-                                    className="font-bold h-12 px-8 shadow-lg"
-                                    icon={Shuffle}
-                                    colorClass={currentStyle.color}
-                                  >
-                                    Sortear
-                                  </DynamicButton>
+                                <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
                                 ) : (
-                                  <DynamicButton 
-                                    onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} 
-                                    className="font-bold h-12 px-8 shadow-lg"
-                                    icon={Shuffle}
-                                    colorClass={currentStyle.color}
-                                  >
-                                    Sortear
-                                  </DynamicButton>
+                                <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
                                 )}
-
                                 <Button onClick={confirmarSorteoCuadro} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                                 <Button onClick={() => setNavState({ ...navState, level: "direct-bracket" })} className="bg-red-600 text-white font-bold h-12 px-8"><Trash2 className="mr-2" /> ELIMINAR</Button>
                             </div>
@@ -234,14 +185,7 @@ export default function Home() {
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
-                  <DynamicButton 
-                    onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} 
-                    className="font-bold h-12 shadow-lg"
-                    icon={Shuffle}
-                    colorClass={currentStyle.color}
-                  >
-                    SORTEAR
-                  </DynamicButton>
+                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
                   <Button onClick={() => { setGroupData([]); setNavState({...navState, level: "tournament-phases"}); }} variant="destructive" className="font-bold h-12"><Trash2 className="mr-2" /> ELIMINAR</Button>

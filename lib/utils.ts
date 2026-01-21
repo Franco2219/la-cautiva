@@ -29,7 +29,6 @@ export const getTournamentStyle = (shortName: string) => {
     const key = shortName ? shortName.toLowerCase().trim() : "default";
     const map: any = { 
         "adelaide": "adelaide", 
-        "adelaide_250": "adelaide_250",
         "ao": "ao", 
         "us open": "us", "us": "us", 
         "indian wells": "iw", "iw": "iw", 
