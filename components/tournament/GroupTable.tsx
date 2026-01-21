@@ -40,7 +40,8 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   const style = getTournamentStyle(tournamentShort);
 
   return (
-    <div className={`bg-white border-2 border-opacity-20 rounded-2xl overflow-hidden shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor}`}>
+    // CORRECCIÓN AQUÍ: Agregamos 'md:' a overflow-hidden para que en notebooks no corte el contenido
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit md:overflow-hidden ${style.borderColor}`}>
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
