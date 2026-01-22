@@ -97,7 +97,6 @@ export const useTournamentData = () => {
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
       
-      // --- LÓGICA DE DISTRIBUCIÓN INTELIGENTE (64 JUGADORES) ---
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
              const blockCounts = Array(16).fill(0); 
@@ -197,12 +196,13 @@ export const useTournamentData = () => {
       return { matches, bracketSize };
   }
 
-  // --- ACCIONES PÚBLICAS ---
+  // --- CORRECCIÓN 1: Filtro BYE en Lista Basti ---
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
-             if (m.p1 && m.p2 && m.p2.name !== "BYE") {
+             // Solo enviar si AMBOS son jugadores reales (ninguno es BYE)
+             if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") {
                  mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
              }
          });
@@ -411,7 +411,6 @@ export const useTournamentData = () => {
       } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN: Separación lógica para Direct vs Full ---
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
     
@@ -562,13 +561,17 @@ export const useTournamentData = () => {
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
 
+  // --- CORRECCIÓN 2: Limpieza de cache al volver ---
   const goBack = () => {
     setIsSorteoConfirmado(false);
     const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket" };
     const nextLevel = levels[navState.level] || "home";
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false });
-        setBracketData({ ...bracketData, hasData: false }); setGroupData([]);
+        setBracketData({ ...bracketData, hasData: false });
+        setGroupData([]);
+        // AGREGADO: Borrar generatedBracket para evitar que aparezca info vieja en Lista Basti
+        setGeneratedBracket([]); 
     } else { setNavState({ ...navState, level: nextLevel }); }
   }
 
