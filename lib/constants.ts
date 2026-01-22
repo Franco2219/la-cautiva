@@ -106,7 +106,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         textColor: "text-[#b35a38]", 
         trophyColor: "text-[#b35a38]", 
         logo: "/logos/mc.png", 
-        pointsLogo: "/logos/pts_mc.png" 
+        pointsLogo: null 
     },
     "s8_500": { 
         color: "bg-[#b35a38]", 
