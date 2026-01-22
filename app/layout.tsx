@@ -1,8 +1,9 @@
+import type React from "react";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-// 1. IMPORTAMOS LA LIBRERÍA OFICIAL DE GOOGLE PARA NEXT.JS
-import { GoogleTagManager } from '@next/third-parties/google';
+// 1. IMPORTAMOS GOOGLE ANALYTICS
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -23,11 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      {/* 2. INICIALIZAMOS GOOGLE TAG MANAGER CON TU CÓDIGO */}
-      <GoogleTagManager gtmId="GTM-W973S6SS" />
-      
       <body className={`${poppins.variable} font-sans antialiased`}>
         {children}
+        {/* 2. TU CÓDIGO REAL DE GOOGLE ANALYTICS */}
+        <GoogleAnalytics gaId="G-9Y933CE1PB" />
       </body>
     </html>
   );

@@ -6,8 +6,8 @@ import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Li
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-// 1. IMPORTAMOS LA FUNCIÓN DE EVENTOS DE GOOGLE
-import { sendGTMEvent } from '@next/third-parties/google';
+// 1. IMPORTAMOS LA FUNCIÓN PARA ENVIAR EVENTOS A GOOGLE
+import { sendGAEvent } from '@next/third-parties/google';
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -45,6 +45,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       
+      {/* ESTILOS DE IMPRESIÓN */}
       <style jsx global>{`
         @media print {
           button, .cursor-pointer { display: none !important; }
@@ -61,6 +62,7 @@ export default function Home() {
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
+        {/* HEADER / LOGO */}
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
@@ -83,8 +85,8 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
-                  // RASTREO: Botón Ranking
-                  sendGTMEvent({ event: 'button_click', value: 'Menu Principal: Ranking' });
+                  // RASTREO: Botón Ranking del menú principal
+                  sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
                 <Trophy className="mr-2 opacity-50" /> RANKING
@@ -100,13 +102,15 @@ export default function Home() {
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
                   
-                  // --- RASTREO: Categorías ---
+                  // --- RASTREO DE BOTONES (Lógica de diferenciación) ---
                   if (navState.type === "ranking") {
-                      sendGTMEvent({ event: 'button_click', value: `Ranking ${navState.year} ${cat}` });
+                      // Ejemplo: "Ranking 2026 Categoría A"
+                      sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
-                      sendGTMEvent({ event: 'button_click', value: `Caballeros ${cat}` });
+                      // Ejemplo: "Caballeros Categoría A"
+                      sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
                   }
-                  // ---------------------------
+                  // -----------------------------------------------------
 
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
@@ -125,9 +129,10 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      // --- RASTREO: Torneos ---
-                      sendGTMEvent({ event: 'button_click', value: `Torneo ${t.name} - Cat ${navState.category}` });
-                      // ------------------------
+                      // --- RASTREO: Torneo Específico ---
+                      // Ejemplo: "Torneo Australian Open - Cat A"
+                      sendGAEvent('event', 'button_click', { value: `Torneo ${t.name} - Cat ${navState.category}` });
+                      // ----------------------------------
 
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
