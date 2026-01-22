@@ -375,7 +375,7 @@ export default function Home() {
       
       {/* Footer con el botón de Contacto */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse">
-         <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos en vivo</p>
+         <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
              sendGAEvent('event', 'button_click', { value: 'Footer: Contacto' });
