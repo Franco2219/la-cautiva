@@ -221,7 +221,6 @@ export const useTournamentData = () => {
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // --- CORRECCIÓN 2: Sacamos los asteriscos de los grupos para WPP ---
   const confirmarYEnviar = async () => {
     setIsLoading(true);
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
@@ -231,6 +230,7 @@ export const useTournamentData = () => {
        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
        const res = await fetch(rankUrl);
        const txt = await res.text();
+       // OJO: Aquí usamos lógica simplificada para el mensaje, pero el sorteo usa lógica robusta
        const rows = parseCSV(txt).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0 }));
        rows.sort((a,b) => b.total - a.total);
        rows.forEach((p, i) => {
@@ -241,10 +241,9 @@ export const useTournamentData = () => {
     } catch(e) { console.log("Error ranking confirm"); }
 
     groupData.forEach(g => { 
-        // AQUI CAMBIO: Quitamos los * alrededor del nombre del grupo
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            const cleanP = p.trim();
+            const cleanP = p.replace(/\(\d+\)\s+/, "").trim(); 
             const rank = rankMap[cleanP.toLowerCase()];
             if (rank) {
                 mensaje += `(${rank}) ${cleanP}\n`;
@@ -388,29 +387,48 @@ export const useTournamentData = () => {
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN 1: Agregar número (N) a los Top 8 EN EL SORTEO EN VIVO ---
+  // --- CORRECCIÓN LÓGICA IMPORTANTE EN EL SORTEO ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl); const rankCsv = await rankRes.text();
-      const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({ name: row[1] || "", total: row[11] ? parseInt(row[11]) : 0 })).filter(p => p.name !== "");
+      
+      // PARSEO ROBUSTO: Encontramos la columna TOTAL dinámicamente
+      const rawRows = parseCSV(rankCsv);
+      if (!rawRows || rawRows.length === 0) throw new Error("CSV vacío");
+      
+      const headerRow = rawRows[0];
+      // Buscamos el índice de la columna que dice "TOTAL" (mayus/minus/espacios insensitive)
+      let totalIndex = headerRow.findIndex(h => h && h.toUpperCase().trim() === "TOTAL");
+      // Si no la encuentra, fallback al índice 11 (histórico) o al último elemento
+      if (totalIndex === -1) totalIndex = 11;
+
+      const playersRanking = rawRows.slice(1).map(row => ({ 
+          name: row[1] || "", 
+          // Usamos el índice encontrado dinámicamente
+          total: row[totalIndex] ? parseInt(row[totalIndex]) : 0 
+      })).filter(p => p.name !== "");
+
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort).map(cols => cols[2]);
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
-      const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points);
+      
+      const entryList = filteredInscriptos.map(n => { 
+          const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); 
+          return { name: n, points: p ? p.total : 0 }; 
+      }).sort((a, b) => b.points - a.points); // Orden descendente por puntos
+
       const totalPlayers = entryList.length; if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
       let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
       
-      // AQUI CAMBIA: Asignación con número para los TOP 8
       for (let i = 0; i < numGroups; i++) { 
           if (entryList[i]) {
               let pName = entryList[i].name;
-              // Si está en el Top 8 global de este torneo, le agregamos el (N)
               if (i < 8) {
                   pName = `(${i + 1}) ${pName}`;
               }
@@ -424,7 +442,6 @@ export const useTournamentData = () => {
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN 3: Sacar limpieza de nombres para que aparezca el (1) si viene del Excel ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setGroupData([]); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
@@ -437,7 +454,6 @@ export const useTournamentData = () => {
             const potentialP4 = rows[i+4] && rows[i+4][0]; const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*")); const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null; const playersRaw = [rows[i+1], rows[i+2], rows[i+3]]; if (p4) playersRaw.push(p4);
             const validPlayersIndices: number[] = []; const players: string[] = []; const positions: string[] = []; const points: string[] = []; const diff: string[] = []; const gamesDiff: string[] = []; 
             playersRaw.forEach((row, index) => { 
-                // AQUI CAMBIA: Quitamos la limpieza del regex. Se muestra lo que hay en el Excel.
                 const pName = row && row[0] ? row[0] : ""; 
                 if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { players.push(pName); let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); validPlayersIndices.push(index); } 
             });
@@ -462,28 +478,15 @@ export const useTournamentData = () => {
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    
-    // Detectamos si es un torneo directo para aplicar la lógica de "quemar" el número
     const isDirect = tournaments.find(t => t.short === navState.tournamentShort)?.type === "direct";
-
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
-    
     generatedBracket.forEach((match) => { 
         const p1 = match.p1;
         const p2 = match.p2;
-        
-        // Si es DIRECT: usamos (rank) Nombre
-        // Si NO es DIRECT (Full/Grupos): usamos solo Nombre (como antes)
         let p1Name = "TBD";
-        if (p1) {
-            p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name;
-        }
-
+        if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
         let p2Name = "TBD";
-        if (p2) {
-            p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name;
-        }
-
+        if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
         mensaje += `${p1Name}\n${p2Name}\n`; 
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -503,11 +506,9 @@ export const useTournamentData = () => {
             try { const resGroups = await fetch(urlGroups); const txtGroups = await resGroups.text(); const rowsGroups = parseCSV(txtGroups); let foundQualifiers = false; for(let i=0; i<Math.min(rowsGroups.length, 50); i++) { const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i][5] && rowsGroups[i][5] !== "" && rowsGroups[i][5] !== "-"; const hasQualifiersList = rowsGroups[i] && rowsGroups[i][12] && rowsGroups[i][12] !== "" && rowsGroups[i][12] !== "-"; if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; } } setBracketData({ hasData: false, canGenerate: foundQualifiers }); } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
         }
     };
-    // CORRECCIÓN BYES: Soporte para cuadros de 32 y 64
     const processByes = (data: any) => {
         const { r1, r2, r3, r4, bracketSize } = data; const newR2 = [...r2]; const newR3 = [...r3];
         if (bracketSize === 32 || bracketSize === 64) { 
-            // Para 64 o 32, queremos pre-llenar la siguiente ronda (r2) con los ganadores del BYE de r1
             for (let i = 0; i < r1.length; i += 2) { 
                 const p1 = r1[i]; const p2 = r1[i+1]; const targetIdx = Math.floor(i / 2); 
                 if (!newR2[targetIdx] || newR2[targetIdx] === "") { 
@@ -517,11 +518,8 @@ export const useTournamentData = () => {
             } 
             data.r2 = newR2; 
         }
-        
-        // Propagación genérica: Si estamos en 32, llenamos r3 desde r2. Si estamos en 64, llenamos r3 desde r2 (igual lógica)
         const roundPrev = (bracketSize === 32 || bracketSize === 64) ? newR2 : r1; 
         const roundNext = (bracketSize === 32 || bracketSize === 64) ? newR3 : r2; 
-        
         for (let i = 0; i < roundPrev.length; i += 2) { 
             const p1 = roundPrev[i]; const p2 = roundPrev[i+1]; const targetIdx = Math.floor(i / 2); 
             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") { 
@@ -537,13 +535,10 @@ export const useTournamentData = () => {
       const response = await fetch(urlBracket); const csvText = await response.text(); 
       let rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
-      
-      // LIMPIEZA INTELIGENTE DE NOMBRES (Solo para visualizar bonito en Directos)
       let hardcodedSeeds: any = {};
       if (hasContent) {
           rows = rows.map(row => row.map(cell => {
               if (!cell || typeof cell !== 'string') return cell;
-              // Detecta "(1) Nombre"
               const match = cell.match(/^[\(]?(\d+)[\)\.]\s+(.+)/);
               if (match) {
                   const seed = parseInt(match[1]);
@@ -557,21 +552,14 @@ export const useTournamentData = () => {
 
       if (hasContent) {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; 
-          
           let bracketSize = 16; 
           if (playersInCol1 > 32) bracketSize = 64; 
           else if (playersInCol1 > 16) bracketSize = 32; 
           else if (playersInCol1 <= 8) bracketSize = 8; 
-          
-          // Iniciar seeds con los que encontramos en el Excel (prioridad)
           let seeds: any = { ...hardcodedSeeds };
-          
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
-          // CAMBIO FINAL: Eliminamos completamente la lógica de "fallback" para torneos directos.
-          // Si no está el número en el Excel (hardcodedSeeds), NO calculamos nada.
           if (tourType !== "direct") {
-             // Lógica para torneos de grupos (mantiene lo de 1° ZN)
              try {
                 const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                 const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
@@ -630,7 +618,6 @@ export const useTournamentData = () => {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // Functions (Importadas en Page.tsx)
     fetchRankingData, 
     fetchBracketData,
     runDirectDraw, runATPDraw,
