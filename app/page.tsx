@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle } from "lucide-react";
+// AGREGAMOS ICONOS NUEVOS
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-// 1. IMPORTAMOS LA FUNCIÓN PARA ENVIAR EVENTOS A GOOGLE
 import { sendGAEvent } from '@next/third-parties/google';
 
 // Componentes extraídos
@@ -24,6 +24,12 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
+    // NUEVAS FUNCIONES Y ESTADOS
+    inscriptosList,
+    showInscriptosModal,
+    setShowInscriptosModal,
+    fetchInscriptos,
+    // -------------------------
     fetchRankingData,
     fetchBracketData,
     runDirectDraw, 
@@ -85,7 +91,6 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
-                  // RASTREO: Botón Ranking del menú principal
                   sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
@@ -101,17 +106,11 @@ export default function Home() {
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
-                  
-                  // --- RASTREO DE BOTONES (Lógica de diferenciación) ---
                   if (navState.type === "ranking") {
-                      // Ejemplo: "Ranking 2026 Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
-                      // Ejemplo: "Caballeros Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
                   }
-                  // -----------------------------------------------------
-
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
@@ -129,11 +128,7 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      // --- RASTREO: Torneo Específico ---
-                      // Ejemplo: "Torneo Australian Open - Cat A"
                       sendGAEvent('event', 'button_click', { value: `Torneo ${t.name} - Cat ${navState.category}` });
-                      // ----------------------------------
-
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
@@ -162,11 +157,55 @@ export default function Home() {
                       fetchBracketData(navState.currentCat, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
+                  
+                  {/* --- NUEVO BOTÓN INSCRIPTOS --- */}
+                  <Button onClick={() => {
+                      sendGAEvent('event', 'button_click', { value: 'Ver Inscriptos' });
+                      fetchInscriptos(navState.currentCat, navState.currentTour);
+                  }} className={buttonStyle}>
+                      <FileText className="mr-2" /> Inscriptos
+                  </Button>
                 </>
               )}
             </div>
           )}
         </div>
+
+        {/* --- NUEVO MODAL DE INSCRIPTOS --- */}
+        {showInscriptosModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="bg-[#b35a38] p-6 text-white flex justify-between items-center">
+                <div>
+                   <h3 className="text-xl font-black uppercase tracking-wider">Inscriptos</h3>
+                   <p className="text-sm opacity-80 font-bold">{navState.currentTour} - Cat {navState.currentCat}</p>
+                </div>
+                <Button variant="ghost" className="text-white hover:bg-white/20 rounded-full h-10 w-10 p-0" onClick={() => setShowInscriptosModal(false)}>
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                 {inscriptosList.length > 0 ? (
+                    <div className="divide-y divide-slate-100">
+                      {inscriptosList.map((player, index) => (
+                        <div key={index} className="py-3 flex items-center">
+                          <span className="w-8 h-8 flex items-center justify-center bg-[#b35a38]/10 text-[#b35a38] font-black rounded-full text-sm mr-3">
+                            {index + 1}
+                          </span>
+                          <span className="text-lg font-medium text-slate-700">{player}</span>
+                        </div>
+                      ))}
+                    </div>
+                 ) : (
+                    <p className="text-center text-slate-500 py-8">No se encontraron jugadores.</p>
+                 )}
+              </div>
+              <div className="p-4 border-t bg-slate-50">
+                <Button onClick={() => setShowInscriptosModal(false)} className="w-full bg-slate-800 text-white font-bold h-12 rounded-xl">Cerrar</Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
