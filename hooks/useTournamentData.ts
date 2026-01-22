@@ -20,10 +20,10 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // --- NUEVO: ESTADOS PARA INSCRIPTOS (AGREGADO) ---
+  // --- NUEVOS ESTADOS (AGREGADO) ---
   const [inscriptosList, setInscriptosList] = useState<string[]>([]);
   const [showInscriptosModal, setShowInscriptosModal] = useState(false);
-  // ------------------------------------------------
+  // --------------------------------
 
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -45,42 +45,42 @@ export const useTournamentData = () => {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- NUEVO: FUNCIÓN FETCH INSCRIPTOS (AGREGADO) ---
+  // --- NUEVA FUNCIÓN FETCH INSCRIPTOS (AGREGADO) ---
   const fetchInscriptos = async (category: string, tournamentShort: string) => {
     setIsLoading(true);
     setInscriptosList([]);
-    // Usamos ID_DATOS_GENERALES que es donde está el Excel "Cautiva Ranking e Inscriptos 2026"
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Boton Inscriptos")}`;
-    
     try {
         const response = await fetch(url);
         const csvText = await response.text();
         const rows = parseCSV(csvText);
         
-        // Filtramos por torneo y categoría actual
-        // Asumimos: Col 0 = Torneo, Col 1 = Categoria, Col 2 = Jugador
-        const filteredPlayers = rows.slice(1) // Ignoramos header
-            .filter(row => 
-                row[0] && row[0].trim().toLowerCase() === tournamentShort.toLowerCase() && 
-                row[1] && row[1].trim().toLowerCase() === category.toLowerCase()
-            )
-            .map(row => row[2]); // Nos quedamos con el nombre del jugador
+        const filtered = rows.slice(1).filter(r => 
+            r[0] && r[0].trim().toLowerCase() === tournamentShort.toLowerCase() &&
+            r[1] && r[1].trim().toLowerCase() === category.toLowerCase()
+        );
 
-        if (filteredPlayers.length > 0) {
-            setInscriptosList(filteredPlayers);
+        if (filtered.length > 0) {
+            const formattedNames = filtered.map(r => {
+                let name = r[2] || "";
+                // 1. Quitar numeros y parentesis
+                name = name.replace(/[0-9()]/g, "").replace(/\s+/g, " ").trim();
+                // 2. Primera letra mayuscula (Title Case)
+                return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            });
+            setInscriptosList(formattedNames);
             setShowInscriptosModal(true);
         } else {
             alert("No hay inscriptos cargados para este torneo y categoría todavía.");
         }
-
-    } catch (error) {
-        console.error("Error trayendo inscriptos:", error);
-        alert("Error al cargar inscriptos.");
+    } catch (e) {
+        console.error(e);
+        alert("Error al cargar inscriptos");
     } finally {
         setIsLoading(false);
     }
-  };
-  // --------------------------------------------------
+  }
+  // ------------------------------------------------
 
   // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -434,57 +434,26 @@ export const useTournamentData = () => {
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN LÓGICA IMPORTANTE EN EL SORTEO ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
       const rankRes = await fetch(rankUrl); const rankCsv = await rankRes.text();
-      
-      // PARSEO ROBUSTO: Encontramos la columna TOTAL dinámicamente
-      const rawRows = parseCSV(rankCsv);
-      if (!rawRows || rawRows.length === 0) throw new Error("CSV vacío");
-      
-      const headerRow = rawRows[0];
-      // Buscamos el índice de la columna que dice "TOTAL" (mayus/minus/espacios insensitive)
-      let totalIndex = headerRow.findIndex(h => h && h.toUpperCase().trim() === "TOTAL");
-      // Si no la encuentra, fallback al índice 11 (histórico) o al último elemento
-      if (totalIndex === -1) totalIndex = 11;
-
-      const playersRanking = rawRows.slice(1).map(row => ({ 
-          name: row[1] || "", 
-          // Usamos el índice encontrado dinámicamente
-          total: row[totalIndex] ? parseInt(row[totalIndex]) : 0 
-      })).filter(p => p.name !== "");
-
+      const rawRows = parseCSV(rankCsv); if (!rawRows || rawRows.length === 0) throw new Error("CSV vacío");
+      const headerRow = rawRows[0]; let totalIndex = headerRow.findIndex(h => h && h.toUpperCase().trim() === "TOTAL"); if (totalIndex === -1) totalIndex = 11;
+      const playersRanking = rawRows.slice(1).map(row => ({ name: row[1] || "", total: row[totalIndex] ? parseInt(row[totalIndex]) : 0 })).filter(p => p.name !== "");
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
       const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort).map(cols => cols[2]);
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
-      
-      const entryList = filteredInscriptos.map(n => { 
-          const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); 
-          return { name: n, points: p ? p.total : 0 }; 
-      }).sort((a, b) => b.points - a.points); // Orden descendente por puntos
-
+      const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points); 
       const totalPlayers = entryList.length; if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
       let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
-      
-      for (let i = 0; i < numGroups; i++) { 
-          if (entryList[i]) {
-              let pName = entryList[i].name;
-              if (i < 8) {
-                  pName = `(${i + 1}) ${pName}`;
-              }
-              groups[i].players.push(pName);
-          }
-      }
-      
-      const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
-      let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) { let pName = entryList[i].name; if (i < 8) { pName = `(${i + 1}) ${pName}`; } groups[i].players.push(pName); } }
+      const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5); let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
   }
@@ -674,8 +643,11 @@ export const useTournamentData = () => {
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack,
-    // --- NUEVO: EXPORTAMOS LO NUEVO ---
-    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos
+    // --- NUEVO: Exportamos lo nuevo ---
+    inscriptosList, 
+    showInscriptosModal, 
+    setShowInscriptosModal, 
+    fetchInscriptos
     // ---------------------------------
   };
 };
