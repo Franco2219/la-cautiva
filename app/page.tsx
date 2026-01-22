@@ -313,7 +313,7 @@ export default function Home() {
         )}
 
       </div>
-      <p onClick={handleFooterClick} className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center cursor-pointer select-none active:scale-95 transition-transform">Sistema de seguimiento de torneos en vivo</p>
+      <p onClick={handleFooterClick} className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center cursor-pointer select-none active:scale-95 transition-transform">Sistema de seguimiento de torneos</p>
     </div>
   );
 }
