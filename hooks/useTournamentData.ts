@@ -196,12 +196,11 @@ export const useTournamentData = () => {
       return { matches, bracketSize };
   }
 
-  // --- CORRECCIÓN 1: Filtro BYE en Lista Basti ---
+  // --- ACCIONES PÚBLICAS ---
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
-             // Solo enviar si AMBOS son jugadores reales (ninguno es BYE)
              if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") {
                  mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
              }
@@ -222,11 +221,49 @@ export const useTournamentData = () => {
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  const confirmarYEnviar = () => {
+  // --- CORRECCIÓN: Grupos Full - Agregar (N) solo a Top 8 ---
+  const confirmarYEnviar = async () => {
+    setIsLoading(true);
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    groupData.forEach(g => { mensaje += `*${g.groupName}*\n${g.players.join('\n')}\n`; });
+    
+    // 1. Buscamos el ranking actual para saber quiénes son los Top 8 HOY
+    let rankMap: any = {};
+    try {
+       const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
+       const res = await fetch(rankUrl);
+       const txt = await res.text();
+       const rows = parseCSV(txt).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0 }));
+       
+       // Ordenamos por puntos para tener el ranking real
+       rows.sort((a,b) => b.total - a.total);
+       
+       // Guardamos el seed solo para los primeros 8
+       rows.forEach((p, i) => {
+           if (p.name && i < 8) {
+               // Normalizamos nombre para evitar problemas de espacios
+               rankMap[p.name.trim().toLowerCase()] = i + 1;
+           }
+       });
+    } catch(e) { console.log("Error ranking confirm"); }
+
+    // 2. Construimos el mensaje usando ese mapa
+    groupData.forEach(g => { 
+        mensaje += `*${g.groupName}*\n`;
+        g.players.forEach((p: string) => {
+            const cleanP = p.trim();
+            const rank = rankMap[cleanP.toLowerCase()];
+            if (rank) {
+                mensaje += `(${rank}) ${cleanP}\n`;
+            } else {
+                mensaje += `${cleanP}\n`;
+            }
+        });
+        mensaje += `\n`;
+    });
+    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
+    setIsLoading(false);
   };
 
   const calculateAndShowRanking = async () => {
@@ -380,6 +417,7 @@ export const useTournamentData = () => {
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
   }
 
+  // --- CORRECCIÓN 2: Limpieza de nombres con (N) en Fase de Grupos ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setGroupData([]); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
@@ -391,7 +429,14 @@ export const useTournamentData = () => {
           if (rows[i] && rows[i][0] && (rows[i][0].includes("Zona") || rows[i][0].includes("Grupo"))) {
             const potentialP4 = rows[i+4] && rows[i+4][0]; const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*")); const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null; const playersRaw = [rows[i+1], rows[i+2], rows[i+3]]; if (p4) playersRaw.push(p4);
             const validPlayersIndices: number[] = []; const players: string[] = []; const positions: string[] = []; const points: string[] = []; const diff: string[] = []; const gamesDiff: string[] = []; 
-            playersRaw.forEach((row, index) => { const pName = row && row[0] ? row[0] : ""; if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { players.push(pName); let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); validPlayersIndices.push(index); } });
+            playersRaw.forEach((row, index) => { 
+                let pName = row && row[0] ? row[0] : ""; 
+                // LIMPIEZA AQUÍ: Si dice "(1) Nombre", dejamos solo "Nombre" para la tabla
+                const match = pName.match(/^[\(]?(\d+)[\)\.]\s+(.+)/);
+                if (match) pName = match[2].trim();
+
+                if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { players.push(pName); let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); validPlayersIndices.push(index); } 
+            });
             const results: string[][] = []; for (let x = 0; x < validPlayersIndices.length; x++) { const rowResults: string[] = []; const rowIndex = validPlayersIndices[x]; for (let y = 0; y < validPlayersIndices.length; y++) { const colIndex = validPlayersIndices[y]; const res = rows[i + 1 + rowIndex][1 + colIndex]; rowResults.push(res); } results.push(rowResults); }
             parsedGroups.push({ groupName: rows[i][0], players: players, results: results, positions: positions, points: points, diff: diff, gamesDiff: gamesDiff });
           }
@@ -561,7 +606,6 @@ export const useTournamentData = () => {
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN 2: Limpieza de cache al volver ---
   const goBack = () => {
     setIsSorteoConfirmado(false);
     const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket" };
@@ -570,7 +614,6 @@ export const useTournamentData = () => {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false });
         setBracketData({ ...bracketData, hasData: false });
         setGroupData([]);
-        // AGREGADO: Borrar generatedBracket para evitar que aparezca info vieja en Lista Basti
         setGeneratedBracket([]); 
     } else { setNavState({ ...navState, level: nextLevel }); }
   }
