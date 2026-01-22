@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-// AGREGAMOS ICONOS DE CONTACTO (MapPin, Phone, Mail)
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, Mail, MessageSquare } from "lucide-react";
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
@@ -165,11 +164,11 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- PANTALLA DE CONTACTO (NUEVO) --- */}
         {navState.level === "contact" && (
           <div className="bg-white border-4 border-[#b35a38] rounded-[2rem] p-8 md:p-12 shadow-2xl max-w-5xl mx-auto text-left relative overflow-hidden">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                {/* Columna Izquierda: Información */}
+                
+                {/* Columna Izquierda: Información y MAPA DINÁMICO */}
                 <div className="space-y-8 flex flex-col justify-between">
                    <div>
                       <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-2">La Cautiva Tenis y Pádel</h2>
@@ -187,12 +186,19 @@ export default function Home() {
                       </div>
                    </div>
 
-                   {/* Placeholder Imagen/Mapa */}
-                   <div className="w-full h-48 bg-slate-100 rounded-2xl border-2 border-slate-200 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#b35a38_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                      <MapPin className="w-16 h-16 text-slate-300" />
-                      <p className="absolute bottom-2 text-xs text-slate-400 font-bold uppercase tracking-widest">Ubicación del Club</p>
+                   {/* --- MAPA DE GOOGLE DINÁMICO (IFRAME) --- */}
+                   <div className="w-full h-48 bg-slate-100 rounded-2xl border-2 border-slate-200 overflow-hidden shadow-inner relative group">
+                      <iframe 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 0 }} 
+                        loading="lazy" 
+                        allowFullScreen 
+                        src="https://maps.google.com/maps?q=La+Cautiva+7651%2C+Villa+Bosch&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        className="absolute inset-0 w-full h-full"
+                      ></iframe>
                    </div>
+                   {/* ----------------------------------------- */}
 
                    <p className="text-xl font-bold text-slate-800 italic">
                       ¡Agendá tu próximo partido y sumate!
@@ -238,7 +244,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* MODAL INSCRIPTOS */}
         {showInscriptosModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
@@ -368,7 +373,7 @@ export default function Home() {
 
       </div>
       
-      {/* --- FOOTER MODIFICADO --- */}
+      {/* Footer con el botón de Contacto */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse">
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos en vivo</p>
          <span className="text-slate-300">|</span>
