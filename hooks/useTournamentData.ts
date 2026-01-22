@@ -452,18 +452,7 @@ export const useTournamentData = () => {
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
-      
-      // --- CORRECCIÓN AQUÍ: Numerar TODOS los cabezas de serie ---
-      for (let i = 0; i < numGroups; i++) { 
-          if (entryList[i]) {
-              let pName = entryList[i].name;
-              // Antes estaba limitado a if (i < 8). Ahora se lo ponemos a todos los cabezas de zona.
-              pName = `(${i + 1}) ${pName}`;
-              groups[i].players.push(pName);
-          }
-      }
-      // -----------------------------------------------------------
-      
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) { let pName = entryList[i].name; if (i < 8) { pName = `(${i + 1}) ${pName}`; } groups[i].players.push(pName); } }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5); let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
@@ -508,9 +497,12 @@ export const useTournamentData = () => {
     const isDirect = tournaments.find(t => t.short === navState.tournamentShort)?.type === "direct";
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => { 
-        const p1 = match.p1; const p2 = match.p2;
-        let p1Name = "TBD"; if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
-        let p2Name = "TBD"; if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
+        const p1 = match.p1;
+        const p2 = match.p2;
+        let p1Name = "TBD";
+        if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
+        let p2Name = "TBD";
+        if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
         mensaje += `${p1Name}\n${p2Name}\n`; 
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
