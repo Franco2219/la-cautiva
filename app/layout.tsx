@@ -1,8 +1,7 @@
-import type React from "react";
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-// 1. IMPORTAMOS GOOGLE ANALYTICS
+// IMPORTAMOS GOOGLE ANALYTICS
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 const poppins = Poppins({
@@ -12,8 +11,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "La Cautiva Tennis Club - Cuadros de Torneos",
-  description: "Visualiza en tiempo real los cuadros y rankings de los torneos del club",
+  // --- AGREGADO: TU DOMINIO OFICIAL ---
+  metadataBase: new URL('https://www.lacautivatenisypadel.com.ar'),
+  // ------------------------------------
+  title: "La Cautiva Tenis y Pádel - Cuadros y Ranking",
+  description: "Sitio oficial de La Cautiva. Visualiza en tiempo real los cuadros, inscriptos y rankings de los torneos del club.",
   generator: "v0.app",
 };
 
@@ -26,7 +28,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${poppins.variable} font-sans antialiased`}>
         {children}
-        {/* 2. TU CÓDIGO REAL DE GOOGLE ANALYTICS */}
+        {/* TU CÓDIGO REAL DE GOOGLE ANALYTICS */}
         <GoogleAnalytics gaId="G-9Y933CE1PB" />
       </body>
     </html>
