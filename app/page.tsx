@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-// AGREGAMOS ICONOS NUEVOS
+// AGREGAMOS ICONOS NUEVOS (FileText y X)
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
@@ -24,12 +24,6 @@ export default function Home() {
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
     calculatedRanking,
-    // NUEVAS FUNCIONES Y ESTADOS
-    inscriptosList,
-    showInscriptosModal,
-    setShowInscriptosModal,
-    fetchInscriptos,
-    // -------------------------
     fetchRankingData,
     fetchBracketData,
     runDirectDraw, 
@@ -41,6 +35,11 @@ export default function Home() {
     confirmarSorteoCuadro,
     handleFooterClick, 
     goBack,
+    // DESTRUCTURAMOS LO NUEVO
+    inscriptosList,
+    showInscriptosModal,
+    setShowInscriptosModal,
+    fetchInscriptos,
   } = useTournamentData();
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
@@ -91,6 +90,7 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
+                  // RASTREO: Botón Ranking del menú principal
                   sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
@@ -106,11 +106,17 @@ export default function Home() {
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
+                  
+                  // --- RASTREO DE BOTONES (Lógica de diferenciación) ---
                   if (navState.type === "ranking") {
+                      // Ejemplo: "Ranking 2026 Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
+                      // Ejemplo: "Caballeros Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
                   }
+                  // -----------------------------------------------------
+
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
@@ -128,7 +134,11 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
+                      // --- RASTREO: Torneo Específico ---
+                      // Ejemplo: "Torneo Australian Open - Cat A"
                       sendGAEvent('event', 'button_click', { value: `Torneo ${t.name} - Cat ${navState.category}` });
+                      // ----------------------------------
+
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
@@ -157,7 +167,7 @@ export default function Home() {
                       fetchBracketData(navState.currentCat, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
-                  
+
                   {/* --- NUEVO BOTÓN INSCRIPTOS --- */}
                   <Button onClick={() => {
                       sendGAEvent('event', 'button_click', { value: 'Ver Inscriptos' });
@@ -165,6 +175,8 @@ export default function Home() {
                   }} className={buttonStyle}>
                       <FileText className="mr-2" /> Inscriptos
                   </Button>
+                  {/* ----------------------------- */}
+
                 </>
               )}
             </div>
@@ -206,6 +218,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        {/* --------------------------------- */}
 
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">

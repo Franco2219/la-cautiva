@@ -20,6 +20,11 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
+  // --- NUEVO: ESTADOS PARA INSCRIPTOS (AGREGADO) ---
+  const [inscriptosList, setInscriptosList] = useState<string[]>([]);
+  const [showInscriptosModal, setShowInscriptosModal] = useState(false);
+  // ------------------------------------------------
+
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
@@ -39,6 +44,43 @@ export const useTournamentData = () => {
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
+
+  // --- NUEVO: FUNCIÓN FETCH INSCRIPTOS (AGREGADO) ---
+  const fetchInscriptos = async (category: string, tournamentShort: string) => {
+    setIsLoading(true);
+    setInscriptosList([]);
+    // Usamos ID_DATOS_GENERALES que es donde está el Excel "Cautiva Ranking e Inscriptos 2026"
+    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Boton Inscriptos")}`;
+    
+    try {
+        const response = await fetch(url);
+        const csvText = await response.text();
+        const rows = parseCSV(csvText);
+        
+        // Filtramos por torneo y categoría actual
+        // Asumimos: Col 0 = Torneo, Col 1 = Categoria, Col 2 = Jugador
+        const filteredPlayers = rows.slice(1) // Ignoramos header
+            .filter(row => 
+                row[0] && row[0].trim().toLowerCase() === tournamentShort.toLowerCase() && 
+                row[1] && row[1].trim().toLowerCase() === category.toLowerCase()
+            )
+            .map(row => row[2]); // Nos quedamos con el nombre del jugador
+
+        if (filteredPlayers.length > 0) {
+            setInscriptosList(filteredPlayers);
+            setShowInscriptosModal(true);
+        } else {
+            alert("No hay inscriptos cargados para este torneo y categoría todavía.");
+        }
+
+    } catch (error) {
+        console.error("Error trayendo inscriptos:", error);
+        alert("Error al cargar inscriptos.");
+    } finally {
+        setIsLoading(false);
+    }
+  };
+  // --------------------------------------------------
 
   // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -230,15 +272,20 @@ export const useTournamentData = () => {
        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
        const res = await fetch(rankUrl);
        const txt = await res.text();
-       // OJO: Aquí usamos lógica simplificada para el mensaje, pero el sorteo usa lógica robusta
-       const rows = parseCSV(txt).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0 }));
-       rows.sort((a,b) => b.total - a.total);
-       rows.forEach((p, i) => {
+       const rows = parseCSV(txt);
+       const headers = rows[0];
+       let totalIdx = headers.findIndex(h => h && h.toUpperCase().trim() === "TOTAL"); 
+       if (totalIdx === -1) totalIdx = 11;
+
+       const rankingRows = rows.slice(1).map(r => ({ name: r[1], total: (r[totalIdx] ? parseInt(r[totalIdx]) : 0) }));
+       rankingRows.sort((a,b) => b.total - a.total);
+       
+       rankingRows.forEach((p, i) => {
            if (p.name && i < 8) {
                rankMap[p.name.trim().toLowerCase()] = i + 1;
            }
        });
-    } catch(e) { console.log("Error ranking confirm"); }
+    } catch(e) { console.log("Error ranking confirm", e); }
 
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
@@ -626,6 +673,9 @@ export const useTournamentData = () => {
     confirmarYEnviar,  
     enviarListaBasti, 
     confirmarSorteoCuadro,
-    handleFooterClick, goBack
+    handleFooterClick, goBack,
+    // --- NUEVO: EXPORTAMOS LO NUEVO ---
+    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos
+    // ---------------------------------
   };
 };
