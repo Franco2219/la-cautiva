@@ -20,10 +20,9 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // --- NUEVOS ESTADOS (AGREGADO) ---
+  // --- NUEVO: ESTADOS PARA INSCRIPTOS ---
   const [inscriptosList, setInscriptosList] = useState<string[]>([]);
   const [showInscriptosModal, setShowInscriptosModal] = useState(false);
-  // --------------------------------
 
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -45,7 +44,7 @@ export const useTournamentData = () => {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- NUEVA FUNCIÓN FETCH INSCRIPTOS (AGREGADO) ---
+  // --- LÓGICA PARA TRAER INSCRIPTOS (EDITADA CON TU PEDIDO) ---
   const fetchInscriptos = async (category: string, tournamentShort: string) => {
     setIsLoading(true);
     setInscriptosList([]);
@@ -55,32 +54,33 @@ export const useTournamentData = () => {
         const csvText = await response.text();
         const rows = parseCSV(csvText);
         
-        const filtered = rows.slice(1).filter(r => 
-            r[0] && r[0].trim().toLowerCase() === tournamentShort.toLowerCase() &&
-            r[1] && r[1].trim().toLowerCase() === category.toLowerCase()
-        );
+        const filteredPlayers = rows.slice(1)
+            .filter(row => 
+                row[0] && row[0].trim().toLowerCase() === tournamentShort.toLowerCase() && 
+                row[1] && row[1].trim().toLowerCase() === category.toLowerCase()
+            )
+            .map(row => {
+                // AQUI ESTA LA EDICION SOLICITADA
+                const rawName = row[2] || "";
+                // 1. Borramos números y paréntesis
+                const cleanName = rawName.replace(/[0-9()]/g, "").replace(/\s+/g, " ").trim();
+                // 2. Capitalizamos cada palabra (Title Case)
+                return cleanName.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            }); 
 
-        if (filtered.length > 0) {
-            const formattedNames = filtered.map(r => {
-                let name = r[2] || "";
-                // 1. Quitar numeros y parentesis
-                name = name.replace(/[0-9()]/g, "").replace(/\s+/g, " ").trim();
-                // 2. Primera letra mayuscula (Title Case)
-                return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            });
-            setInscriptosList(formattedNames);
+        if (filteredPlayers.length > 0) {
+            setInscriptosList(filteredPlayers);
             setShowInscriptosModal(true);
         } else {
             alert("No hay inscriptos cargados para este torneo y categoría todavía.");
         }
-    } catch (e) {
-        console.error(e);
-        alert("Error al cargar inscriptos");
+    } catch (error) {
+        console.error("Error trayendo inscriptos:", error);
+        alert("Error al cargar inscriptos.");
     } finally {
         setIsLoading(false);
     }
-  }
-  // ------------------------------------------------
+  };
 
   // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -98,21 +98,19 @@ export const useTournamentData = () => {
       const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
       const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
-      // Prioridad Byes
       const playersWithBye = new Set();
       const priorityByes = Math.min(winners.length, byeCount);
-      for(let i=0; i < priorityByes; i++) {
-          if(winners[i]) playersWithBye.add(winners[i].name);
+      for(let i=0; i < priorityByes; i++) { 
+          if(winners[i]) playersWithBye.add(winners[i].name); 
       }
       if (byeCount > priorityByes) {
-          for(let i=0; i < (byeCount - priorityByes); i++) {
-              if(runners[i]) playersWithBye.add(runners[i].name);
+          for(let i=0; i < (byeCount - priorityByes); i++) { 
+              if(runners[i]) playersWithBye.add(runners[i].name); 
           }
       }
 
       let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
       
-      // 1. SEEDS FIJOS
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
@@ -123,8 +121,14 @@ export const useTournamentData = () => {
       const idxMidTop = halfMatches - 1; 
       const idxMidBottom = halfMatches; 
 
-      if (wZ1) { matches[idxTop].p1 = wZ1; if(playersWithBye.has(wZ1.name)) matches[idxTop].p2 = { name: "BYE", rank: 0 }; }
-      if (wZ2) { matches[idxBottom].p2 = wZ2; if(playersWithBye.has(wZ2.name)) matches[idxBottom].p1 = { name: "BYE", rank: 0 }; }
+      if (wZ1) { 
+          matches[idxTop].p1 = wZ1; 
+          if(playersWithBye.has(wZ1.name)) matches[idxTop].p2 = { name: "BYE", rank: 0 }; 
+      }
+      if (wZ2) { 
+          matches[idxBottom].p2 = wZ2; 
+          if(playersWithBye.has(wZ2.name)) matches[idxBottom].p1 = { name: "BYE", rank: 0 }; 
+      }
       
       const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
       if (mids.length > 0) {
@@ -136,16 +140,15 @@ export const useTournamentData = () => {
           if(playersWithBye.has(mids[1].name)) matches[idxMidBottom].p2 = { name: "BYE", rank: 0 };
       }
       
-      // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
       
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
              const blockCounts = Array(16).fill(0); 
-             matches.forEach((m, i) => {
-                 if ((m.p1 && m.p1.rank === 1) || (m.p2 && m.p2.rank === 1)) {
-                     blockCounts[Math.floor(i / 2)]++;
-                 }
+             matches.forEach((m, i) => { 
+                 if ((m.p1 && m.p1.rank === 1) || (m.p2 && m.p2.rank === 1)) { 
+                     blockCounts[Math.floor(i / 2)]++; 
+                 } 
              });
              const candidates = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1);
              candidates.sort((a, b) => {
@@ -155,8 +158,8 @@ export const useTournamentData = () => {
                  return Math.random() - 0.5;
              });
              if (candidates.length > 0) {
-                 const idx = candidates[0];
-                 matches[idx].p1 = w;
+                 const idx = candidates[0]; 
+                 matches[idx].p1 = w; 
                  if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
              }
           });
@@ -164,8 +167,8 @@ export const useTournamentData = () => {
           const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
           otherWinners.forEach(w => {
               if (availableMatches.length > 0) {
-                  const idx = availableMatches.pop()!;
-                  matches[idx].p1 = w;
+                  const idx = availableMatches.pop()!; 
+                  matches[idx].p1 = w; 
                   if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
               }
           });
@@ -190,51 +193,51 @@ export const useTournamentData = () => {
       const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
       const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
       
-      let poolTop = [...mustGoTop];
-      let poolBottom = [...mustGoBottom];
+      let poolTop = [...mustGoTop]; 
+      let poolBottom = [...mustGoBottom]; 
       let poolFree = [...freeAgents];
 
       const countReal = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1?.name !== "BYE" && m.p1 ? 1 : 0) + (m.p2?.name !== "BYE" && m.p2 ? 1 : 0), 0);
-      let loadTop = countReal(topMatches) + poolTop.length;
+      let loadTop = countReal(topMatches) + poolTop.length; 
       let loadBot = countReal(bottomMatches) + poolBottom.length;
 
-      while (poolFree.length > 0) {
-         if (loadTop <= loadBot) { poolTop.push(poolFree.pop()); loadTop++; }
-         else { poolBottom.push(poolFree.pop()); loadBot++; }
+      while (poolFree.length > 0) { 
+          if (loadTop <= loadBot) { poolTop.push(poolFree.pop()); loadTop++; } 
+          else { poolBottom.push(poolFree.pop()); loadBot++; } 
       }
       
       const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
-      poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
+      poolTop = shuffle(poolTop); 
+      poolBottom = shuffle(poolBottom);
 
       const fillHalfRandomly = (matchList: any[], pool: any[]) => {
           let indices = Array.from({length: matchList.length}, (_, i) => i).sort(() => Math.random() - 0.5);
-          for(let i of indices) {
-              if(!matchList[i].p1 && !matchList[i].p2 && pool.length > 0) matchList[i].p1 = pool.pop();
+          for(let i of indices) { 
+              if(!matchList[i].p1 && !matchList[i].p2 && pool.length > 0) matchList[i].p1 = pool.pop(); 
           }
           for(let i of indices) {
               if(matchList[i].p1 && !matchList[i].p2 && matchList[i].p1.name !== "BYE" && pool.length > 0) matchList[i].p2 = pool.pop();
               else if(!matchList[i].p1 && matchList[i].p2 && matchList[i].p2.name !== "BYE" && pool.length > 0) matchList[i].p1 = pool.pop();
           }
-          for(let i of indices) {
-              if(pool.length === 0) return;
-              if(!matchList[i].p1) matchList[i].p1 = pool.pop();
-              else if(!matchList[i].p2) matchList[i].p2 = pool.pop();
+          for(let i of indices) { 
+              if(pool.length === 0) return; 
+              if(!matchList[i].p1) matchList[i].p1 = pool.pop(); 
+              else if(!matchList[i].p2) matchList[i].p2 = pool.pop(); 
           }
       };
 
-      fillHalfRandomly(topMatches, poolTop);
+      fillHalfRandomly(topMatches, poolTop); 
       fillHalfRandomly(bottomMatches, poolBottom);
 
       matches.forEach(m => {
-          if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
+          if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 }; 
           if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
           
           const isFixedP2 = (m.p2.rank === 1 || m.p2.rank === 2 || m.p2.rank === 3 || m.p2.rank === 4);
-          if (!isFixedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
-              const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
+          if (!isFixedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") { 
+              const temp = m.p1; m.p1 = m.p2; m.p2 = temp; 
           }
       });
-
       return { matches, bracketSize };
   }
 
@@ -242,10 +245,10 @@ export const useTournamentData = () => {
   const enviarListaBasti = () => {
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
     if (generatedBracket.length > 0) {
-         generatedBracket.forEach(m => {
-             if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") {
-                 mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
-             }
+         generatedBracket.forEach(m => { 
+             if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") { 
+                 mensaje += `${m.p1.name} vs ${m.p2.name}\n`; 
+             } 
          });
     } else if (navState.level === "group-phase") {
         groupData.forEach(group => {
@@ -253,8 +256,8 @@ export const useTournamentData = () => {
             for (let i = 0; i < players.length; i++) {
                 for (let j = i + 1; j < players.length; j++) {
                     const res = group.results[i] && group.results[i][j] ? group.results[i][j] : "-";
-                    if (!res || res === "-" || res === "") {
-                        mensaje += `${players[i]} vs ${players[j]}\n`;
+                    if (!res || res === "-" || res === "") { 
+                        mensaje += `${players[i]} vs ${players[j]}\n`; 
                     }
                 }
             }
@@ -266,58 +269,46 @@ export const useTournamentData = () => {
   const confirmarYEnviar = async () => {
     setIsLoading(true);
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
-    
     let rankMap: any = {};
     try {
        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
-       const res = await fetch(rankUrl);
-       const txt = await res.text();
+       const res = await fetch(rankUrl); 
+       const txt = await res.text(); 
        const rows = parseCSV(txt);
        const headers = rows[0];
        let totalIdx = headers.findIndex(h => h && h.toUpperCase().trim() === "TOTAL"); 
        if (totalIdx === -1) totalIdx = 11;
-
+       
        const rankingRows = rows.slice(1).map(r => ({ name: r[1], total: (r[totalIdx] ? parseInt(r[totalIdx]) : 0) }));
        rankingRows.sort((a,b) => b.total - a.total);
-       
-       rankingRows.forEach((p, i) => {
-           if (p.name && i < 8) {
-               rankMap[p.name.trim().toLowerCase()] = i + 1;
-           }
+       rankingRows.forEach((p, i) => { 
+           if (p.name && i < 8) { rankMap[p.name.trim().toLowerCase()] = i + 1; } 
        });
     } catch(e) { console.log("Error ranking confirm", e); }
-
+    
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
             const cleanP = p.replace(/\(\d+\)\s+/, "").trim(); 
             const rank = rankMap[cleanP.toLowerCase()];
-            if (rank) {
-                mensaje += `(${rank}) ${cleanP}\n`;
-            } else {
-                mensaje += `${cleanP}\n`;
-            }
+            if (rank) { mensaje += `(${rank}) ${cleanP}\n`; } else { mensaje += `${cleanP}\n`; }
         });
         mensaje += `\n`;
     });
-    
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    setIsSorteoConfirmado(true);
-    setIsLoading(false);
+    setIsSorteoConfirmado(true); setIsLoading(false);
   };
 
   const calculateAndShowRanking = async () => {
     setIsLoading(true);
     try {
         const urlBaremo = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Formatos Grupos")}&range=A37:Z50`;
-        const res = await fetch(urlBaremo);
-        const txt = await res.text();
-        const rows = parseCSV(txt);
+        const res = await fetch(urlBaremo); const txt = await res.text(); const rows = parseCSV(txt);
         const catName = navState.category || navState.selectedCategory;
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${catName} 2026`)}`;
-        const rankRes = await fetch(rankUrl);
-        const rankCsv = await rankRes.text();
+        const rankRes = await fetch(rankUrl); const rankCsv = await rankRes.text();
         const rankNames = parseCSV(rankCsv).slice(1).map(row => row[1] ? row[1].trim().toLowerCase() : "");
+        
         const getRankIndex = (name: string) => {
             if (!name) return 99999;
             const n = name.toLowerCase().trim();
@@ -334,14 +325,16 @@ export const useTournamentData = () => {
         for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) { colIndex = i; break; } }
         if (colIndex === -1) { for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) { colIndex = i; break; } } }
         if (colIndex === -1) { alert("Error puntos"); setIsLoading(false); return; }
+        
         const getPoints = (rowIndex: number) => { if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0; const val = parseInt(rows[rowIndex][colIndex]); return isNaN(val) ? 0 : val; };
         const pts = { champion: getPoints(1), finalist: getPoints(2), semi: getPoints(3), quarters: getPoints(4), octavos: getPoints(5), dieciseis: getPoints(6), groupWin1: getPoints(7), groupWin2: getPoints(8), groupWin3: getPoints(9) };
         const playerScores: any = {};
+        
         const addRoundScore = (name: string, score: number) => { if (!name || name === "BYE" || name === "") return; const cleanName = name.trim(); if (!playerScores[cleanName] || score > playerScores[cleanName]) { playerScores[cleanName] = score; } };
+        
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, r5, winner, bracketSize } = bracketData;
-            let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
-            let finalists: string[] = [];
+            let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = []; let finalists: string[] = [];
             if (bracketSize === 32) { semis = r4; cuartos = r3; octavos = r2; dieciseis = r1; finalists = r5 || []; } 
             else if (bracketSize === 16) { semis = r3; cuartos = r2; octavos = r1; finalists = r4 || []; } 
             else { semis = r2; cuartos = r1; finalists = r3 || []; }
@@ -355,9 +348,7 @@ export const useTournamentData = () => {
         if (tourType === "full") {
             const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
             try {
-                const groupRes = await fetch(groupUrl);
-                const groupTxt = await groupRes.text();
-                const groupRows = parseCSV(groupTxt);
+                const groupRes = await fetch(groupUrl); const groupTxt = await groupRes.text(); const groupRows = parseCSV(groupTxt);
                 const playerWins: any = {};
                 for (let i = 0; i < groupRows.length; i += 4) {
                     if (groupRows[i] && groupRows[i][0] && (groupRows[i][0].includes("Zona") || groupRows[i][0].includes("Grupo"))) {
@@ -372,32 +363,24 @@ export const useTournamentData = () => {
             } catch (err) { console.log("Error ranking full", err); }
         }
         const rankingArray = Object.keys(playerScores).map(key => ({ name: key, points: playerScores[key] })).sort((a, b) => { const rankA = getRankIndex(a.name); const rankB = getRankIndex(b.name); if (rankA === rankB) return b.points - a.points; return rankA - rankB; });
-        setCalculatedRanking(rankingArray);
-        setShowRankingCalc(true);
+        setCalculatedRanking(rankingArray); setShowRankingCalc(true);
     } catch (e) { console.error(e); alert("Error calculando ranking."); } finally { setIsLoading(false); }
   };
 
   const handleFooterClick = () => {
       if (navState.level === "direct-bracket") {
-          const newCount = footerClicks + 1;
-          setFooterClicks(newCount);
-          if (newCount >= 4) { calculateAndShowRanking(); setFooterClicks(0); }
+          const newCount = footerClicks + 1; setFooterClicks(newCount); if (newCount >= 4) { calculateAndShowRanking(); setFooterClicks(0); }
       }
   };
 
   const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
-    setIsLoading(true);
-    setGeneratedBracket([]);
-    setIsFixedData(false);
-    setIsSorteoConfirmado(false);
+    setIsLoading(true); setGeneratedBracket([]); setIsFixedData(false); setIsSorteoConfirmado(false);
     try {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
-        const rankRes = await fetch(rankUrl);
-        const rankCsv = await rankRes.text();
+        const rankRes = await fetch(rankUrl); const rankCsv = await rankRes.text();
         const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({ name: row[1] || "", total: row[11] ? parseInt(row[11]) : 0 })).filter(p => p.name !== "");
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-        const inscRes = await fetch(inscUrl);
-        const inscCsv = await inscRes.text();
+        const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
         const filteredInscriptos = parseCSV(inscCsv).slice(1).filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort).map(cols => cols[2]);
         if (filteredInscriptos.length < 4) { alert("Mínimo 4 jugadores."); setIsLoading(false); return; }
         const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points);
@@ -423,13 +406,7 @@ export const useTournamentData = () => {
         let countRealTop = slots.slice(0, bracketSize/2).filter(x => x && x.name !== "BYE").length; let countRealBot = slots.slice(bracketSize/2).filter(x => x && x.name !== "BYE").length; let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         for (const player of nonSeeds) { const emptyTop = emptySlots.filter(i => i < bracketSize/2); const emptyBot = emptySlots.filter(i => i >= bracketSize/2); let targetIdx = -1; if (countRealTop < countRealBot && emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (countRealBot < countRealTop && emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else { if (emptyTop.length > 0 && emptyBot.length > 0) { targetIdx = Math.random() > 0.5 ? emptyTop[Math.floor(Math.random() * emptyTop.length)] : emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else if (emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } } if (targetIdx !== -1) { slots[targetIdx] = player; if (targetIdx < bracketSize/2) countRealTop++; else countRealBot++; emptySlots = emptySlots.filter(i => i !== targetIdx); } }
         for (let i = 0; i < slots.length; i++) { if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 }; }
-        
-        let matches = []; 
-        for (let i = 0; i < bracketSize; i += 2) { 
-            let p1 = slots[i]; 
-            let p2 = slots[i+1]; 
-            matches.push({ p1, p2 }); 
-        }
+        let matches = []; for (let i = 0; i < bracketSize; i += 2) { let p1 = slots[i]; let p2 = slots[i+1]; matches.push({ p1, p2 }); }
         setGeneratedBracket(matches); setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
@@ -497,12 +474,9 @@ export const useTournamentData = () => {
     const isDirect = tournaments.find(t => t.short === navState.tournamentShort)?.type === "direct";
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => { 
-        const p1 = match.p1;
-        const p2 = match.p2;
-        let p1Name = "TBD";
-        if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
-        let p2Name = "TBD";
-        if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
+        const p1 = match.p1; const p2 = match.p2;
+        let p1Name = "TBD"; if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
+        let p2Name = "TBD"; if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
         mensaje += `${p1Name}\n${p2Name}\n`; 
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -511,7 +485,7 @@ export const useTournamentData = () => {
 
   const fetchBracketData = async (category: string, tournamentShort: string) => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Cuadro ${tournamentShort} ${category}`)}`;
     const checkCanGenerate = async () => {
         const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
         if (isDirect) {
@@ -643,11 +617,6 @@ export const useTournamentData = () => {
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack,
-    // --- NUEVO: Exportamos lo nuevo ---
-    inscriptosList, 
-    showInscriptosModal, 
-    setShowInscriptosModal, 
-    fetchInscriptos
-    // ---------------------------------
+    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos
   };
 };
