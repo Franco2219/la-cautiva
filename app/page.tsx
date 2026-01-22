@@ -6,8 +6,8 @@ import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Li
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
-// 1. IMPORTAMOS LA FUNCIÓN DE RASTREO
-import { track } from '@vercel/analytics';
+// 1. IMPORTAMOS LA FUNCIÓN DE EVENTOS DE GOOGLE
+import { sendGTMEvent } from '@next/third-parties/google';
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -45,34 +45,22 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       
-      {/* --- INICIO DEL BLOQUE DE IMPRESIÓN --- */}
       <style jsx global>{`
         @media print {
-          /* 1. Ocultar todos los botones e íconos interactivos */
           button, .cursor-pointer { display: none !important; }
-          
-          /* 2. Forzar que se impriman los colores de fondo (headers naranjas/azules) */
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
-          
-          /* 3. Quitar sombras para ahorrar tinta y limpiar visual */
           .shadow-2xl, .shadow-lg, .shadow-md { box-shadow: none !important; border: 1px solid #ddd !important; }
-          
-          /* 4. Asegurar márgenes limpios y uso total del ancho */
           @page { margin: 1.5cm; size: auto; }
           .min-h-screen { min-height: 0 !important; }
           .p-4, .p-8, .p-12 { padding: 0 !important; }
           .max-w-6xl, .max-w-[95%] { max-width: 100% !important; width: 100% !important; }
-          
-          /* 5. Ajustar el grid para que si es necesario se ponga en 1 columna en papel vertical */
           .grid { display: block !important; }
           .grid > div { margin-bottom: 20px; }
         }
       `}</style>
-      {/* --- FIN DEL BLOQUE DE IMPRESIÓN --- */}
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
-        {/* LOGO PRINCIPAL */}
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
@@ -95,8 +83,8 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
-                  // RASTREO: Botón Ranking del menú principal
-                  track('Menu Principal: Ranking');
+                  // RASTREO: Botón Ranking
+                  sendGTMEvent({ event: 'button_click', value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
                 <Trophy className="mr-2 opacity-50" /> RANKING
@@ -112,15 +100,13 @@ export default function Home() {
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
                   
-                  // --- RASTREO: Identificar si es Ranking o Torneo (Caballeros) ---
+                  // --- RASTREO: Categorías ---
                   if (navState.type === "ranking") {
-                      // Ejemplo: "Ranking 2026 Categoría A"
-                      track(`Ranking ${navState.year} ${cat}`);
+                      sendGTMEvent({ event: 'button_click', value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
-                      // Ejemplo: "Caballeros Categoría A"
-                      track(`Caballeros ${cat}`);
+                      sendGTMEvent({ event: 'button_click', value: `Caballeros ${cat}` });
                   }
-                  // -------------------------------------------------------------
+                  // ---------------------------
 
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
@@ -139,10 +125,9 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      // --- RASTREO: Torneo específico con su categoría ---
-                      // Ejemplo: "Torneo Australian Open - Cat A"
-                      track(`Torneo ${t.name} - Cat ${navState.category}`);
-                      // --------------------------------------------------
+                      // --- RASTREO: Torneos ---
+                      sendGTMEvent({ event: 'button_click', value: `Torneo ${t.name} - Cat ${navState.category}` });
+                      // ------------------------
 
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }

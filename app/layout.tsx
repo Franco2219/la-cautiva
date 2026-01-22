@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-// Importamos la herramienta de analíticas
-import { Analytics } from "@vercel/analytics/react";
+// 1. IMPORTAMOS LA LIBRERÍA OFICIAL DE GOOGLE PARA NEXT.JS
+import { GoogleTagManager } from '@next/third-parties/google';
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -23,10 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      {/* 2. INICIALIZAMOS GOOGLE TAG MANAGER CON TU CÓDIGO */}
+      <GoogleTagManager gtmId="GTM-W973S6SS" />
+      
       <body className={`${poppins.variable} font-sans antialiased`}>
         {children}
-        {/* Componente de Analytics agregado al final del body */}
-        <Analytics />
       </body>
     </html>
   );
