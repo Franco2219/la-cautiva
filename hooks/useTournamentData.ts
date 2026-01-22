@@ -520,37 +520,10 @@ export const useTournamentData = () => {
           
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
-          if (tourType === "direct") {
-            try {
-               const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
-               const rankRes = await fetch(rankUrl);
-               const rankCsv = await rankRes.text();
-               
-               const rankRows = parseCSV(rankCsv).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0}));
-               const playersInBracket = rows.map(r => r[0]).filter(n => n && n.trim() !== "" && n !== "-" && n !== "BYE");
-               
-               const tournamentSeeds = playersInBracket.map(pName => {
-                   const rankedPlayer = rankRows.find(rp => 
-                       rp.name && (
-                         rp.name.toLowerCase().trim() === pName.toLowerCase().trim() ||
-                         rp.name.toLowerCase().includes(pName.toLowerCase()) || 
-                         pName.toLowerCase().includes(rp.name.toLowerCase())
-                       )
-                   );
-                   return { name: pName, total: rankedPlayer ? rankedPlayer.total : 0 };
-               });
-
-               tournamentSeeds.sort((a, b) => b.total - a.total);
-
-               tournamentSeeds.slice(0, 8).forEach((p, i) => {
-                   if (p.name && !seeds[p.name]) {
-                       seeds[p.name] = i + 1;
-                   }
-               });
-
-            } catch(e) { console.log("Error seeds direct", e); }
-          } else {
-             // Lógica para torneos de grupos (Full) - Se mantiene igual
+          // CAMBIO FINAL: Eliminamos completamente la lógica de "fallback" para torneos directos.
+          // Si no está el número en el Excel (hardcodedSeeds), NO calculamos nada.
+          if (tourType !== "direct") {
+             // Lógica para torneos de grupos (mantiene lo de 1° ZN)
              try {
                 const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                 const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
