@@ -40,13 +40,10 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   const style = getTournamentStyle(tournamentShort);
 
   return (
-    // AGREGAMOS 'print:break-inside-avoid' AL FINAL DE LAS CLASES PARA EVITAR CORTES AL IMPRIMIR
     <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor} print:break-inside-avoid`}>
       <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
-      
-      {/* Eliminamos <style jsx> con hide-scroll para permitir scroll en pantallas normales */}
       
       <div className="overflow-x-auto w-full">
           <table className="w-max min-w-full text-[11px] md:text-xs">
@@ -55,10 +52,13 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                 <th className="p-3 border-r w-32 text-left font-bold text-black min-w-[120px] whitespace-nowrap">JUGADOR</th>
                 {group.players && group.players.map((p: string, i: number) => {
                   let shortName = p;
-                  if (p) {
-                      const clean = p.replace(/,/g, "").trim().split(/\s+/);
-                      if (clean.length > 1) shortName = `${clean[0]} ${clean[1].charAt(0)}.`;
-                      else shortName = clean[0];
+                  // Limpieza: Quitamos el número del header (ej: "(1) Oliva" -> "Oliva")
+                  let cleanName = p.replace(/^\(\d+\)\s*/, "").trim(); 
+                  
+                  if (cleanName) {
+                      const cleanParts = cleanName.replace(/,/g, "").trim().split(/\s+/);
+                      if (cleanParts.length > 1) shortName = `${cleanParts[0]} ${cleanParts[1].charAt(0)}.`;
+                      else shortName = cleanParts[0];
                   }
                   return (
                     <th key={i} className={`p-3 border-r text-center font-black uppercase min-w-[80px] whitespace-nowrap ${style.textColor}`}>
@@ -77,9 +77,18 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
               </tr>
             </thead>
             <tbody>
-              {group.players && group.players.map((p1: string, i: number) => (
+              {group.players && group.players.map((p1: string, i: number) => {
+                // Separar número del nombre para pintar diferente
+                const seedMatch = p1.match(/^\((\d+)\)\s*(.+)/);
+                const rank = seedMatch ? seedMatch[1] : null;
+                const name = seedMatch ? seedMatch[2] : p1;
+
+                return (
                 <tr key={i} className="border-b">
-                  <td className={`p-3 border-r font-black bg-slate-50 uppercase text-left whitespace-nowrap ${style.textColor}`}>{p1}</td>
+                  <td className={`p-3 border-r font-black bg-slate-50 uppercase text-left whitespace-nowrap ${style.textColor}`}>
+                      {rank && <span className="text-orange-600 mr-1">({rank})</span>}
+                      {name}
+                  </td>
                   {group.players.map((p2: string, j: number) => (
                     <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
                       {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
@@ -96,7 +105,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                       </>
                   )}
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
       </div>
