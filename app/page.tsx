@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-// AGREGAMOS ICONOS NUEVOS (FileText y X)
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X } from "lucide-react";
+// AGREGAMOS ICONOS DE CONTACTO (MapPin, Phone, Mail)
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, Mail, MessageSquare } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
@@ -35,7 +35,6 @@ export default function Home() {
     confirmarSorteoCuadro,
     handleFooterClick, 
     goBack,
-    // DESTRUCTURAMOS LO NUEVO
     inscriptosList,
     showInscriptosModal,
     setShowInscriptosModal,
@@ -50,7 +49,6 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
       
-      {/* ESTILOS DE IMPRESIÓN */}
       <style jsx global>{`
         @media print {
           button, .cursor-pointer { display: none !important; }
@@ -65,9 +63,8 @@ export default function Home() {
         }
       `}</style>
 
-      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
+      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
-        {/* HEADER / LOGO */}
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
@@ -90,7 +87,6 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
-                  // RASTREO: Botón Ranking del menú principal
                   sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
@@ -106,17 +102,11 @@ export default function Home() {
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
-                  
-                  // --- RASTREO DE BOTONES (Lógica de diferenciación) ---
                   if (navState.type === "ranking") {
-                      // Ejemplo: "Ranking 2026 Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
-                      // Ejemplo: "Caballeros Categoría A"
                       sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
                   }
-                  // -----------------------------------------------------
-
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
@@ -134,11 +124,7 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      // --- RASTREO: Torneo Específico ---
-                      // Ejemplo: "Torneo Australian Open - Cat A"
                       sendGAEvent('event', 'button_click', { value: `Torneo ${t.name} - Cat ${navState.category}` });
-                      // ----------------------------------
-
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
@@ -167,23 +153,92 @@ export default function Home() {
                       fetchBracketData(navState.currentCat, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
-
-                  {/* --- NUEVO BOTÓN INSCRIPTOS --- */}
                   <Button onClick={() => {
                       sendGAEvent('event', 'button_click', { value: 'Ver Inscriptos' });
                       fetchInscriptos(navState.currentCat, navState.currentTour);
                   }} className={buttonStyle}>
                       <FileText className="mr-2" /> Inscriptos
                   </Button>
-                  {/* ----------------------------- */}
-
                 </>
               )}
             </div>
           )}
         </div>
 
-        {/* --- NUEVO MODAL DE INSCRIPTOS --- */}
+        {/* --- PANTALLA DE CONTACTO (NUEVO) --- */}
+        {navState.level === "contact" && (
+          <div className="bg-white border-4 border-[#b35a38] rounded-[2rem] p-8 md:p-12 shadow-2xl max-w-5xl mx-auto text-left relative overflow-hidden">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* Columna Izquierda: Información */}
+                <div className="space-y-8 flex flex-col justify-between">
+                   <div>
+                      <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-2">La Cautiva Tenis y Pádel</h2>
+                      <div className="h-1 w-20 bg-[#b35a38] mb-6"></div>
+                      
+                      <div className="space-y-4 text-slate-600 font-medium text-lg">
+                         <div className="flex items-start gap-3">
+                            <MapPin className="w-6 h-6 text-[#b35a38] shrink-0 mt-1" />
+                            <p>La Cautiva 7651, B1682AWM<br/>Villa Bosch, Provincia de Buenos Aires</p>
+                         </div>
+                         <div className="flex items-center gap-3">
+                            <Phone className="w-6 h-6 text-[#b35a38] shrink-0" />
+                            <p className="font-bold">11 2396-5949</p>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Placeholder Imagen/Mapa */}
+                   <div className="w-full h-48 bg-slate-100 rounded-2xl border-2 border-slate-200 flex items-center justify-center relative overflow-hidden">
+                      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#b35a38_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                      <MapPin className="w-16 h-16 text-slate-300" />
+                      <p className="absolute bottom-2 text-xs text-slate-400 font-bold uppercase tracking-widest">Ubicación del Club</p>
+                   </div>
+
+                   <p className="text-xl font-bold text-slate-800 italic">
+                      ¡Agendá tu próximo partido y sumate!
+                   </p>
+                </div>
+
+                {/* Columna Derecha: Formulario */}
+                <div className="bg-[#fffaf5] p-8 rounded-3xl border border-[#b35a38]/20">
+                   <h3 className="text-xl font-black text-[#b35a38] mb-4 flex items-center gap-2">
+                      <MessageSquare className="w-6 h-6" />
+                      ¿Tenés alguna duda o recomendación?
+                   </h3>
+                   <p className="text-slate-500 mb-6 text-sm font-bold">¡Escribinos! Reporta errores o danos tu feedback.</p>
+                   
+                   <form className="space-y-4" onSubmit={(e: any) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const name = formData.get("name");
+                      const mail = formData.get("mail");
+                      const msg = formData.get("message");
+                      const mailtoLink = `mailto:Franferro100@gmail.com?subject=Contacto Web Club - ${name}&body=Nombre: ${name}%0D%0AEmail: ${mail}%0D%0A%0D%0AMensaje:%0D%0A${msg}`;
+                      window.open(mailtoLink, '_blank');
+                   }}>
+                      <div>
+                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nombre</label>
+                         <input name="name" required className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="Tu nombre..." />
+                      </div>
+                      <div>
+                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
+                         <input name="mail" type="email" required className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="tucorreo@ejemplo.com" />
+                      </div>
+                      <div>
+                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mensaje</label>
+                         <textarea name="message" required className="w-full h-32 p-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700 resize-none" placeholder="Escribí tu mensaje aquí..."></textarea>
+                      </div>
+                      
+                      <Button type="submit" className="w-full h-14 bg-[#b35a38] hover:bg-[#8c3d26] text-white font-black text-lg rounded-xl shadow-lg transform active:scale-95 transition-all">
+                         <Send className="mr-2 w-5 h-5" /> ENVIAR MENSAJE
+                      </Button>
+                   </form>
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* MODAL INSCRIPTOS */}
         {showInscriptosModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
@@ -218,7 +273,6 @@ export default function Home() {
             </div>
           </div>
         )}
-        {/* --------------------------------- */}
 
         {navState.level === "generate-bracket" && (
           <div className="flex flex-col items-center">
@@ -313,7 +367,16 @@ export default function Home() {
         )}
 
       </div>
-      <p onClick={handleFooterClick} className="text-center text-slate-500/80 mt-12 text-sm font-bold uppercase tracking-widest animate-pulse text-center cursor-pointer select-none active:scale-95 transition-transform">Sistema de seguimiento de torneos</p>
+      
+      {/* --- FOOTER MODIFICADO --- */}
+      <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse">
+         <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos en vivo</p>
+         <span className="text-slate-300">|</span>
+         <p onClick={() => {
+             sendGAEvent('event', 'button_click', { value: 'Footer: Contacto' });
+             setNavState({ level: "contact" });
+         }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>
+      </div>
     </div>
   );
 }

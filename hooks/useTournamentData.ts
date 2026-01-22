@@ -20,10 +20,9 @@ export const useTournamentData = () => {
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
 
-  // --- NUEVOS ESTADOS (AGREGADO) ---
+  // --- ESTADOS PARA INSCRIPTOS ---
   const [inscriptosList, setInscriptosList] = useState<string[]>([]);
   const [showInscriptosModal, setShowInscriptosModal] = useState(false);
-  // --------------------------------
 
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
@@ -45,7 +44,7 @@ export const useTournamentData = () => {
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   }
 
-  // --- NUEVA FUNCIÓN FETCH INSCRIPTOS (AGREGADO) ---
+  // --- FUNCIÓN FETCH INSCRIPTOS ---
   const fetchInscriptos = async (category: string, tournamentShort: string) => {
     setIsLoading(true);
     setInscriptosList([]);
@@ -63,9 +62,7 @@ export const useTournamentData = () => {
         if (filtered.length > 0) {
             const formattedNames = filtered.map(r => {
                 let name = r[2] || "";
-                // 1. Quitar numeros y parentesis
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
-                // 2. Primera letra mayuscula (Title Case)
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
             setInscriptosList(formattedNames);
@@ -80,7 +77,6 @@ export const useTournamentData = () => {
         setIsLoading(false);
     }
   }
-  // ------------------------------------------------
 
   // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -453,16 +449,13 @@ export const useTournamentData = () => {
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
       
-      // --- CORRECCIÓN AQUÍ: Numerar TODOS los cabezas de serie ---
       for (let i = 0; i < numGroups; i++) { 
           if (entryList[i]) {
               let pName = entryList[i].name;
-              // Antes estaba limitado a if (i < 8). Ahora se lo ponemos a todos los cabezas de zona.
               pName = `(${i + 1}) ${pName}`;
               groups[i].players.push(pName);
           }
       }
-      // -----------------------------------------------------------
       
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5); let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
@@ -624,7 +617,10 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket" };
+    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket", 
+    // AGREGADO AQUI:
+    "contact": "home" };
+    // -------------
     const nextLevel = levels[navState.level] || "home";
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false });
@@ -651,11 +647,6 @@ export const useTournamentData = () => {
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack,
-    // --- NUEVO: Exportamos lo nuevo ---
-    inscriptosList, 
-    showInscriptosModal, 
-    setShowInscriptosModal, 
-    fetchInscriptos
-    // ---------------------------------
+    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos
   };
 };
