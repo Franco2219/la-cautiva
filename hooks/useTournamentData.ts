@@ -97,6 +97,7 @@ export const useTournamentData = () => {
       // Llenar el resto de ganadores
       const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
       
+      // --- LÓGICA DE DISTRIBUCIÓN INTELIGENTE (64 JUGADORES) ---
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
              const blockCounts = Array(16).fill(0); 
@@ -410,16 +411,31 @@ export const useTournamentData = () => {
       } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN 1: INCLUIR (N) EN EL MENSAJE PARA QUE QUEDE GRABADO EN EXCEL ---
+  // --- CORRECCIÓN: Separación lógica para Direct vs Full ---
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
+    
+    // Detectamos si es un torneo directo para aplicar la lógica de "quemar" el número
+    const isDirect = tournaments.find(t => t.short === navState.tournamentShort)?.type === "direct";
+
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
+    
     generatedBracket.forEach((match) => { 
         const p1 = match.p1;
         const p2 = match.p2;
-        // Si tiene seed/rank, lo pegamos al nombre con formato "(1) NOMBRE"
-        const p1Name = p1 ? (p1.rank ? `(${p1.rank}) ${p1.name}` : p1.name) : "TBD";
-        const p2Name = p2 ? (p2.rank ? `(${p2.rank}) ${p2.name}` : p2.name) : "TBD";
+        
+        // Si es DIRECT: usamos (rank) Nombre
+        // Si NO es DIRECT (Full/Grupos): usamos solo Nombre (como antes)
+        let p1Name = "TBD";
+        if (p1) {
+            p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name;
+        }
+
+        let p2Name = "TBD";
+        if (p2) {
+            p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name;
+        }
+
         mensaje += `${p1Name}\n${p2Name}\n`; 
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -474,41 +490,36 @@ export const useTournamentData = () => {
       let rows = parseCSV(csvText);
       const firstCell = rows.length > 0 && rows[0][0] ? rows[0][0].toString().toLowerCase() : ""; const invalidKeywords = ["formato", "cant", "zona", "pareja", "inscripto", "ranking", "puntos", "nombre", "apellido", "torneo", "fecha"]; const isInvalidSheet = invalidKeywords.some(k => firstCell.includes(k)); const hasContent = rows.length > 0 && !isInvalidSheet && firstCell !== "" && firstCell !== "-";
       
-      // --- CORRECCIÓN 2: LIMPIEZA INTELIGENTE DE NOMBRES ---
-      // Si el Excel tiene "(1) Juan", extraemos el 1 y dejamos "Juan" limpio.
+      // LIMPIEZA INTELIGENTE DE NOMBRES (Solo para visualizar bonito en Directos)
       let hardcodedSeeds: any = {};
       if (hasContent) {
           rows = rows.map(row => row.map(cell => {
               if (!cell || typeof cell !== 'string') return cell;
-              // Detecta "(1) Nombre" o "1. Nombre"
+              // Detecta "(1) Nombre"
               const match = cell.match(/^[\(]?(\d+)[\)\.]\s+(.+)/);
               if (match) {
                   const seed = parseInt(match[1]);
                   const cleanName = match[2].trim();
-                  // Guardamos el seed hardcodeado
                   hardcodedSeeds[cleanName] = seed;
-                  return cleanName; // Devolvemos nombre limpio para que la estética no se rompa
+                  return cleanName; 
               }
               return cell;
           }));
       }
-      // -----------------------------------------------------
 
       if (hasContent) {
           const playersInCol1 = rows.filter(r => r[0] && r[0].trim() !== "" && r[0] !== "-").length; 
           
-          // --- CORRECCIÓN: Detección de tamaño 64 ---
           let bracketSize = 16; 
           if (playersInCol1 > 32) bracketSize = 64; 
           else if (playersInCol1 > 16) bracketSize = 32; 
           else if (playersInCol1 <= 8) bracketSize = 8; 
           
-          // Iniciar seeds con los que encontramos en el Excel (tienen prioridad absoluta)
+          // Iniciar seeds con los que encontramos en el Excel (prioridad)
           let seeds: any = { ...hardcodedSeeds };
           
           const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
           
-          // Solo calculamos ranking dinámico si NO encontramos seeds hardcodeados para ese jugador
           if (tourType === "direct") {
             try {
                const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} 2026`)}`;
@@ -531,7 +542,6 @@ export const useTournamentData = () => {
 
                tournamentSeeds.sort((a, b) => b.total - a.total);
 
-               // Solo asignamos si no existe ya un seed fijo (para no pisar el Excel)
                tournamentSeeds.slice(0, 8).forEach((p, i) => {
                    if (p.name && !seeds[p.name]) {
                        seeds[p.name] = i + 1;
@@ -540,6 +550,7 @@ export const useTournamentData = () => {
 
             } catch(e) { console.log("Error seeds direct", e); }
           } else {
+             // Lógica para torneos de grupos (Full) - Se mantiene igual
              try {
                 const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
                 const res = await fetch(urlGroups); const txt = await res.text(); const groupRows = parseCSV(txt);
