@@ -64,7 +64,7 @@ export const useTournamentData = () => {
             const formattedNames = filtered.map(r => {
                 let name = r[2] || "";
                 // 1. Quitar numeros y parentesis
-                name = name.replace(/[0-9()]/g, "").replace(/\s+/g, " ").trim();
+                name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
                 // 2. Primera letra mayuscula (Title Case)
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
