@@ -221,34 +221,28 @@ export const useTournamentData = () => {
     window.open(`https://wa.me/${TELEFONO_BASTI}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
-  // --- CORRECCIÓN: Grupos Full - Agregar (N) solo a Top 8 ---
+  // --- CORRECCIÓN 2: Sacamos los asteriscos de los grupos para WPP ---
   const confirmarYEnviar = async () => {
     setIsLoading(true);
     let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
     
-    // 1. Buscamos el ranking actual para saber quiénes son los Top 8 HOY
     let rankMap: any = {};
     try {
        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
        const res = await fetch(rankUrl);
        const txt = await res.text();
        const rows = parseCSV(txt).slice(1).map(r => ({ name: r[1], total: parseInt(r[11]) || 0 }));
-       
-       // Ordenamos por puntos para tener el ranking real
        rows.sort((a,b) => b.total - a.total);
-       
-       // Guardamos el seed solo para los primeros 8
        rows.forEach((p, i) => {
            if (p.name && i < 8) {
-               // Normalizamos nombre para evitar problemas de espacios
                rankMap[p.name.trim().toLowerCase()] = i + 1;
            }
        });
     } catch(e) { console.log("Error ranking confirm"); }
 
-    // 2. Construimos el mensaje usando ese mapa
     groupData.forEach(g => { 
-        mensaje += `*${g.groupName}*\n`;
+        // AQUI CAMBIO: Quitamos los * alrededor del nombre del grupo
+        mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
             const cleanP = p.trim();
             const rank = rankMap[cleanP.toLowerCase()];
@@ -394,6 +388,7 @@ export const useTournamentData = () => {
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
 
+  // --- CORRECCIÓN 1: Agregar número (N) a los Top 8 EN EL SORTEO EN VIVO ---
   const runATPDraw = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
@@ -410,14 +405,26 @@ export const useTournamentData = () => {
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
-      for (let i = 0; i < numGroups; i++) { if (entryList[i]) groups[i].players.push(entryList[i].name); }
+      
+      // AQUI CAMBIA: Asignación con número para los TOP 8
+      for (let i = 0; i < numGroups; i++) { 
+          if (entryList[i]) {
+              let pName = entryList[i].name;
+              // Si está en el Top 8 global de este torneo, le agregamos el (N)
+              if (i < 8) {
+                  pName = `(${i + 1}) ${pName}`;
+              }
+              groups[i].players.push(pName);
+          }
+      }
+      
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5);
       let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
   }
 
-  // --- CORRECCIÓN 2: Limpieza de nombres con (N) en Fase de Grupos ---
+  // --- CORRECCIÓN 3: Sacar limpieza de nombres para que aparezca el (1) si viene del Excel ---
   const fetchGroupPhase = async (categoryShort: string, tournamentShort: string) => {
     setIsLoading(true); setGroupData([]); setIsSorteoConfirmado(false); setIsFixedData(false);
     try {
@@ -430,11 +437,8 @@ export const useTournamentData = () => {
             const potentialP4 = rows[i+4] && rows[i+4][0]; const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*")); const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[i+4] : null; const playersRaw = [rows[i+1], rows[i+2], rows[i+3]]; if (p4) playersRaw.push(p4);
             const validPlayersIndices: number[] = []; const players: string[] = []; const positions: string[] = []; const points: string[] = []; const diff: string[] = []; const gamesDiff: string[] = []; 
             playersRaw.forEach((row, index) => { 
-                let pName = row && row[0] ? row[0] : ""; 
-                // LIMPIEZA AQUÍ: Si dice "(1) Nombre", dejamos solo "Nombre" para la tabla
-                const match = pName.match(/^[\(]?(\d+)[\)\.]\s+(.+)/);
-                if (match) pName = match[2].trim();
-
+                // AQUI CAMBIA: Quitamos la limpieza del regex. Se muestra lo que hay en el Excel.
+                const pName = row && row[0] ? row[0] : ""; 
                 if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { players.push(pName); let rawPos = row[4] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); let rawPts = row[5] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); let rawDif = row[6] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); let rawGames = row[7] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); validPlayersIndices.push(index); } 
             });
             const results: string[][] = []; for (let x = 0; x < validPlayersIndices.length; x++) { const rowResults: string[] = []; const rowIndex = validPlayersIndices[x]; for (let y = 0; y < validPlayersIndices.length; y++) { const colIndex = validPlayersIndices[y]; const res = rows[i + 1 + rowIndex][1 + colIndex]; rowResults.push(res); } results.push(rowResults); }
