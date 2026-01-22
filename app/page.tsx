@@ -6,6 +6,8 @@ import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, Li
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
+// 1. IMPORTAMOS LA FUNCIÓN DE RASTREO
+import { track } from '@vercel/analytics';
 
 // Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -87,7 +89,21 @@ export default function Home() {
 
         <div className="space-y-4 max-w-xl mx-auto">
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
-          {navState.level === "main-menu" && <div className="grid grid-cols-1 gap-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button><Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button><Button onClick={() => setNavState({ level: "year-selection", type: "ranking" })} className={buttonStyle}><Trophy className="mr-2 opacity-50" /> RANKING</Button></div>}
+          
+          {navState.level === "main-menu" && (
+            <div className="grid grid-cols-1 gap-4 text-center">
+              <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
+              <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
+              <Button onClick={() => {
+                  // RASTREO: Botón Ranking del menú principal
+                  track('Menu Principal: Ranking');
+                  setNavState({ level: "year-selection", type: "ranking" })
+                }} className={buttonStyle}>
+                <Trophy className="mr-2 opacity-50" /> RANKING
+              </Button>
+            </div>
+          )}
+
           {navState.level === "year-selection" && <div className="space-y-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button></div>}
           
           {navState.level === "category-selection" && (
@@ -95,6 +111,17 @@ export default function Home() {
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
+                  
+                  // --- RASTREO: Identificar si es Ranking o Torneo (Caballeros) ---
+                  if (navState.type === "ranking") {
+                      // Ejemplo: "Ranking 2026 Categoría A"
+                      track(`Ranking ${navState.year} ${cat}`);
+                  } else if (navState.type === "caballeros") {
+                      // Ejemplo: "Caballeros Categoría A"
+                      track(`Caballeros ${cat}`);
+                  }
+                  // -------------------------------------------------------------
+
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
@@ -112,6 +139,11 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
+                      // --- RASTREO: Torneo específico con su categoría ---
+                      // Ejemplo: "Torneo Australian Open - Cat A"
+                      track(`Torneo ${t.name} - Cat ${navState.category}`);
+                      // --------------------------------------------------
+
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
