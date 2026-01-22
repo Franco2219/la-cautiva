@@ -24,6 +24,9 @@ export const useTournamentData = () => {
   const [inscriptosList, setInscriptosList] = useState<string[]>([]);
   const [showInscriptosModal, setShowInscriptosModal] = useState(false);
 
+  // --- NUEVO: ESTADO DEL FORMULARIO DE CONTACTO ---
+  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
     setIsLoading(true); setRankingData([]); setHeaders([]);
@@ -77,6 +80,28 @@ export const useTournamentData = () => {
         setIsLoading(false);
     }
   }
+
+  // --- NUEVA FUNCIÓN: ENVIAR CONTACTO ---
+  const sendContactForm = async (formData: FormData, formId: string) => {
+      setContactStatus('sending');
+      try {
+          const response = await fetch(`https://formspree.io/f/${formId}`, {
+              method: 'POST',
+              body: formData,
+              headers: {
+                  'Accept': 'application/json'
+              }
+          });
+          if (response.ok) {
+              setContactStatus('success');
+              setTimeout(() => setContactStatus('idle'), 5000);
+          } else {
+              setContactStatus('error');
+          }
+      } catch (error) {
+          setContactStatus('error');
+      }
+  };
 
   // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
@@ -419,13 +444,7 @@ export const useTournamentData = () => {
         let countRealTop = slots.slice(0, bracketSize/2).filter(x => x && x.name !== "BYE").length; let countRealBot = slots.slice(bracketSize/2).filter(x => x && x.name !== "BYE").length; let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         for (const player of nonSeeds) { const emptyTop = emptySlots.filter(i => i < bracketSize/2); const emptyBot = emptySlots.filter(i => i >= bracketSize/2); let targetIdx = -1; if (countRealTop < countRealBot && emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (countRealBot < countRealTop && emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else { if (emptyTop.length > 0 && emptyBot.length > 0) { targetIdx = Math.random() > 0.5 ? emptyTop[Math.floor(Math.random() * emptyTop.length)] : emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else if (emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } } if (targetIdx !== -1) { slots[targetIdx] = player; if (targetIdx < bracketSize/2) countRealTop++; else countRealBot++; emptySlots = emptySlots.filter(i => i !== targetIdx); } }
         for (let i = 0; i < slots.length; i++) { if (slots[i] === null) slots[i] = { name: "BYE", rank: 0 }; }
-        
-        let matches = []; 
-        for (let i = 0; i < bracketSize; i += 2) { 
-            let p1 = slots[i]; 
-            let p2 = slots[i+1]; 
-            matches.push({ p1, p2 }); 
-        }
+        let matches = []; for (let i = 0; i < bracketSize; i += 2) { let p1 = slots[i]; let p2 = slots[i+1]; matches.push({ p1, p2 }); }
         setGeneratedBracket(matches); setNavState({ ...navState, level: "generate-bracket", category: categoryShort, tournamentShort: tournamentShort, bracketSize: bracketSize });
     } catch (e) { alert("Error al generar sorteo directo."); } finally { setIsLoading(false); }
   }
@@ -448,15 +467,7 @@ export const useTournamentData = () => {
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
-      
-      for (let i = 0; i < numGroups; i++) { 
-          if (entryList[i]) {
-              let pName = entryList[i].name;
-              pName = `(${i + 1}) ${pName}`;
-              groups[i].players.push(pName);
-          }
-      }
-      
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) { let pName = entryList[i].name; pName = `(${i + 1}) ${pName}`; groups[i].players.push(pName); } }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5); let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
@@ -617,10 +628,7 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket", 
-    // AGREGADO AQUI:
-    "contact": "home" };
-    // -------------
+    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket", "contact": "home" };
     const nextLevel = levels[navState.level] || "home";
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false });
@@ -647,6 +655,9 @@ export const useTournamentData = () => {
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack,
-    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos
+    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos,
+    // --- NUEVO EXPORTADO ---
+    contactStatus, sendContactForm
+    // -----------------------
   };
 };

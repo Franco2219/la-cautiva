@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare } from "lucide-react";
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
 import { tournaments } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
@@ -38,12 +38,18 @@ export default function Home() {
     showInscriptosModal,
     setShowInscriptosModal,
     fetchInscriptos,
+    // NUEVAS FUNCIONES DE CONTACTO
+    contactStatus,
+    sendContactForm
   } = useTournamentData();
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
+
+  // AQUI ESTA TU CODIGO DE FORMSPREE
+  const FORMSPREE_ID = "xpqpqzdg";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
@@ -164,16 +170,14 @@ export default function Home() {
           )}
         </div>
 
+        {/* --- PANTALLA DE CONTACTO --- */}
         {navState.level === "contact" && (
           <div className="bg-white border-4 border-[#b35a38] rounded-[2rem] p-8 md:p-12 shadow-2xl max-w-5xl mx-auto text-left relative overflow-hidden">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                
-                {/* Columna Izquierda: Información y MAPA DINÁMICO */}
                 <div className="space-y-8 flex flex-col justify-between">
                    <div>
                       <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-2">La Cautiva Tenis y Pádel</h2>
                       <div className="h-1 w-20 bg-[#b35a38] mb-6"></div>
-                      
                       <div className="space-y-4 text-slate-600 font-medium text-lg">
                          <div className="flex items-start gap-3">
                             <MapPin className="w-6 h-6 text-[#b35a38] shrink-0 mt-1" />
@@ -185,27 +189,12 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
-
-                   {/* --- MAPA DE GOOGLE DINÁMICO (IFRAME) --- */}
                    <div className="w-full h-48 bg-slate-100 rounded-2xl border-2 border-slate-200 overflow-hidden shadow-inner relative group">
-                      <iframe 
-                        width="100%" 
-                        height="100%" 
-                        style={{ border: 0 }} 
-                        loading="lazy" 
-                        allowFullScreen 
-                        src="https://maps.google.com/maps?q=La+Cautiva+7651%2C+Villa+Bosch&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                        className="absolute inset-0 w-full h-full"
-                      ></iframe>
+                      <iframe width="100%" height="100%" style={{ border: 0 }} loading="lazy" allowFullScreen src="https://maps.google.com/maps?q=La+Cautiva+7651%2C+Villa+Bosch&t=&z=15&ie=UTF8&iwloc=&output=embed" className="absolute inset-0 w-full h-full"></iframe>
                    </div>
-                   {/* ----------------------------------------- */}
-
-                   <p className="text-xl font-bold text-slate-800 italic">
-                      ¡Agendá tu próximo partido y sumate!
-                   </p>
+                   <p className="text-xl font-bold text-slate-800 italic">¡Agendá tu próximo partido y sumate!</p>
                 </div>
 
-                {/* Columna Derecha: Formulario */}
                 <div className="bg-[#fffaf5] p-8 rounded-3xl border border-[#b35a38]/20">
                    <h3 className="text-xl font-black text-[#b35a38] mb-4 flex items-center gap-2">
                       <MessageSquare className="w-6 h-6" />
@@ -216,28 +205,41 @@ export default function Home() {
                    <form className="space-y-4" onSubmit={(e: any) => {
                       e.preventDefault();
                       const formData = new FormData(e.target);
-                      const name = formData.get("name");
-                      const mail = formData.get("mail");
-                      const msg = formData.get("message");
-                      const mailtoLink = `mailto:Franferro100@gmail.com?subject=Contacto Web Club - ${name}&body=Nombre: ${name}%0D%0AEmail: ${mail}%0D%0A%0D%0AMensaje:%0D%0A${msg}`;
-                      window.open(mailtoLink, '_blank');
+                      sendContactForm(formData, FORMSPREE_ID);
                    }}>
                       <div>
                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nombre</label>
-                         <input name="name" required className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="Tu nombre..." />
+                         <input name="name" required disabled={contactStatus === 'sending'} className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="Tu nombre..." />
                       </div>
                       <div>
                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
-                         <input name="mail" type="email" required className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="tucorreo@ejemplo.com" />
+                         <input name="email" type="email" required disabled={contactStatus === 'sending'} className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700" placeholder="tucorreo@ejemplo.com" />
                       </div>
                       <div>
                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Mensaje</label>
-                         <textarea name="message" required className="w-full h-32 p-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700 resize-none" placeholder="Escribí tu mensaje aquí..."></textarea>
+                         <textarea name="message" required disabled={contactStatus === 'sending'} className="w-full h-32 p-4 rounded-xl border-2 border-slate-200 focus:border-[#b35a38] focus:outline-none transition-colors font-bold text-slate-700 resize-none" placeholder="Escribí tu mensaje aquí..."></textarea>
                       </div>
                       
-                      <Button type="submit" className="w-full h-14 bg-[#b35a38] hover:bg-[#8c3d26] text-white font-black text-lg rounded-xl shadow-lg transform active:scale-95 transition-all">
-                         <Send className="mr-2 w-5 h-5" /> ENVIAR MENSAJE
-                      </Button>
+                      {contactStatus === 'idle' && (
+                        <Button type="submit" className="w-full h-14 bg-[#b35a38] hover:bg-[#8c3d26] text-white font-black text-lg rounded-xl shadow-lg transform active:scale-95 transition-all">
+                           <Send className="mr-2 w-5 h-5" /> ENVIAR MENSAJE
+                        </Button>
+                      )}
+                      {contactStatus === 'sending' && (
+                        <Button disabled className="w-full h-14 bg-slate-300 text-slate-500 font-black text-lg rounded-xl shadow-none cursor-not-allowed">
+                           <Loader2 className="mr-2 w-5 h-5 animate-spin" /> ENVIANDO...
+                        </Button>
+                      )}
+                      {contactStatus === 'success' && (
+                        <div className="w-full h-14 bg-green-500 text-white font-black text-lg rounded-xl shadow-lg flex items-center justify-center animate-in fade-in zoom-in">
+                           <CheckCircle className="mr-2 w-6 h-6" /> ¡ENVIADO!
+                        </div>
+                      )}
+                      {contactStatus === 'error' && (
+                        <div className="w-full h-14 bg-red-500 text-white font-black text-lg rounded-xl shadow-lg flex items-center justify-center animate-in fade-in zoom-in">
+                           <AlertCircle className="mr-2 w-6 h-6" /> ERROR - INTENTAR DE NUEVO
+                        </div>
+                      )}
                    </form>
                 </div>
              </div>
@@ -375,7 +377,7 @@ export default function Home() {
       
       {/* Footer con el botón de Contacto */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse">
-         <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
+         <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos en vivo</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
              sendGAEvent('event', 'button_click', { value: 'Footer: Contacto' });
