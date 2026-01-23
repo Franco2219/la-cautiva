@@ -311,13 +311,19 @@ export const useTournamentData = () => {
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            const cleanP = p.replace(/\(\d+\)\s+/, "").trim(); 
-            const rank = rankMap[cleanP.toLowerCase()];
-            if (rank) {
-                mensaje += `(${rank}) ${cleanP}\n`;
+            // --- CORRECCIÓN AQUÍ: Si ya tiene numero (del sorteo), lo usamos directo ---
+            if (p.trim().match(/^\(\d+\)/)) {
+                 mensaje += `${p}\n`;
             } else {
-                mensaje += `${cleanP}\n`;
+                const cleanP = p.replace(/\(\d+\)\s+/, "").trim(); 
+                const rank = rankMap[cleanP.toLowerCase()];
+                if (rank) {
+                    mensaje += `(${rank}) ${cleanP}\n`;
+                } else {
+                    mensaje += `${cleanP}\n`;
+                }
             }
+            // --------------------------------------------------------------------------
         });
         mensaje += `\n`;
     });
@@ -420,7 +426,7 @@ export const useTournamentData = () => {
         const inscRes = await fetch(inscUrl);
         const inscCsv = await inscRes.text();
         
-        // --- LIMPIEZA DE NOMBRES EN SORTEO DIRECTO (AGREGADO) ---
+        // --- LIMPIEZA DE NOMBRES EN SORTEO DIRECTO ---
         const filteredInscriptos = parseCSV(inscCsv).slice(1)
             .filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort)
             .map(cols => {
@@ -428,7 +434,7 @@ export const useTournamentData = () => {
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
-        // --------------------------------------------------------
+        // ---------------------------------------------
 
         if (filteredInscriptos.length < 4) { alert("Mínimo 4 jugadores."); setIsLoading(false); return; }
         const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points);
@@ -470,17 +476,15 @@ export const useTournamentData = () => {
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
       
-      // --- LIMPIEZA DE NOMBRES EN SORTEO ATP (AGREGADO) ---
+      // --- LIMPIEZA DE NOMBRES EN SORTEO ATP ---
       const filteredInscriptos = parseCSV(inscCsv).slice(1)
           .filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort)
           .map(cols => {
                 let name = cols[2] || "";
-                // 1. Quitar numeros y parentesis
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
-                // 2. Primera letra mayuscula
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
           });
-      // ----------------------------------------------------
+      // -----------------------------------------
 
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
       const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points); 
@@ -489,15 +493,7 @@ export const useTournamentData = () => {
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
       capacities = capacities.sort((a, b) => b - a); const numGroups = capacities.length;
       let groups = capacities.map((cap, i) => ({ groupName: `Zona ${i + 1}`, capacity: cap, players: [], results: [["-","-","-"], ["-","-","-"], ["-","-","-"], ["-","-","-"]], positions: ["-", "-", "-", "-"], points: ["", "", "", ""], diff: ["", "", "", ""] }));
-      
-      for (let i = 0; i < numGroups; i++) { 
-          if (entryList[i]) {
-              let pName = entryList[i].name;
-              pName = `(${i + 1}) ${pName}`;
-              groups[i].players.push(pName);
-          }
-      }
-      
+      for (let i = 0; i < numGroups; i++) { if (entryList[i]) { let pName = entryList[i].name; pName = `(${i + 1}) ${pName}`; groups[i].players.push(pName); } }
       const restOfPlayers = entryList.slice(numGroups).sort(() => Math.random() - 0.5); let pIdx = 0; for (let g = 0; g < numGroups; g++) { while (groups[g].players.length < groups[g].capacity && pIdx < restOfPlayers.length) { groups[g].players.push(restOfPlayers[pIdx].name); pIdx++; } }
       setGroupData(groups); setNavState({ ...navState, level: "group-phase", currentCat: categoryShort, currentTour: tournamentShort });
     } catch (e) { alert("Error al procesar el sorteo."); } finally { setIsLoading(false); }
@@ -685,13 +681,7 @@ export const useTournamentData = () => {
     enviarListaBasti, 
     confirmarSorteoCuadro,
     handleFooterClick, goBack,
-    // --- NUEVO: Exportamos lo nuevo ---
-    inscriptosList, 
-    showInscriptosModal, 
-    setShowInscriptosModal, 
-    fetchInscriptos,
-    contactStatus, 
-    sendContactForm
-    // ---------------------------------
+    inscriptosList, showInscriptosModal, setShowInscriptosModal, fetchInscriptos,
+    contactStatus, sendContactForm
   };
 };
