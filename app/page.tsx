@@ -90,7 +90,11 @@ export default function Home() {
           {navState.level === "main-menu" && (
             <div className="grid grid-cols-1 gap-4 text-center">
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
-              <Button onClick={() => setNavState({ level: "category-selection", type: "damas" })} className={buttonStyle}>DAMAS</Button>
+              <Button onClick={() => {
+                  // AVISO A GOOGLE: DAMAS
+                  sendGAEvent('event', 'button_click', { value: 'Menu: Damas' });
+                  setNavState({ level: "category-selection", type: "damas" });
+              }} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
                   sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
@@ -100,18 +104,34 @@ export default function Home() {
             </div>
           )}
 
-          {navState.level === "year-selection" && <div className="space-y-4 text-center"><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2025" })} className={buttonStyle}>Ranking 2025</Button><Button onClick={() => setNavState({ level: "category-selection", type: "ranking", year: "2026" })} className={buttonStyle}>Ranking 2026</Button></div>}
+          {navState.level === "year-selection" && (
+            <div className="space-y-4 text-center">
+                <Button onClick={() => {
+                    // AVISO A GOOGLE: RANKING 2025
+                    sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2025' });
+                    setNavState({ level: "category-selection", type: "ranking", year: "2025" });
+                }} className={buttonStyle}>Ranking 2025</Button>
+                
+                <Button onClick={() => {
+                    // AVISO A GOOGLE: RANKING 2026
+                    sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2026' });
+                    setNavState({ level: "category-selection", type: "ranking", year: "2026" });
+                }} className={buttonStyle}>Ranking 2026</Button>
+            </div>
+          )}
           
           {navState.level === "category-selection" && (
             <div className="space-y-4 text-center">
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
+                  // AVISO A GOOGLE: CATEGORIAS (Caballeros o Ranking)
                   if (navState.type === "ranking") {
                       sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
                       sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
                   }
+                  
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
@@ -380,6 +400,7 @@ export default function Home() {
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
+             // AVISO A GOOGLE: CONTACTO
              sendGAEvent('event', 'button_click', { value: 'Footer: Contacto' });
              setNavState({ level: "contact" });
          }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>
