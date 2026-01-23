@@ -91,7 +91,7 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-4 text-center">
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => {
-                  // AVISO A GOOGLE: DAMAS
+                  // AVISO A GOOGLE: DAMAS (AGREGADO)
                   sendGAEvent('event', 'button_click', { value: 'Menu: Damas' });
                   setNavState({ level: "category-selection", type: "damas" });
               }} className={buttonStyle}>DAMAS</Button>
@@ -107,13 +107,13 @@ export default function Home() {
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">
                 <Button onClick={() => {
-                    // AVISO A GOOGLE: RANKING 2025
+                    // AVISO A GOOGLE: RANKING 2025 (AGREGADO)
                     sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2025' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2025" });
                 }} className={buttonStyle}>Ranking 2025</Button>
                 
                 <Button onClick={() => {
-                    // AVISO A GOOGLE: RANKING 2026
+                    // AVISO A GOOGLE: RANKING 2026 (AGREGADO)
                     sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2026' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2026" });
                 }} className={buttonStyle}>Ranking 2026</Button>
