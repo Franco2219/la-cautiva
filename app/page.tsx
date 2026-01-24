@@ -170,7 +170,7 @@ export default function Home() {
 
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 text-center text-center">
-              <h2 className="text-xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
+              <h2 className="text-lg font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
               {navState.hasGroups ? (
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
