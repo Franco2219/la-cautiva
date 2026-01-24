@@ -81,12 +81,12 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER MODIFICADO --- */}
+        {/* --- BOTÓN VOLVER MODIFICADO (Responsive) --- */}
         {navState.level !== "home" && (
             <Button 
                 onClick={goBack} 
                 variant="ghost" 
-                className="mb-6 text-black font-black text-3xl"
+                className="mb-6 text-black font-black text-xl md:text-3xl h-auto whitespace-normal"
             >
                 {navState.level === "tournament-selection" ? "← VOLVER A CATEGORIAS" : "← VOLVER"}
             </Button>
