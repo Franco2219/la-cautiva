@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react"; // Agregamos useState para el gesto
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
@@ -43,6 +44,40 @@ export default function Home() {
     sendContactForm
   } = useTournamentData();
 
+  // --- LOGICA DEL GESTO DESLIZAR (SWIPE) ---
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50; // Distancia mínima para considerar un swipe
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    // Solo detectamos si empieza en el borde izquierdo (15% de la pantalla)
+    // Esto evita que choques con el scroll horizontal de las tablas
+    if (e.targetTouches[0].clientX < window.innerWidth * 0.20) {
+        setTouchStart(e.targetTouches[0].clientX);
+    } else {
+        setTouchStart(null);
+    }
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStart !== null) {
+        setTouchEnd(e.targetTouches[0].clientX);
+    }
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance < -minSwipeDistance; // Negativo significa hacia la derecha
+    
+    if (isLeftSwipe && navState.level !== "home") {
+      goBack(); // Ejecutamos la función volver
+    }
+  }
+  // ----------------------------------------
+
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
   const activeTour = navState.tournamentShort || navState.currentTour;
@@ -52,7 +87,13 @@ export default function Home() {
   const FORMSPREE_ID = "xpqpqzdg";
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]">
+    // Agregamos los eventos de Touch al div principal
+    <div 
+        className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+    >
       
       <style jsx global>{`
         @media print {
@@ -81,15 +122,15 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER NUEVO DISEÑO --- */}
+        {/* --- BOTÓN VOLVER (Se mantiene visible por si no saben usar el gesto) --- */}
         {navState.level !== "home" && (
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-8 w-full">
                 <Button 
                     onClick={goBack} 
-                    className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center"
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
-                    <ArrowLeft className="w-6 h-6" />
-                    {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : "VOLVER"}
+                    <ArrowLeft className="w-6 h-6 shrink-0" />
+                    <span>{navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : "VOLVER"}</span>
                 </Button>
             </div>
         )}
