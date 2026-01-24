@@ -81,15 +81,17 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER MODIFICADO (Responsive) --- */}
+        {/* --- BOTÓN VOLVER NUEVO DISEÑO --- */}
         {navState.level !== "home" && (
-            <Button 
-                onClick={goBack} 
-                variant="ghost" 
-                className="mb-6 text-black font-black text-xl md:text-3xl h-auto whitespace-normal"
-            >
-                {navState.level === "tournament-selection" ? "← VOLVER A CATEGORIAS" : "← VOLVER"}
-            </Button>
+            <div className="flex justify-center mb-8">
+                <Button 
+                    onClick={goBack} 
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                    {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : "VOLVER"}
+                </Button>
+            </div>
         )}
         
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
