@@ -86,7 +86,7 @@ export default function Home() {
             <Button 
                 onClick={goBack} 
                 variant="ghost" 
-                className="mb-6 text-black font-black text-x2"
+                className="mb-6 text-black font-black text-2x1"
             >
                 {navState.level === "tournament-selection" ? "← VOLVER A CATEGORIAS" : "← VOLVER"}
             </Button>
