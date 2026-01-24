@@ -81,7 +81,17 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {navState.level !== "home" && <Button onClick={goBack} variant="ghost" className="mb-6 text-slate-500 font-bold">← VOLVER</Button>}
+        {/* --- BOTÓN VOLVER MODIFICADO --- */}
+        {navState.level !== "home" && (
+            <Button 
+                onClick={goBack} 
+                variant="ghost" 
+                className="mb-6 text-black font-black text-xl hover:bg-transparent hover:scale-105 transition-transform"
+            >
+                {navState.level === "tournament-selection" ? "← VOLVER A CATEGORIAS" : "← VOLVER"}
+            </Button>
+        )}
+        
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto">
