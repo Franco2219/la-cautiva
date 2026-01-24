@@ -86,7 +86,7 @@ export default function Home() {
             <Button 
                 onClick={goBack} 
                 variant="ghost" 
-                className="mb-6 text-black font-black text-xl hover:bg-transparent hover:scale-105 transition-transform"
+                className="mb-6 text-black font-black text-x2"
             >
                 {navState.level === "tournament-selection" ? "← VOLVER A CATEGORIAS" : "← VOLVER"}
             </Button>
@@ -170,7 +170,7 @@ export default function Home() {
 
           {navState.level === "tournament-phases" && (
             <div className="space-y-4 text-center text-center">
-              <h2 className="text-2xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
+              <h2 className="text-xl font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
               {navState.hasGroups ? (
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
