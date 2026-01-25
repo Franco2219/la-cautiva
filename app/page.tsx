@@ -138,6 +138,21 @@ export default function Home() {
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto">
+          {/* --- AVISO DE RÉCORD (NUEVO) --- */}
+          {navState.level === "home" && (
+            <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              <div className="bg-white/90 backdrop-blur-sm border-2 border-[#b35a38] text-[#b35a38] py-3 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 mx-4 transform hover:scale-105 transition-transform duration-300">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
+                </span>
+                <p className="font-black uppercase tracking-wide text-sm md:text-base">
+                  ¡Récord! Ya somos <span className="text-xl md:text-2xl">115</span> inscriptos al AO
+                </p>
+              </div>
+            </div>
+          )}
+          {/* -------------------------------- */}
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           
           {navState.level === "main-menu" && (
