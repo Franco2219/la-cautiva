@@ -138,7 +138,7 @@ export default function Home() {
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto">
-          {/* --- AVISO DE RÉCORD (NUEVO) --- */}
+          {/* --- AVISO DE RÉCORD (NUEVO) --- SI LO QUIERO APAGAR PONGO FALSE EN EL ARRANQUE DE LA 142 */}
           {navState.level === "home" && (
             <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <div className="bg-white/90 backdrop-blur-sm border-2 border-[#b35a38] text-[#b35a38] py-3 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 mx-4 transform hover:scale-105 transition-transform duration-300">
