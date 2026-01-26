@@ -130,7 +130,7 @@ export const BracketView = ({
           
           {/* NUEVA COLUMNA: 64 JUGADORES (32 PARTIDOS) */}
           {getSize === 64 && (
-            <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r64');
                 const p1 = r ? r[idx] : null;
@@ -195,7 +195,7 @@ export const BracketView = ({
 
           {/* COLUMNA: 32 JUGADORES */}
           {getSize >= 32 && (
-            <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 16 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r32');
                 if (!r) return null; // Safety check
@@ -260,7 +260,7 @@ export const BracketView = ({
 
           {/* COLUMNA: 16 JUGADORES (OCTAVOS) */}
           {getSize >= 16 && (
-            <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
               {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                 const [r, s, nextR] = getRoundData('r16');
                 if (!r) return null;
@@ -324,7 +324,7 @@ export const BracketView = ({
           )}
 
           {/* COLUMNA: CUARTOS DE FINAL */}
-          <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
             {[0, 2, 4, 6].map((idx, i) => {
               const [r, s, nextR] = getRoundData('qf');
               const p1 = r ? r[idx] : null;
@@ -386,7 +386,7 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA: SEMIFINALES */}
-          <div className="flex flex-col justify-around min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
             {[0, 2].map((idx, i) => {
               const [r, s] = getRoundData('sf');
               const p1 = r ? r[idx] : null;
@@ -462,7 +462,7 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA: FINAL */}
-          <div className="flex flex-col justify-center min-w-[150px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
             {(() => {
               let topFinalistName = "";
               let botFinalistName = "";
@@ -530,7 +530,7 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA: CAMPEÓN */}
-          <div className="flex flex-col justify-center min-w-[80px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[120px] md:min-w-0 md:flex-1 relative">
             <div className="relative flex flex-col items-center">
               <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
               <Trophy
