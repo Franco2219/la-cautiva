@@ -160,11 +160,11 @@ export default function Home() {
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => {
                   // AVISO A GOOGLE: DAMAS (AGREGADO)
-                  sendGAEvent('event', 'button_click', { value: 'Menu: Damas' });
+                  sendGAEvent('event', 'button_click', { event_label: 'Menu: Damas' });
                   setNavState({ level: "category-selection", type: "damas" });
               }} className={buttonStyle}>DAMAS</Button>
               <Button onClick={() => {
-                  sendGAEvent('event', 'button_click', { value: 'Menu Principal: Ranking' });
+                  sendGAEvent('event', 'button_click', { event_label: 'Menu Principal: Ranking' });
                   setNavState({ level: "year-selection", type: "ranking" })
                 }} className={buttonStyle}>
                 <Trophy className="mr-2 opacity-50" /> RANKING
@@ -176,13 +176,13 @@ export default function Home() {
             <div className="space-y-4 text-center">
                 <Button onClick={() => {
                     // AVISO A GOOGLE: RANKING 2025 (AGREGADO)
-                    sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2025' });
+                    sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2025' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2025" });
                 }} className={buttonStyle}>Ranking 2025</Button>
                 
                 <Button onClick={() => {
                     // AVISO A GOOGLE: RANKING 2026 (AGREGADO)
-                    sendGAEvent('event', 'button_click', { value: 'Ver Ranking 2026' });
+                    sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2026' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2026" });
                 }} className={buttonStyle}>Ranking 2026</Button>
             </div>
@@ -195,9 +195,9 @@ export default function Home() {
                   const catShort = cat.replace("Categoría ", "");
                   // AVISO A GOOGLE: CATEGORIAS (Caballeros o Ranking)
                   if (navState.type === "ranking") {
-                      sendGAEvent('event', 'button_click', { value: `Ranking ${navState.year} ${cat}` });
+                      sendGAEvent('event', 'button_click', { event_label: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
-                      sendGAEvent('event', 'button_click', { value: `Caballeros ${cat}` });
+                      sendGAEvent('event', 'button_click', { event_label: `Caballeros ${cat}` });
                   }
                   
                   if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
@@ -217,7 +217,7 @@ export default function Home() {
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
-                      sendGAEvent('event', 'button_click', { value: `Torneo ${t.name} - Cat ${navState.category}` });
+                      sendGAEvent('event', 'button_click', { event_label: `Torneo ${t.name} - Cat ${navState.category}` });
                       if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
@@ -247,7 +247,7 @@ export default function Home() {
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro de Eliminación</Button>
                   <Button onClick={() => {
-                      sendGAEvent('event', 'button_click', { value: 'Ver Inscriptos' });
+                      sendGAEvent('event', 'button_click', { event_label: 'Ver Inscriptos' });
                       fetchInscriptos(navState.currentCat, navState.currentTour);
                   }} className={buttonStyle}>
                       <FileText className="mr-2" /> Inscriptos
@@ -469,7 +469,7 @@ export default function Home() {
          <span className="text-slate-300">|</span>
          <p onClick={() => {
              // AVISO A GOOGLE: CONTACTO
-             sendGAEvent('event', 'button_click', { value: 'Footer: Contacto' });
+             sendGAEvent('event', 'button_click', { event_label: 'Footer: Contacto' });
              setNavState({ level: "contact" });
          }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>
       </div>
