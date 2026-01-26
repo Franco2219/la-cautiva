@@ -52,7 +52,14 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
             </tbody>
           </table>
         </div>
+      ) : headers.length > 0 && data.length === 0 ? (
+        // --- MENSAJE DE "NO HAY PUNTOS" ---
+        <div className="h-64 flex items-center justify-center text-slate-400 uppercase font-bold text-center p-8">
+          Todavía no hay jugadores con puntos para esta sección
+        </div>
+        // ----------------------------------
       ) : (
+        // --- ESTADO DE CARGA ---
         <div className="h-64 flex items-center justify-center text-slate-300 uppercase font-black animate-pulse text-center">
           Cargando datos...
         </div>
