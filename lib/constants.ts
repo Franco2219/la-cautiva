@@ -140,34 +140,37 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
 
 export const PRINT_STYLES = `
 @media print {
-  /* 1. LIMPIEZA TOTAL DE ELEMENTOS NO DESEADOS */
-  /* Ocultamos navegación, botones, footer y elementos interactivos */
+  /* 1. OCULTAR NAVEGACIÓN Y ELEMENTOS DE INTERFAZ */
   nav, header, footer, button, .navbar, .btn, .cursor-pointer, .animate-pulse {
     display: none !important;
   }
 
-  /* Ocultamos el bloque del título principal "La Cautiva" y su logo para arrancar directo con el Torneo */
-  /* Apuntamos al contenedor específico del logo y título del home */
-  .text-center.mb-8 {
+  /* 2. OCULTAR SOLO EL LOGO Y TÍTULO DE "LA CAUTIVA" (EL DE ARRIBA DE TODO) */
+  /* Ocultamos el contenedor del logo principal */
+  .relative.group.w-64.h-64 {
+     display: none !important;
+  }
+  /* Ocultamos el texto "La Cautiva" y "Club de Tenis" */
+  h1.text-5xl.md\\:text-7xl, 
+  p.text-xl.text-slate-400 {
      display: none !important;
   }
 
-  /* 2. MÁRGENES DE HOJA AL MÍNIMO */
+  /* 3. CONFIGURACIÓN DE LA HOJA Y ZOOM (AQUÍ ESTÁ EL CAMBIO) */
   @page {
-    margin: 0.3cm; /* Márgenes muy estrechos para aprovechar toda la hoja */
+    margin: 0.5cm; /* Margen moderado */
     size: auto; 
   }
 
-  /* 3. ZOOM AGRESIVO PARA QUE ENTREN MÁS ZONAS */
   body {
-    zoom: 60%; /* Con esto deberían entrar cómodamente 14-16 zonas */
+    zoom: 60%; /* <--- ZOOM IDEAL: Grande pero permite varios grupos por hoja */
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
-    -webkit-print-color-adjust: exact;
+    -webkit-print-color-adjust: exact; /* Para que salga el color de fondo del header */
   }
 
-  /* 4. CONTENEDORES FULL WIDTH */
+  /* 4. CONTENEDORES AL 100% */
   main, .main-content, .max-w-6xl, .max-w-[95%] {
     width: 100% !important;
     max-width: 100% !important;
@@ -175,56 +178,43 @@ export const PRINT_STYLES = `
     padding: 0 !important;
   }
 
-  /* 5. GRILLA DE ZONAS COMPACTA */
+  /* 5. HEADER DEL TORNEO (WIMBLEDON...) - VISIBLE Y AJUSTADO */
+  /* Nos aseguramos que la barra de color del torneo SE VEA */
+  .rounded-2xl.mb-8 {
+     display: flex !important;
+     margin-bottom: 15px !important;
+     padding: 10px !important;
+     break-inside: avoid !important;
+  }
+  
+  /* Opcional: Si quieres ganar un poco de altura, ocultamos los logos DENTRO de la barra del torneo */
+  /* Si prefieres que se vean, borra estas 3 líneas de abajo */
+  .rounded-2xl.mb-8 img, 
+  .rounded-2xl.mb-8 .w-20.h-20 {
+     display: none !important;
+  }
+
+  /* 6. GRILLA DE ZONAS */
   .grid {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 5px !important; /* Espacio mínimo entre zonas */
+    gap: 10px !important;
     justify-content: center !important;
   }
 
   .grid > div {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    width: 49% !important; /* Dos columnas ocupando casi todo el ancho */
-    margin-bottom: 5px !important; /* Mínimo margen vertical */
-    border: 1px solid #000 !important;
+    width: 48% !important; /* 2 columnas */
+    margin-bottom: 10px !important;
+    border: 1px solid #333 !important;
     box-shadow: none !important;
-    border-radius: 4px !important;
-  }
-
-  /* 6. ENCABEZADO DEL TORNEO (BARRA DE COLOR) */
-  /* Lo hacemos mucho más fino y quitamos sus logos internos */
-  .rounded-2xl.mb-8 {
-     margin-bottom: 10px !important;
-     padding: 4px !important;
-     min-height: 0 !important;
-     border-radius: 4px !important;
-  }
-
-  /* Texto del título del torneo */
-  .rounded-2xl.mb-8 h2 {
-     font-size: 1.8rem !important;
-     margin: 0 !important;
-     line-height: 1.1 !important;
+    border-radius: 6px !important;
   }
   
-  /* Texto de la categoría */
-  .rounded-2xl.mb-8 p {
-     font-size: 1rem !important;
-     margin: 0 !important;
-  }
-
-  /* Ocultamos los logos DENTRO de la barra del torneo para ganar altura */
-  .rounded-2xl.mb-8 img, 
-  .rounded-2xl.mb-8 .w-20.h-20 {
-     display: none !important;
-  }
-
-  /* 7. AJUSTE FINO DE LAS TABLAS INTERNAS */
-  /* Reducimos el padding de las celdas para que cada zona ocupe menos altura */
+  /* Ajuste de celdas para que no sean tan altas innecesariamente */
   td, th {
-     padding: 2px 4px !important;
+     padding: 4px 6px !important;
   }
 }
 `;
