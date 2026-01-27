@@ -136,7 +136,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya somos <span className="text-xl md:text-2xl">119</span> inscriptos en el Australian Open! No te quedes afuera, anotate!
+                  Ya somos <span className="text-xl md:text-2xl">+120</span> inscriptos en el Australian Open! No te quedes afuera, anotate!
                 </p>
               </div>
             </div>
