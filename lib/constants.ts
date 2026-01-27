@@ -160,7 +160,7 @@ export const PRINT_STYLES = `
 
   /* 3. ZOOM AGRESIVO PARA QUE ENTREN MÁS ZONAS */
   body {
-    zoom: 52%; /* Con esto deberían entrar cómodamente 14-16 zonas */
+    zoom: 60%; /* Con esto deberían entrar cómodamente 14-16 zonas */
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
