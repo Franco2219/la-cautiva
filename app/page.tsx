@@ -4,7 +4,7 @@ import { useState } from "react"; // Agregamos useState para el gesto
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
-import { tournaments } from "@/lib/constants"; 
+import { tournaments, PRINT_STYLES } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 import { sendGAEvent } from '@next/third-parties/google';
@@ -95,19 +95,8 @@ export default function Home() {
         onTouchEnd={onTouchEnd}
     >
       
-      <style jsx global>{`
-        @media print {
-          button, .cursor-pointer { display: none !important; }
-          body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background: white !important; }
-          .shadow-2xl, .shadow-lg, .shadow-md { box-shadow: none !important; border: 1px solid #ddd !important; }
-          @page { margin: 1.5cm; size: auto; }
-          .min-h-screen { min-height: 0 !important; }
-          .p-4, .p-8, .p-12 { padding: 0 !important; }
-          .max-w-6xl, .max-w-[95%] { max-width: 100% !important; width: 100% !important; }
-          .grid { display: block !important; }
-          .grid > div { margin-bottom: 20px; }
-        }
-      `}</style>
+      {/* ESTILOS DE IMPRESIÓN DINÁMICOS */}
+<style jsx global>{PRINT_STYLES}</style>
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         

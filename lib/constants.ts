@@ -134,4 +134,89 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logo.png", 
         pointsLogo: null 
     }
+    
 };
+// En lib/constants.ts
+
+export const PRINT_STYLES = `
+@media print {
+  /* 1. OCULTAR TODO LO QUE NO SIRVE PARA PAPEL */
+  nav, header, footer, button, .navbar, .btn, .cursor-pointer, .animate-pulse {
+    display: none !important;
+  }
+
+  /* 2. CONFIGURACIÓN DE LA HOJA */
+  @page {
+    margin: 0.5cm; 
+    size: auto;
+  }
+
+  /* 3. ACHICAR TODO EL CONTENIDO (ZOOM) */
+  body {
+    zoom: 55%; /* Ajuste agresivo para meter 4 cuadros. Si es muy chico, prueba 60% */
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* 4. CONTENEDORES FLUIDOS */
+  main, .main-content, .max-w-6xl, .max-w-\[95\%\] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 5. DISEÑO DE LAS TABLAS (ZONAS) */
+  /* Forzamos que los cuadros floten uno al lado del otro si hay espacio, o bloque compacto */
+  .grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Cada cuadro de zona */
+  .grid > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    width: 48% !important; /* Intentar poner 2 por ancho (2x2 = 4 por hoja) */
+    margin-bottom: 10px !important;
+    border: 1px solid #000 !important; /* Borde negro simple para ahorrar tinta */
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+
+  /* 6. TEXTOS Y CABECERAS */
+  h1, h2, h3, p {
+    color: black !important; /* Texto negro puro */
+  }
+  
+  /* Ocultar logo grande de "La Cautiva" del inicio si aparece */
+  .relative.group.w-64.h-64 {
+     display: none !important;
+  }
+  
+  /* Ocultar el título gigante del club al imprimir, dejar solo el del torneo */
+  h1.text-5xl.md\:text-7xl {
+     display: none !important;
+  }
+  p.text-xl.text-slate-400 {
+     display: none !important;
+  }
+
+  /* Ajustar cabecera de cada cuadro */
+  .rounded-2xl.mb-8 {
+     margin-bottom: 5px !important;
+     padding: 5px !important;
+     background: #eee !important; /* Gris claro en vez de naranja para ahorrar tinta */
+     color: black !important;
+  }
+  
+  /* Ocultar imágenes/iconos dentro de las cabeceras de zona para ahorrar espacio */
+  .rounded-2xl.mb-8 img {
+     display: none !important;
+  }
+}
+`;
