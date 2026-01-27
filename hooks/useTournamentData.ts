@@ -262,7 +262,8 @@ export const useTournamentData = () => {
 
   // --- ACCIONES PÚBLICAS ---
   const enviarListaBasti = () => {
-    let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)}*\n\n`;
+    // --- CORRECCIÓN: Agregada la categoría al final del título ---
+    let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)} - ${navState.currentCat || navState.category}*\n\n`;
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
              if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") {
@@ -287,7 +288,8 @@ export const useTournamentData = () => {
 
   const confirmarYEnviar = async () => {
     setIsLoading(true);
-    let mensaje = `*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}\n\n`;
+    // --- CORRECCIÓN: Mensaje empieza vacío para poner título al final ---
+    let mensaje = "";
     
     let rankMap: any = {};
     try {
@@ -312,7 +314,7 @@ export const useTournamentData = () => {
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            // --- CORRECCIÓN AQUÍ: Si ya tiene numero (del sorteo), lo usamos directo ---
+            // --- CORRECCIÓN ANTERIOR: Si ya tiene numero (del sorteo), lo usamos directo ---
             if (p.trim().match(/^\(\d+\)/)) {
                  mensaje += `${p}\n`;
             } else {
@@ -324,11 +326,13 @@ export const useTournamentData = () => {
                     mensaje += `${cleanP}\n`;
                 }
             }
-            // --------------------------------------------------------------------------
         });
-        mensaje += `\n`;
+        // --- CORRECCIÓN: Eliminado el salto de línea entre zonas para agrupar todo ---
     });
     
+    // --- CORRECCIÓN: Agregado el título y categoría al final con 2 renglones de separación ---
+    mensaje += `\n\n*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}`;
+
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
     setIsLoading(false);
@@ -488,24 +492,21 @@ export const useTournamentData = () => {
       // -----------------------------------------
 
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
-      // ... dentro de runATPDraw ...
+      
+      // Función auxiliar para normalizar nombres (quitar comas, puntos y minúsculas) solo para comparar
+      const normalizeName = (s: string) => s.toLowerCase().replace(/[,.]/g, "").replace(/\s+/g, "");
+      const entryList = filteredInscriptos.map(n => {
+          const p = playersRanking.find(pr => {
+              const rankName = normalizeName(pr.name);
+              const inscName = normalizeName(n);
+              // Comparamos los nombres limpios de símbolos
+              return rankName.includes(inscName) || inscName.includes(rankName);
+          });
+          // Debug para ver si ahora lo encuentra (puedes borrarlo luego)
+          if (n.includes("Eberle") && !p) console.log("Aún no encuentro a Eberle");
+          return { name: n, points: p ? p.total : 0 }; 
+      }).sort((a, b) => b.points - a.points);
 
-// Función auxiliar para normalizar nombres (quitar comas, puntos y minúsculas) solo para comparar
-const normalizeName = (s: string) => s.toLowerCase().replace(/[,.]/g, "").replace(/\s+/g, "");
-
-const entryList = filteredInscriptos.map(n => {
-    const p = playersRanking.find(pr => {
-        const rankName = normalizeName(pr.name);
-        const inscName = normalizeName(n);
-        // Comparamos los nombres limpios de símbolos
-        return rankName.includes(inscName) || inscName.includes(rankName);
-    });
-    
-    // Debug para ver si ahora lo encuentra (puedes borrarlo luego)
-    if (n.includes("Eberle") && !p) console.log("Aún no encuentro a Eberle");
-    
-    return { name: n, points: p ? p.total : 0 }; 
-}).sort((a, b) => b.points - a.points);
       const totalPlayers = entryList.length; if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
       let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
       if (tournamentShort === "Masters") { groupsOf4 = Math.floor(totalPlayers / 4); const remainder = totalPlayers % 4; for(let i=0; i<groupsOf4; i++) capacities.push(4); if (remainder === 3) capacities.push(3); else if (remainder === 2) capacities.push(2); else if (remainder === 1) { if (capacities.length > 0) capacities[capacities.length - 1] += 1; else capacities.push(1); } } else { const remainder = totalPlayers % 3; if (remainder === 0) { groupsOf3 = totalPlayers / 3; } else if (remainder === 1) { groupsOf2 = 2; groupsOf3 = (totalPlayers - 4) / 3; } else if (remainder === 2) { groupsOf2 = 1; groupsOf3 = (totalPlayers - 2) / 3; } for(let i=0; i<groupsOf3; i++) capacities.push(3); for(let i=0; i<groupsOf2; i++) capacities.push(2); }
