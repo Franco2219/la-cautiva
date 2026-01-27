@@ -140,83 +140,91 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
 
 export const PRINT_STYLES = `
 @media print {
-  /* 1. OCULTAR TODO LO QUE NO SIRVE PARA PAPEL */
+  /* 1. LIMPIEZA TOTAL DE ELEMENTOS NO DESEADOS */
+  /* Ocultamos navegación, botones, footer y elementos interactivos */
   nav, header, footer, button, .navbar, .btn, .cursor-pointer, .animate-pulse {
     display: none !important;
   }
 
-  /* 2. CONFIGURACIÓN DE LA HOJA */
-  @page {
-    margin: 0.5cm; 
-    size: auto;
+  /* Ocultamos el bloque del título principal "La Cautiva" y su logo para arrancar directo con el Torneo */
+  /* Apuntamos al contenedor específico del logo y título del home */
+  .text-center.mb-8 {
+     display: none !important;
   }
 
-  /* 3. ACHICAR TODO EL CONTENIDO (ZOOM) */
+  /* 2. MÁRGENES DE HOJA AL MÍNIMO */
+  @page {
+    margin: 0.3cm; /* Márgenes muy estrechos para aprovechar toda la hoja */
+    size: auto; 
+  }
+
+  /* 3. ZOOM AGRESIVO PARA QUE ENTREN MÁS ZONAS */
   body {
-    zoom: 55%; /* Ajuste agresivo para meter 4 cuadros. Si es muy chico, prueba 60% */
+    zoom: 52%; /* Con esto deberían entrar cómodamente 14-16 zonas */
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
     -webkit-print-color-adjust: exact;
   }
 
-  /* 4. CONTENEDORES FLUIDOS */
-  main, .main-content, .max-w-6xl, .max-w-\[95\%\] {
+  /* 4. CONTENEDORES FULL WIDTH */
+  main, .main-content, .max-w-6xl, .max-w-[95%] {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* 5. DISEÑO DE LAS TABLAS (ZONAS) */
-  /* Forzamos que los cuadros floten uno al lado del otro si hay espacio, o bloque compacto */
+  /* 5. GRILLA DE ZONAS COMPACTA */
   .grid {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 10px !important;
-    justify-content: flex-start !important;
+    gap: 5px !important; /* Espacio mínimo entre zonas */
+    justify-content: center !important;
   }
 
-  /* Cada cuadro de zona */
   .grid > div {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    width: 48% !important; /* Intentar poner 2 por ancho (2x2 = 4 por hoja) */
-    margin-bottom: 10px !important;
-    border: 1px solid #000 !important; /* Borde negro simple para ahorrar tinta */
+    width: 49% !important; /* Dos columnas ocupando casi todo el ancho */
+    margin-bottom: 5px !important; /* Mínimo margen vertical */
+    border: 1px solid #000 !important;
     box-shadow: none !important;
-    border-radius: 8px !important;
+    border-radius: 4px !important;
   }
 
-  /* 6. TEXTOS Y CABECERAS */
-  h1, h2, h3, p {
-    color: black !important; /* Texto negro puro */
-  }
-  
-  /* Ocultar logo grande de "La Cautiva" del inicio si aparece */
-  .relative.group.w-64.h-64 {
-     display: none !important;
-  }
-  
-  /* Ocultar el título gigante del club al imprimir, dejar solo el del torneo */
-  h1.text-5xl.md\:text-7xl {
-     display: none !important;
-  }
-  p.text-xl.text-slate-400 {
-     display: none !important;
-  }
-
-  /* Ajustar cabecera de cada cuadro */
+  /* 6. ENCABEZADO DEL TORNEO (BARRA DE COLOR) */
+  /* Lo hacemos mucho más fino y quitamos sus logos internos */
   .rounded-2xl.mb-8 {
-     margin-bottom: 5px !important;
-     padding: 5px !important;
-     background: #eee !important; /* Gris claro en vez de naranja para ahorrar tinta */
-     color: black !important;
+     margin-bottom: 10px !important;
+     padding: 4px !important;
+     min-height: 0 !important;
+     border-radius: 4px !important;
+  }
+
+  /* Texto del título del torneo */
+  .rounded-2xl.mb-8 h2 {
+     font-size: 1.8rem !important;
+     margin: 0 !important;
+     line-height: 1.1 !important;
   }
   
-  /* Ocultar imágenes/iconos dentro de las cabeceras de zona para ahorrar espacio */
-  .rounded-2xl.mb-8 img {
+  /* Texto de la categoría */
+  .rounded-2xl.mb-8 p {
+     font-size: 1rem !important;
+     margin: 0 !important;
+  }
+
+  /* Ocultamos los logos DENTRO de la barra del torneo para ganar altura */
+  .rounded-2xl.mb-8 img, 
+  .rounded-2xl.mb-8 .w-20.h-20 {
      display: none !important;
+  }
+
+  /* 7. AJUSTE FINO DE LAS TABLAS INTERNAS */
+  /* Reducimos el padding de las celdas para que cada zona ocupe menos altura */
+  td, th {
+     padding: 2px 4px !important;
   }
 }
 `;
