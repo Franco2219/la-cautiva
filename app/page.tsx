@@ -197,14 +197,14 @@ export default function Home() {
                 </h2>
                 <div className="space-y-4 text-slate-600 font-medium text-lg leading-relaxed">
                     <p>
-                        <span className="font-bold text-slate-800">¡Muy pronto!</span> Estamos trabajando en una nueva sección donde podrás acceder a tu historial completo de partidos.
+                        <span className="font-bold text-slate-800">¡Muy pronto!</span> Estamos trabajando para que tengas todas tus estadísticas de los <span className="font-bold">partidos de torneos.</span>
                     </p>
                     <p>
-                        Próximamente podrás consultar tu <span className="text-[#b35a38] font-bold">"Head to Head"</span> (historial contra rivales), revisar tu desempeño en cada torneo y categoría, y analizar todos tus resultados del año en un solo lugar.
+                        Vas a poder consultar tu "Head to Head" (historial contra rivales), revisar tu desempeño en cada torneo y categoría, y analizar todos tus resultados del año en un solo lugar.
                     </p>
                 </div>
                 <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente en Febrero</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente</p>
                 </div>
             </div>
             )}
@@ -214,21 +214,18 @@ export default function Home() {
             <div className="bg-white border-4 border-[#b35a38]/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-w-2xl mx-auto text-center animate-in zoom-in duration-300">
                 <Trophy className="w-24 h-24 text-[#b35a38] mx-auto mb-6 opacity-80" />
                 <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-6 italic">
-                    Hall de la Fama
+                    Historial de Campeones
                 </h2>
                 <div className="space-y-4 text-slate-600 font-medium text-lg leading-relaxed">
                     <p>
-                         Aquí encontrarás el registro histórico con todos los <span className="font-bold text-slate-800">campeones</span> de cada edición.
+                         Acá vas a encontrar el registro histórico con todos los <span className="font-bold text-slate-800">ganadores</span> de cada edición.
                     </p>
                     <p>
-                        Podrás ver quién defiende el título, quién lidera el historial de tu categoría y revivir las definiciones más importantes de la temporada. 
-                    </p>
-                    <p className="font-bold text-[#b35a38] text-xl italic mt-2">
-                        ¿Quién será el próximo en levantar la copa?
+                        Vas a ver quién defiende el título y repasar quiénes fueron los campeones de cada torneo por año.
                     </p>
                 </div>
                 <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente en Febrero</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente</p>
                 </div>
             </div>
             )}
