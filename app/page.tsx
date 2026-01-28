@@ -3,7 +3,8 @@
 import { useState } from "react"; // Agregamos useState para el gesto
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
+// AGREGADO: Importamos BarChart2, TrendingUp y History para los nuevos botones
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History } from "lucide-react";
 import { tournaments, PRINT_STYLES } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
@@ -98,7 +99,7 @@ export default function Home() {
       {/* ESTILOS DE IMPRESIÓN DINÁMICOS */}
 <style jsx global>{PRINT_STYLES}</style>
 
-      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
+      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
         <div className="text-center mb-8">
             <div className="flex justify-center mb-5 text-center">
@@ -158,8 +159,79 @@ export default function Home() {
                 }} className={buttonStyle}>
                 <Trophy className="mr-2 opacity-50" /> RANKING
               </Button>
+              {/* --- AGREGADO: BOTÓN ESTADÍSTICAS --- */}
+              <Button onClick={() => {
+                  sendGAEvent('event', 'button_click', { event_label: 'Menu Principal: Estadisticas' });
+                  setNavState({ level: "statistics-menu" })
+                }} className={buttonStyle}>
+                <BarChart2 className="mr-2 opacity-50" /> ESTADÍSTICAS
+              </Button>
             </div>
           )}
+
+            {/* --- AGREGADO: MENÚ DE ESTADÍSTICAS --- */}
+            {navState.level === "statistics-menu" && (
+            <div className="grid grid-cols-1 gap-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Button onClick={() => {
+                    sendGAEvent('event', 'button_click', { event_label: 'Estadisticas: Por Jugador' });
+                    setNavState({ level: "stats-player" });
+                }} className={buttonStyle}>
+                    <TrendingUp className="mr-2 opacity-50" /> Estadísticas por Jugador
+                </Button>
+                
+                <Button onClick={() => {
+                    sendGAEvent('event', 'button_click', { event_label: 'Estadisticas: Por Torneo' });
+                    setNavState({ level: "stats-tournaments" });
+                }} className={buttonStyle}>
+                    <History className="mr-2 opacity-50" /> Estadísticas de Torneos
+                </Button>
+            </div>
+            )}
+
+            {/* --- AGREGADO: VISTA ESTADÍSTICAS POR JUGADOR (PRÓXIMAMENTE) --- */}
+            {navState.level === "stats-player" && (
+            <div className="bg-white border-4 border-[#b35a38]/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-w-2xl mx-auto text-center animate-in zoom-in duration-300">
+                <TrendingUp className="w-24 h-24 text-[#b35a38] mx-auto mb-6 opacity-80" />
+                <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-6 italic">
+                    Estadísticas Personales
+                </h2>
+                <div className="space-y-4 text-slate-600 font-medium text-lg leading-relaxed">
+                    <p>
+                        <span className="font-bold text-slate-800">¡Muy pronto!</span> Estamos trabajando en una nueva sección donde podrás acceder a tu historial completo de partidos.
+                    </p>
+                    <p>
+                        Próximamente podrás consultar tu <span className="text-[#b35a38] font-bold">"Head to Head"</span> (historial contra rivales), revisar tu desempeño en cada torneo y categoría, y analizar todos tus resultados del año en un solo lugar.
+                    </p>
+                </div>
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente en Febrero</p>
+                </div>
+            </div>
+            )}
+
+            {/* --- AGREGADO: VISTA ESTADÍSTICAS POR TORNEO (PRÓXIMAMENTE) --- */}
+            {navState.level === "stats-tournaments" && (
+            <div className="bg-white border-4 border-[#b35a38]/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-w-2xl mx-auto text-center animate-in zoom-in duration-300">
+                <Trophy className="w-24 h-24 text-[#b35a38] mx-auto mb-6 opacity-80" />
+                <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-6 italic">
+                    Hall de la Fama
+                </h2>
+                <div className="space-y-4 text-slate-600 font-medium text-lg leading-relaxed">
+                    <p>
+                         Aquí encontrarás el registro histórico con todos los <span className="font-bold text-slate-800">campeones</span> de cada edición.
+                    </p>
+                    <p>
+                        Podrás ver quién defiende el título, quién lidera el historial de tu categoría y revivir las definiciones más importantes de la temporada. 
+                    </p>
+                    <p className="font-bold text-[#b35a38] text-xl italic mt-2">
+                        ¿Quién será el próximo en levantar la copa?
+                    </p>
+                </div>
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente en Febrero</p>
+                </div>
+            </div>
+            )}
 
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">

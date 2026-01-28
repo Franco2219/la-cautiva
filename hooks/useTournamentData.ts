@@ -673,7 +673,25 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    const levels: any = { "main-menu": "home", "year-selection": "main-menu", "category-selection": "main-menu", "tournament-selection": "category-selection", "tournament-phases": "tournament-selection", "group-phase": "tournament-phases", "bracket-phase": "tournament-phases", "ranking-view": "category-selection", "direct-bracket": "tournament-selection", "damas-empty": "category-selection", "generate-bracket": "direct-bracket", "contact": "home" };
+    // MODIFICADO: Agregamos la lógica de retorno para los menús de estadísticas
+    const levels: any = { 
+        "main-menu": "home", 
+        "year-selection": "main-menu", 
+        "category-selection": "main-menu", 
+        "tournament-selection": "category-selection", 
+        "tournament-phases": "tournament-selection", 
+        "group-phase": "tournament-phases", 
+        "bracket-phase": "tournament-phases", 
+        "ranking-view": "category-selection", 
+        "direct-bracket": "tournament-selection", 
+        "damas-empty": "category-selection", 
+        "generate-bracket": "direct-bracket", 
+        "contact": "home",
+        // --- NUEVOS NIVELES ---
+        "statistics-menu": "main-menu",
+        "stats-player": "statistics-menu",
+        "stats-tournaments": "statistics-menu"
+    };
     const nextLevel = levels[navState.level] || "home";
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false });
