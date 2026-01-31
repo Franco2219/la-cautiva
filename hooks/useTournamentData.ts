@@ -403,6 +403,54 @@ export const useTournamentData = () => {
                 Object.keys(playerWins).forEach(pName => { const wins = playerWins[pName]; let extraPoints = 0; if (wins === 1) extraPoints = pts.groupWin1; else if (wins === 2) extraPoints = pts.groupWin2; else if (wins >= 3) extraPoints = pts.groupWin3; if (playerScores[pName]) playerScores[pName] += extraPoints; else playerScores[pName] = extraPoints; });
             } catch (err) { console.log("Error ranking full", err); }
         }
+
+        // --- NUEVA LÓGICA: FILTRAR JUGADORES QUE PASARON A "LOSERS" ---
+        // Definimos mapa de torneos principales a sus torneos de perdedores
+        const loserTourMap: Record<string, string> = {
+            "adelaide": "s8_250"
+        };
+        
+        // Solo ejecutamos si es eliminacion directa y tiene un torneo "hijo" mapeado
+        if (tourType === "direct" && loserTourMap[currentTourShort]) {
+            const secondaryTourShort = loserTourMap[currentTourShort];
+            const secondarySheetName = `${catName} ${secondaryTourShort}`; // Ej: Categoría A s8_250
+            const secondaryUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(secondarySheetName)}`;
+            
+            try {
+                const secRes = await fetch(secondaryUrl);
+                const secTxt = await secRes.text();
+                const secRows = parseCSV(secTxt);
+                
+                // Recolectamos todos los nombres que aparecen en el torneo secundario
+                const playersInSecondary = new Set<string>();
+                
+                secRows.forEach(row => {
+                    row.forEach(cell => {
+                        if (cell && typeof cell === 'string' && cell.length > 2) {
+                            // Ignoramos celdas que no son nombres
+                            if (!cell.includes("BYE") && !cell.match(/Zona|Grupo|#|Total|Puntos|Formato|Fecha/i)) {
+                                // Limpiamos el nombre igual que en el resto de la app (quitamos seed)
+                                // Ej: "(1) Olivera, M" -> "Olivera, M"
+                                const cleanName = cell.replace(/^[\(]?(\d+)[\)\.]\s+/, "").trim();
+                                if (cleanName) playersInSecondary.add(cleanName);
+                            }
+                        }
+                    });
+                });
+
+                // Si un jugador está en el torneo secundario, lo borramos de la lista de puntos del principal
+                Object.keys(playerScores).forEach(player => {
+                    if (playersInSecondary.has(player)) {
+                        delete playerScores[player];
+                    }
+                });
+
+            } catch (err) {
+                console.log("No se pudo verificar el torneo secundario o no existe data aun.", err);
+            }
+        }
+        // -------------------------------------------------------------
+
         const rankingArray = Object.keys(playerScores).map(key => ({ name: key, points: playerScores[key] })).sort((a, b) => { const rankA = getRankIndex(a.name); const rankB = getRankIndex(b.name); if (rankA === rankB) return b.points - a.points; return rankA - rankB; });
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
