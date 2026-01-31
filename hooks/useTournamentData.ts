@@ -38,7 +38,6 @@ export const useTournamentData = () => {
       const rows = parseCSV(csvText);
       if (rows.length > 0) {
         setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
-        // MODIFICACIÓN: Filtramos para que solo pasen los que tienen total > 0
         setRankingData(rows.slice(1).map(row => ({
           name: row[1],
           points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
@@ -361,7 +360,12 @@ export const useTournamentData = () => {
         };
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
-        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
+        
+        // Buscamos el nombre completo del torneo actual en la lista de constantes para comparar
+        const currentTourObj = tournaments.find(t => t.short === currentTourShort);
+        const currentTourName = currentTourObj ? currentTourObj.name : "";
+        const tourType = currentTourObj?.type || "direct";
+
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) { colIndex = i; break; } }
         if (colIndex === -1) { for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) { colIndex = i; break; } } }
@@ -403,6 +407,67 @@ export const useTournamentData = () => {
                 Object.keys(playerWins).forEach(pName => { const wins = playerWins[pName]; let extraPoints = 0; if (wins === 1) extraPoints = pts.groupWin1; else if (wins === 2) extraPoints = pts.groupWin2; else if (wins >= 3) extraPoints = pts.groupWin3; if (playerScores[pName]) playerScores[pName] += extraPoints; else playerScores[pName] = extraPoints; });
             } catch (err) { console.log("Error ranking full", err); }
         }
+
+        // --- LÓGICA DE FILTRADO (LOSERS) MEJORADA Y OPTIMIZADA ---
+        // 1. Verificamos si estamos en un torneo de eliminación directa y año actual (o sin año, que es el actual)
+        const isCurrentYear = !navState.year || navState.year === "2026";
+        
+        if (tourType === "direct" && isCurrentYear && currentTourName) {
+            // 2. BUSCAMOS EL TORNEO "HIJO" EN LA LISTA DE UTILS (CONSTANTS)
+            // Lógica: Si el nombre del otro torneo CONTIENE el nombre de este torneo y es más largo.
+            // Ej: "Adelaide" está contenido en "Adelaide 250"
+            const loserTour = tournaments.find(t => 
+                t.name !== currentTourName && 
+                t.name.includes(currentTourName)
+            );
+
+            if (loserTour) {
+                // 3. CONSTRUIMOS EL NOMBRE DE LA HOJA UNA SOLA VEZ
+                const shortCat = navState.category; // "A"
+                const sheetName = `${shortCat} ${loserTour.short}`; // Ej: "A Adelaide 250"
+                const urlLoser = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+                try {
+                    const res = await fetch(urlLoser);
+                    if (res.ok) {
+                        const txt = await res.text();
+                        // Verificamos que no sea HTML (error de Google)
+                        if (!txt.includes("<!DOCTYPE html>")) {
+                            const secRows = parseCSV(txt);
+                            const playersInSecondary = new Set<string>();
+                            
+                            // Normalizador simple: minúsculas y sin espacios extra
+                            const normalize = (s: string) => s.toLowerCase().trim();
+
+                            secRows.forEach(row => {
+                                row.forEach(cell => {
+                                    if (cell && typeof cell === 'string' && cell.length > 2) {
+                                        // Ignoramos metadatos obvios
+                                        if (!cell.match(/Zona|Grupo|#|Total|Puntos|Formato|Fecha|Campeón/i)) {
+                                            const cleanName = cell.replace(/^[\(]?(\d+)[\)\.]\s+/, "").trim();
+                                            if (cleanName && cleanName.toUpperCase() !== "BYE") {
+                                                playersInSecondary.add(normalize(cleanName));
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+
+                            // 4. BORRAMOS DE LA TABLA PRINCIPAL A LOS QUE ESTÁN EN EL SECUNDARIO
+                            Object.keys(playerScores).forEach(player => {
+                                if (playersInSecondary.has(normalize(player))) {
+                                    delete playerScores[player];
+                                }
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.log("No se pudo cargar el torneo de perdedores asociado:", loserTour.name);
+                }
+            }
+        }
+        // -------------------------------------------------------------
+
         const rankingArray = Object.keys(playerScores).map(key => ({ name: key, points: playerScores[key] })).sort((a, b) => { const rankA = getRankIndex(a.name); const rankB = getRankIndex(b.name); if (rankA === rankB) return b.points - a.points; return rankA - rankB; });
         setCalculatedRanking(rankingArray);
         setShowRankingCalc(true);
