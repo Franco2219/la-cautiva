@@ -404,33 +404,52 @@ export const useTournamentData = () => {
         }
 
         // --- FILTRO DE PERDEDORES: LÓGICA INSTANTÁNEA (SIN FETCH EXTRA) ---
-        // Si es eliminacion directa, chequeamos quién perdió en 1ra ronda jugando contra un rival real.
-        // Si perdieron, asumimos que están en el torneo de consuelo y los borramos de esta tabla.
         if (tourType === "direct" && bracketData.hasData) {
-            const { r1, r2 } = bracketData;
-            // Recorremos los partidos de primera ronda
+            const { r1, r2, r3 } = bracketData;
+            
             for (let i = 0; i < r1.length; i += 2) {
                 const p1 = r1[i];
                 const p2 = r1[i+1];
+                
+                if (!p1 || !p2) continue; // Skip incomplete slots
 
-                // Solo analizamos partidos REALES (donde ninguno es BYE)
-                // Si alguno es BYE, el que pasa no jugó realmente, y el BYE "pierde" pero no importa.
-                if (p1 && p2 && p1 !== "BYE" && p2 !== "BYE") {
-                    
-                    // ¿Quién ganó este cruce? El que aparece en r2 en la posición i/2
-                    const winnerOfMatch = r2[Math.floor(i / 2)];
-                    
-                    if (winnerOfMatch) {
-                        const wName = winnerOfMatch.trim().toLowerCase();
-                        
-                        // Si p1 no es el ganador -> perdió en 1ra ronda JUGANDO -> se va.
-                        if (p1.trim().toLowerCase() !== wName) {
-                            delete playerScores[p1.trim()];
+                const p1Name = p1.trim();
+                const p2Name = p2.trim();
+                const p1IsBye = p1Name.toUpperCase() === "BYE";
+                const p2IsBye = p2Name.toUpperCase() === "BYE";
+                const r2Index = Math.floor(i / 2);
+
+                // CASO 1: PARTIDO REAL EN R1
+                if (!p1IsBye && !p2IsBye) {
+                    const winnerR1 = r2[r2Index]; // Quien pasó a R2
+                    if (winnerR1 && winnerR1.trim() !== "") {
+                        const wName = winnerR1.trim().toLowerCase();
+                        // Si p1 jugó y no ganó, perdió en su 1er partido -> Delete
+                        if (p1Name.toLowerCase() !== wName) delete playerScores[p1Name];
+                        if (p2Name.toLowerCase() !== wName) delete playerScores[p2Name];
+                    }
+                }
+                // CASO 2: P1 PASA POR BYE -> Revisamos si pierde en R2
+                else if (p2IsBye && !p1IsBye) {
+                    // El partido de R2 se define en r3
+                    // El índice en r3 es r2Index / 2
+                    if (r3) {
+                        const winnerR2 = r3[Math.floor(r2Index / 2)];
+                        // Solo si ya hay un ganador en R3 (el partido R2 se jugó)
+                        if (winnerR2 && winnerR2.trim() !== "") {
+                            const wNameR2 = winnerR2.trim().toLowerCase();
+                            // Si p1 (que venía de BYE) no está en R3, perdió su 1er partido real (la R2) -> Delete
+                            if (p1Name.toLowerCase() !== wNameR2) delete playerScores[p1Name];
                         }
-                        
-                        // Si p2 no es el ganador -> perdió en 1ra ronda JUGANDO -> se va.
-                        if (p2.trim().toLowerCase() !== wName) {
-                            delete playerScores[p2.trim()];
+                    }
+                }
+                // CASO 3: P2 PASA POR BYE (Raro orden, pero posible)
+                else if (p1IsBye && !p2IsBye) {
+                    if (r3) {
+                        const winnerR2 = r3[Math.floor(r2Index / 2)];
+                        if (winnerR2 && winnerR2.trim() !== "") {
+                            const wNameR2 = winnerR2.trim().toLowerCase();
+                            if (p2Name.toLowerCase() !== wNameR2) delete playerScores[p2Name];
                         }
                     }
                 }
