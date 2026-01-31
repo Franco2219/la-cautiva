@@ -38,7 +38,6 @@ export const useTournamentData = () => {
       const rows = parseCSV(csvText);
       if (rows.length > 0) {
         setHeaders(year === "2025" ? rows[0].slice(2, 9) : rows[0].slice(2, 11));
-        // MODIFICACIÓN: Filtramos para que solo pasen los que tienen total > 0
         setRankingData(rows.slice(1).map(row => ({
           name: row[1],
           points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
@@ -262,7 +261,6 @@ export const useTournamentData = () => {
 
   // --- ACCIONES PÚBLICAS ---
   const enviarListaBasti = () => {
-    // --- CORRECCIÓN: Agregada la categoría al final del título ---
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)} - ${navState.currentCat || navState.category}*\n\n`;
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
@@ -288,9 +286,7 @@ export const useTournamentData = () => {
 
   const confirmarYEnviar = async () => {
     setIsLoading(true);
-    // --- CORRECCIÓN: Mensaje empieza vacío para poner título al final ---
     let mensaje = "";
-    
     let rankMap: any = {};
     try {
        const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${navState.currentCat} 2026`)}`;
@@ -314,7 +310,6 @@ export const useTournamentData = () => {
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            // --- CORRECCIÓN ANTERIOR: Si ya tiene numero (del sorteo), lo usamos directo ---
             if (p.trim().match(/^\(\d+\)/)) {
                  mensaje += `${p}\n`;
             } else {
@@ -327,10 +322,8 @@ export const useTournamentData = () => {
                 }
             }
         });
-        // --- CORRECCIÓN: Eliminado el salto de línea entre zonas para agrupar todo ---
     });
     
-    // --- CORRECCIÓN: Agregado el título y categoría al final con 2 renglones de separación ---
     mensaje += `\n\n*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}`;
 
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -345,7 +338,11 @@ export const useTournamentData = () => {
         const res = await fetch(urlBaremo);
         const txt = await res.text();
         const rows = parseCSV(txt);
-        const catName = navState.category || navState.selectedCategory;
+        // Usamos tanto la categoría corta "A" como la larga "Categoría A"
+        const catShort = navState.category;
+        const catFull = navState.selectedCategory;
+        const catName = catShort || catFull; // fallback
+
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${catName} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
@@ -404,49 +401,80 @@ export const useTournamentData = () => {
             } catch (err) { console.log("Error ranking full", err); }
         }
 
-        // --- NUEVA LÓGICA: FILTRAR JUGADORES QUE PASARON A "LOSERS" ---
+        // --- LÓGICA DE FILTRADO (LOSERS) MEJORADA ---
+        // AHORA APUNTA AL NOMBRE CORRECTO SEGÚN LA CAPTURA: "Adelaide 250"
         const loserTourMap: Record<string, string> = {
-            "adelaide": "s8_250"
+            "adelaide": "Adelaide 250"
         };
         
-        // Helper para comparar nombres de forma segura (ignora mayusculas, acentos, comas y espacios)
-        const normalizeName = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+        // Helper: normaliza simple para no volverse loco
+        const simpleNormalize = (s: string) => s.toLowerCase().replace(/\s+/g, "").trim();
 
-        if (tourType === "direct" && loserTourMap[currentTourShort]) {
+        // Chequeo de año para que solo funcione en 2026 (o el año actual por defecto)
+        const isCurrentYear = !navState.year || navState.year === "2026";
+
+        if (tourType === "direct" && loserTourMap[currentTourShort] && isCurrentYear) {
             const secondaryTourShort = loserTourMap[currentTourShort];
-            const secondarySheetName = `${catName} ${secondaryTourShort}`; 
-            const secondaryUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(secondarySheetName)}`;
             
+            // Probamos primero con el nombre corto: "A Adelaide 250"
+            const sheetNameShort = `${catShort} ${secondaryTourShort}`;
+            const urlShort = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameShort)}`;
+
+            // Por las dudas, también con el nombre largo: "Categoría A Adelaide 250"
+            const sheetNameLong = `${catFull} ${secondaryTourShort}`;
+            const urlLong = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameLong)}`;
+            
+            let secRows: any[] = [];
+
             try {
-                const secRes = await fetch(secondaryUrl);
-                const secTxt = await secRes.text();
-                const secRows = parseCSV(secTxt);
+                const resShort = await fetch(urlShort);
+                if (resShort.ok) {
+                   const txt = await resShort.text();
+                   if (!txt.includes("<!DOCTYPE html>")) {
+                       secRows = parseCSV(txt);
+                   }
+                }
+
+                // Si falló el corto, probamos el largo
+                if (secRows.length === 0) {
+                   const resLong = await fetch(urlLong);
+                   if (resLong.ok) {
+                       const txt = await resLong.text();
+                       if (!txt.includes("<!DOCTYPE html>")) {
+                           secRows = parseCSV(txt);
+                       }
+                   }
+                }
                 
                 const playersInSecondary = new Set<string>();
                 
-                secRows.forEach(row => {
-                    row.forEach(cell => {
-                        if (cell && typeof cell === 'string' && cell.length > 2) {
-                            if (!cell.toLowerCase().includes("bye") && !cell.match(/Zona|Grupo|#|Total|Puntos|Formato|Fecha|Campeón/i)) {
-                                const cleanName = cell.replace(/^[\(]?(\d+)[\)\.]\s+/, "").trim();
-                                if (cleanName && cleanName.toUpperCase() !== "BYE") {
-                                    playersInSecondary.add(normalizeName(cleanName));
+                if (secRows.length > 0) {
+                    secRows.forEach(row => {
+                        row.forEach(cell => {
+                            if (cell && typeof cell === 'string' && cell.length > 2) {
+                                // Ignoramos metadatos y BYEs explícitos
+                                if (!cell.match(/Zona|Grupo|#|Total|Puntos|Formato|Fecha|Campeón/i)) {
+                                    const cleanName = cell.replace(/^[\(]?(\d+)[\)\.]\s+/, "").trim();
+                                    if (cleanName && cleanName.toUpperCase() !== "BYE") {
+                                        // Usamos la normalización simple
+                                        playersInSecondary.add(simpleNormalize(cleanName));
+                                    }
                                 }
                             }
+                        });
+                    });
+
+                    // Eliminación total del jugador si aparece en la lista secundaria
+                    Object.keys(playerScores).forEach(player => {
+                        const normPlayer = simpleNormalize(player);
+                        if (playersInSecondary.has(normPlayer)) {
+                            delete playerScores[player];
                         }
                     });
-                });
-
-                // Borramos del objeto playerScores si encontramos el nombre normalizado en la lista secundaria
-                Object.keys(playerScores).forEach(player => {
-                    const normPlayer = normalizeName(player);
-                    if (playersInSecondary.has(normPlayer)) {
-                        delete playerScores[player]; // Eliminación total para que no aparezca en la lista
-                    }
-                });
+                }
 
             } catch (err) {
-                console.log("No se pudo verificar el torneo secundario o no existe data aun.", err);
+                console.log("Error intentando filtrar jugadores perdedores.", err);
             }
         }
         // -------------------------------------------------------------
@@ -479,7 +507,6 @@ export const useTournamentData = () => {
         const inscRes = await fetch(inscUrl);
         const inscCsv = await inscRes.text();
         
-        // --- LIMPIEZA DE NOMBRES EN SORTEO DIRECTO ---
         const filteredInscriptos = parseCSV(inscCsv).slice(1)
             .filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort)
             .map(cols => {
@@ -487,7 +514,6 @@ export const useTournamentData = () => {
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
-        // ---------------------------------------------
 
         if (filteredInscriptos.length < 4) { alert("Mínimo 4 jugadores."); setIsLoading(false); return; }
         const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points);
@@ -529,7 +555,6 @@ export const useTournamentData = () => {
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
       
-      // --- LIMPIEZA DE NOMBRES EN SORTEO ATP ---
       const filteredInscriptos = parseCSV(inscCsv).slice(1)
           .filter(cols => cols[0] === tournamentShort && cols[1] === categoryShort)
           .map(cols => {
@@ -537,20 +562,16 @@ export const useTournamentData = () => {
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
                 return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
           });
-      // -----------------------------------------
 
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
       
-      // Función auxiliar para normalizar nombres (quitar comas, puntos y minúsculas) solo para comparar
       const normalizeName = (s: string) => s.toLowerCase().replace(/[,.]/g, "").replace(/\s+/g, "");
       const entryList = filteredInscriptos.map(n => {
           const p = playersRanking.find(pr => {
               const rankName = normalizeName(pr.name);
               const inscName = normalizeName(n);
-              // Comparamos los nombres limpios de símbolos
               return rankName.includes(inscName) || inscName.includes(rankName);
           });
-          // Debug para ver si ahora lo encuentra (puedes borrarlo luego)
           if (n.includes("Eberle") && !p) console.log("Aún no encuentro a Eberle");
           return { name: n, points: p ? p.total : 0 }; 
       }).sort((a, b) => b.points - a.points);
@@ -721,7 +742,6 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    // MODIFICADO: Agregamos la lógica de retorno para los menús de estadísticas
     const levels: any = { 
         "main-menu": "home", 
         "year-selection": "main-menu", 
@@ -735,7 +755,6 @@ export const useTournamentData = () => {
         "damas-empty": "category-selection", 
         "generate-bracket": "direct-bracket", 
         "contact": "home",
-        // --- NUEVOS NIVELES ---
         "statistics-menu": "main-menu",
         "stats-player": "statistics-menu",
         "stats-tournaments": "statistics-menu"
