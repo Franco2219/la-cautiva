@@ -404,14 +404,18 @@ export const useTournamentData = () => {
         }
 
         // --- FILTRO DE PERDEDORES: LÓGICA INSTANTÁNEA (SIN FETCH EXTRA) ---
-        if (tourType === "direct" && bracketData.hasData) {
+        // SOLO APLICA A TORNEOS PRINCIPALES: Adelaide, Indian Wells, Montecarlo, US Open
+        const targetTournaments = ["adelaide", "iw", "mc", "us"];
+        const isTargetTournament = targetTournaments.includes(currentTourShort);
+
+        if (tourType === "direct" && bracketData.hasData && isTargetTournament) {
             const { r1, r2, r3 } = bracketData;
             
             for (let i = 0; i < r1.length; i += 2) {
                 const p1 = r1[i];
                 const p2 = r1[i+1];
                 
-                if (!p1 || !p2) continue; // Skip incomplete slots
+                if (!p1 || !p2) continue;
 
                 const p1Name = p1.trim();
                 const p2Name = p2.trim();
@@ -424,21 +428,16 @@ export const useTournamentData = () => {
                     const winnerR1 = r2[r2Index]; // Quien pasó a R2
                     if (winnerR1 && winnerR1.trim() !== "") {
                         const wName = winnerR1.trim().toLowerCase();
-                        // Si p1 jugó y no ganó, perdió en su 1er partido -> Delete
                         if (p1Name.toLowerCase() !== wName) delete playerScores[p1Name];
                         if (p2Name.toLowerCase() !== wName) delete playerScores[p2Name];
                     }
                 }
                 // CASO 2: P1 PASA POR BYE -> Revisamos si pierde en R2
                 else if (p2IsBye && !p1IsBye) {
-                    // El partido de R2 se define en r3
-                    // El índice en r3 es r2Index / 2
                     if (r3) {
                         const winnerR2 = r3[Math.floor(r2Index / 2)];
-                        // Solo si ya hay un ganador en R3 (el partido R2 se jugó)
                         if (winnerR2 && winnerR2.trim() !== "") {
                             const wNameR2 = winnerR2.trim().toLowerCase();
-                            // Si p1 (que venía de BYE) no está en R3, perdió su 1er partido real (la R2) -> Delete
                             if (p1Name.toLowerCase() !== wNameR2) delete playerScores[p1Name];
                         }
                     }
