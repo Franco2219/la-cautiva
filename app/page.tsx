@@ -53,7 +53,7 @@ export default function Home() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
-    // Solo detectamos si empieza en el borde izquierdo (15% de la pantalla)
+    // Solo detectamos si empieza en el borde izquierdo (25% de la pantalla)
     // Esto evita que choques con el scroll horizontal de las tablas
     if (e.targetTouches[0].clientX < window.innerWidth * 0.20) {
         setTouchStart(e.targetTouches[0].clientX);
@@ -137,7 +137,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya somos <span className="text-xl md:text-2xl">+125</span> inscriptos en el Australian Open! No te quedes afuera, anotate!
+                  Ya somos <span className="text-xl md:text-2xl">+135</span> inscriptos en el Australian Open! No te quedes afuera, anotate!
                 </p>
               </div>
             </div>
