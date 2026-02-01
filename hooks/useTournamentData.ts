@@ -261,7 +261,6 @@ export const useTournamentData = () => {
 
   // --- ACCIONES PÚBLICAS ---
   const enviarListaBasti = () => {
-    // --- CORRECCIÓN: Agregada la categoría al final del título ---
     let mensaje = `*PARTIDOS - ${getTournamentName(navState.tournamentShort || navState.currentTour)} - ${navState.currentCat || navState.category}*\n\n`;
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
@@ -287,7 +286,6 @@ export const useTournamentData = () => {
 
   const confirmarYEnviar = async () => {
     setIsLoading(true);
-    // --- CORRECCIÓN: Mensaje empieza vacío para poner título al final ---
     let mensaje = "";
     
     let rankMap: any = {};
@@ -313,7 +311,6 @@ export const useTournamentData = () => {
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            // --- CORRECCIÓN ANTERIOR: Si ya tiene numero (del sorteo), lo usamos directo ---
             if (p.trim().match(/^\(\d+\)/)) {
                  mensaje += `${p}\n`;
             } else {
@@ -326,10 +323,8 @@ export const useTournamentData = () => {
                 }
             }
         });
-        // --- CORRECCIÓN: Eliminado el salto de línea entre zonas para agrupar todo ---
     });
     
-    // --- CORRECCIÓN: Agregado el título y categoría al final con 2 renglones de separación ---
     mensaje += `\n\n*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}`;
 
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -403,8 +398,6 @@ export const useTournamentData = () => {
             } catch (err) { console.log("Error ranking full", err); }
         }
 
-        // --- FILTRO DE PERDEDORES: LÓGICA INSTANTÁNEA (SIN FETCH EXTRA) ---
-        // SOLO APLICA A TORNEOS PRINCIPALES: Adelaide, Indian Wells, Montecarlo, US Open
         const targetTournaments = ["adelaide", "iw", "mc", "us"];
         const isTargetTournament = targetTournaments.includes(currentTourShort);
 
@@ -423,16 +416,14 @@ export const useTournamentData = () => {
                 const p2IsBye = p2Name.toUpperCase() === "BYE";
                 const r2Index = Math.floor(i / 2);
 
-                // CASO 1: PARTIDO REAL EN R1
                 if (!p1IsBye && !p2IsBye) {
-                    const winnerR1 = r2[r2Index]; // Quien pasó a R2
+                    const winnerR1 = r2[r2Index]; 
                     if (winnerR1 && winnerR1.trim() !== "") {
                         const wName = winnerR1.trim().toLowerCase();
                         if (p1Name.toLowerCase() !== wName) delete playerScores[p1Name];
                         if (p2Name.toLowerCase() !== wName) delete playerScores[p2Name];
                     }
                 }
-                // CASO 2: P1 PASA POR BYE -> Revisamos si pierde en R2
                 else if (p2IsBye && !p1IsBye) {
                     if (r3) {
                         const winnerR2 = r3[Math.floor(r2Index / 2)];
@@ -442,7 +433,6 @@ export const useTournamentData = () => {
                         }
                     }
                 }
-                // CASO 3: P2 PASA POR BYE (Raro orden, pero posible)
                 else if (p1IsBye && !p2IsBye) {
                     if (r3) {
                         const winnerR2 = r3[Math.floor(r2Index / 2)];
@@ -454,7 +444,6 @@ export const useTournamentData = () => {
                 }
             }
         }
-        // ----------------------------------------------------------------
 
         const rankingArray = Object.keys(playerScores).map(key => ({ name: key, points: playerScores[key] })).sort((a, b) => { const rankA = getRankIndex(a.name); const rankB = getRankIndex(b.name); if (rankA === rankB) return b.points - a.points; return rankA - rankB; });
         setCalculatedRanking(rankingArray);
@@ -495,7 +484,23 @@ export const useTournamentData = () => {
         // ---------------------------------------------
 
         if (filteredInscriptos.length < 4) { alert("Mínimo 4 jugadores."); setIsLoading(false); return; }
-        const entryList = filteredInscriptos.map(n => { const p = playersRanking.find(pr => pr.name.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(pr.name.toLowerCase())); return { name: n, points: p ? p.total : 0 }; }).sort((a, b) => b.points - a.points);
+        
+        // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
+        const entryList = filteredInscriptos.map(n => { 
+            const p = playersRanking.find(pr => {
+                const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
+                const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
+                // 1. Coincidencia directa (incluye apellido único)
+                if (rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
+                // 2. Coincidencia por partes (desordenado)
+                const rankParts = rankClean.split(/\s+/);
+                const inscParts = inscClean.split(/\s+/);
+                return inscParts.every(ip => rankParts.some(rp => rp.includes(ip)));
+            });
+            return { name: n, points: p ? p.total : 0 }; 
+        }).sort((a, b) => b.points - a.points);
+        // --------------------------------------
+
         const totalPlayers = entryList.length;
         let bracketSize = 4; if (totalPlayers > 4) bracketSize = 8; if (totalPlayers > 8) bracketSize = 16; if (totalPlayers > 16) bracketSize = 32; if (totalPlayers > 32) bracketSize = 64;
         const byeCount = bracketSize - totalPlayers;
@@ -546,19 +551,21 @@ export const useTournamentData = () => {
 
       if (filteredInscriptos.length === 0) { alert("No hay inscriptos."); setIsLoading(false); return; }
       
-      // Función auxiliar para normalizar nombres (quitar comas, puntos y minúsculas) solo para comparar
-      const normalizeName = (s: string) => s.toLowerCase().replace(/[,.]/g, "").replace(/\s+/g, "");
+      // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
       const entryList = filteredInscriptos.map(n => {
           const p = playersRanking.find(pr => {
-              const rankName = normalizeName(pr.name);
-              const inscName = normalizeName(n);
-              // Comparamos los nombres limpios de símbolos
-              return rankName.includes(inscName) || inscName.includes(rankName);
+              const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
+              const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
+              // 1. Coincidencia directa (incluye apellido único)
+              if (rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
+              // 2. Coincidencia por partes (desordenado)
+              const rankParts = rankClean.split(/\s+/);
+              const inscParts = inscClean.split(/\s+/);
+              return inscParts.every(ip => rankParts.some(rp => rp.includes(ip)));
           });
-          // Debug para ver si ahora lo encuentra (puedes borrarlo luego)
-          if (n.includes("Eberle") && !p) console.log("Aún no encuentro a Eberle");
           return { name: n, points: p ? p.total : 0 }; 
       }).sort((a, b) => b.points - a.points);
+      // --------------------------------------
 
       const totalPlayers = entryList.length; if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
       let groupsOf4 = 0; let groupsOf3 = 0; let groupsOf2 = 0; let capacities = [];
@@ -726,7 +733,6 @@ export const useTournamentData = () => {
 
   const goBack = () => {
     setIsSorteoConfirmado(false);
-    // MODIFICADO: Agregamos la lógica de retorno para los menús de estadísticas
     const levels: any = { 
         "main-menu": "home", 
         "year-selection": "main-menu", 
@@ -740,7 +746,6 @@ export const useTournamentData = () => {
         "damas-empty": "category-selection", 
         "generate-bracket": "direct-bracket", 
         "contact": "home",
-        // --- NUEVOS NIVELES ---
         "statistics-menu": "main-menu",
         "stats-player": "statistics-menu",
         "stats-tournaments": "statistics-menu"
