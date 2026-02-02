@@ -4,7 +4,7 @@ import { useState } from "react";
 import { 
   ID_2025, ID_DATOS_GENERALES, ID_TORNEOS, MI_TELEFONO, TELEFONO_BASTI, tournaments 
 } from "../lib/constants";
-import { parseCSV, getTournamentName, getTournamentStyle } from "../lib/utils";
+import { parseCSV, getTournamentName } from "../lib/utils";
 
 export const useTournamentData = () => {
   const [navState, setNavState] = useState<any>({ level: "home" });
@@ -725,16 +725,6 @@ export const useTournamentData = () => {
           else if (bracketSize === 16) { rawData = { r1: getColData(0, 16), s1: getScoreData(1, 16), r2: getColData(2, 8),  s2: getScoreData(3, 8), r3: getColData(4, 4),  s3: getScoreData(5, 4), r4: getColData(6, 2),  s4: getScoreData(7, 2), winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds }; } 
           else { rawData = { r1: getColData(0, 8), s1: getScoreData(1, 8), r2: getColData(2, 4), s2: getScoreData(3, 4), r3: getColData(4, 2), s3: getScoreData(5, 2), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds }; }
           
-          // --- NUEVO: CORRECCIÓN DE FINAL COMPACTA (SI EL USUARIO PUSO LA FINAL EN COLUMNAS ANTERIORES) ---
-          if (bracketSize === 16 && (!winner || winner === "") && rows[0][6] && rows[0][6] !== "-") {
-              rawData.winner = rows[0][6];
-              rawData.runnerUp = rows[1][6] || "";
-              // Mover la final a las columnas E (4) y F (5)
-              rawData.r4 = getColData(4, 2); // Finalistas en Col E
-              rawData.s4 = getScoreData(5, 2); // Resultado en Col F
-          }
-          // --------------------------------------------------------------------------------------------------
-
           if (bracketSize !== 8) rawData = processByes(rawData); 
           setBracketData(rawData);
       } else { await checkCanGenerate(); }
