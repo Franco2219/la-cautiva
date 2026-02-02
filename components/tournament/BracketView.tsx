@@ -541,7 +541,7 @@ export const BracketView = ({
               >
                 CAMPEÓN
               </span>
-              <span className="text-[#b35a38] font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight">
+              <span className={`${bracketStyle.textColor} font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight`}>
                 {bracketData.winner || ""}
               </span>
             </div>
