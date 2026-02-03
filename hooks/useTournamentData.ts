@@ -51,7 +51,7 @@ export const useTournamentData = () => {
   const fetchInscriptos = async (category: string, tournamentShort: string) => {
     setIsLoading(true);
     setInscriptosList([]);
-    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Boton Inscriptos")}`;
+    const url = `https://docs.google.com/spreadsheets/d/${ID_SORTEO_TEMPORAL}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Boton Inscriptos")}`;
     try {
         const response = await fetch(url);
         const csvText = await response.text();

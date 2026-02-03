@@ -1,6 +1,7 @@
 // --- CONFIGURACIÓN DE DATOS ---
 export const ID_2025 = '1_tDp8BrXZfmmmfyBdLIUhPk7PwwKvJ_t'; 
 export const ID_DATOS_GENERALES = '1RVxm-lcNp2PWDz7HcDyXtq0bWIWA9vtw'; 
+export const ID_SORTEO_TEMPORAL = '1xMFa1oCUKPK6fEPt1Skge4Tmz6IMGykL';
 export const ID_TORNEOS = '117mHAgirc9WAaWjHAhsalx1Yp6DgQj5bv2QpVZ-nWmI'; 
 export const MI_TELEFONO = "5491150568353"; 
 export const TELEFONO_BASTI = "5491123965949"; 
