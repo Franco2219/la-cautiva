@@ -501,42 +501,37 @@ export const useTournamentData = () => {
         
         // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
         const entryList = filteredInscriptos.map(n => { 
+            const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
+            const iTokens = inscClean.split(/\s+/);
+            const iSurname = iTokens[0];
+            const iInitial = iTokens.length > 1 ? iTokens[1][0] : null;
+
+            // Verificar duplicados de apellido en el ranking para decidir rigurosidad
+            const surnameDuplicates = playersRanking.filter(pr => {
+                 const prName = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
+                 return prName.split(/\s+/)[0] === iSurname;
+            }).length;
+
             const p = playersRanking.find(pr => {
                 const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
-                const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
-                
-                // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
-                if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
-
                 const rTokens = rankClean.split(/\s+/);
-                const iTokens = inscClean.split(/\s+/);
+                const rSurname = rTokens[0];
+                const rInitial = rTokens.length > 1 ? rTokens[1][0] : null;
 
-                // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
-                const matchTokens = rTokens.every(rt => {
-                    if (iTokens.includes(rt)) return true;
-                    if (iTokens.some(it => (rt.length === 1 && it.startsWith(rt)) || (it.length === 1 && rt.startsWith(it)))) return true;
-                    return false;
-                });
-                if (matchTokens) return true;
+                // 1. Coincidencia de Apellido
+                if (rSurname !== iSurname) return false;
 
-                // 3. SOLO APELLIDO (Última instancia: Estricto con verificación de duplicados)
-                const rSig = rTokens.filter(t => t.length > 2);
-                const iSig = iTokens.filter(t => t.length > 2);
-                
-                if (rSig.length > 0) {
-                    // Verificamos si este apellido/palabra clave se repite en otros jugadores del ranking
-                    const keyword = rSig[0];
-                    const isAmbiguous = playersRanking.filter(pr2 => 
-                        pr2.name.toLowerCase().includes(keyword)
-                    ).length > 1;
+                // 2. Coincidencia Estricta de Inicial (Si ambos tienen nombre)
+                // Esto previene que "Suarez Roman" matchee con "Suarez Cris" aunque sea el unico Suarez
+                if (iInitial && rInitial && iInitial !== rInitial) return false;
 
-                    if (!isAmbiguous) {
-                        if (rSig.length === 1 && iSig.includes(keyword)) return true;
-                        if (rSig.length > 1 && iSig.includes(keyword)) return true;
-                    }
+                // 3. Manejo de Ambigüedad (Si falta alguna inicial)
+                // Si hay duplicados en ranking y no podemos distinguir por inicial, fallar.
+                if (surnameDuplicates > 1) {
+                     if (!iInitial || !rInitial) return false; 
                 }
 
-                return false;
+                return true;
             });
             return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
         }).sort((a, b) => {
@@ -605,42 +600,28 @@ export const useTournamentData = () => {
       
       // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
       const entryList = filteredInscriptos.map(n => {
+          const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
+          const iTokens = inscClean.split(/\s+/);
+          const iSurname = iTokens[0];
+          const iInitial = iTokens.length > 1 ? iTokens[1][0] : null;
+
+          const surnameDuplicates = playersRanking.filter(pr => {
+               const prName = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
+               return prName.split(/\s+/)[0] === iSurname;
+          }).length;
+
           const p = playersRanking.find(pr => {
               const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
-              const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
-
-              // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
-              if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
-
               const rTokens = rankClean.split(/\s+/);
-              const iTokens = inscClean.split(/\s+/);
+              const rSurname = rTokens[0];
+              const rInitial = rTokens.length > 1 ? rTokens[1][0] : null;
 
-              // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
-              const matchTokens = rTokens.every(rt => {
-                  if (iTokens.includes(rt)) return true;
-                  if (iTokens.some(it => (rt.length === 1 && it.startsWith(rt)) || (it.length === 1 && rt.startsWith(it)))) return true;
-                  return false;
-              });
-              if (matchTokens) return true;
-
-              // 3. SOLO APELLIDO (Última instancia: Estricto con verificación de duplicados)
-              const rSig = rTokens.filter(t => t.length > 2);
-              const iSig = iTokens.filter(t => t.length > 2);
-              
-              if (rSig.length > 0) {
-                 // Verificamos si este apellido/palabra clave se repite en otros jugadores del ranking
-                 const keyword = rSig[0];
-                 const isAmbiguous = playersRanking.filter(pr2 => 
-                     pr2.name.toLowerCase().includes(keyword)
-                 ).length > 1;
-
-                 if (!isAmbiguous) {
-                     if (rSig.length === 1 && iSig.includes(keyword)) return true;
-                     if (rSig.length > 1 && iSig.includes(keyword)) return true;
-                 }
+              if (rSurname !== iSurname) return false;
+              if (iInitial && rInitial && iInitial !== rInitial) return false;
+              if (surnameDuplicates > 1) {
+                   if (!iInitial || !rInitial) return false; 
               }
-
-              return false;
+              return true;
           });
           return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
       }).sort((a, b) => {
