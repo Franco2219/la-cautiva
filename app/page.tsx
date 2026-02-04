@@ -96,30 +96,48 @@ export default function Home() {
         onTouchEnd={onTouchEnd}
     >
       
-      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - MODIFICADO */}
+      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - CORREGIDOS Y REFORZADOS */}
       <style jsx global>{`
         ${PRINT_STYLES}
         @media print {
             @page {
-                size: portrait;
-                margin: 2cm; /* Margen superior e inferior de 2cm */
+                size: auto;   /* Auto funciona mejor para adaptar márgenes */
+                margin: 0.5cm; /* Márgenes reducidos para aprovechar la hoja */
             }
-            body {
+            
+            /* REGLA MAESTRA: Forzar impresión de fondos en TODOS los elementos */
+            * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                background-color: white !important;
-                zoom: 70%;
+                color-adjust: exact !important;
             }
+
+            body {
+                background-color: white !important;
+                
+                /* Escala Forzada para Chrome/Edge */
+                zoom: 0.7 !important; 
+                
+                /* Escala Forzada para Firefox (backup) */
+                -moz-transform: scale(0.7);
+                -moz-transform-origin: top left;
+                
+                width: 100%;
+            }
+
             .print\\:hidden {
                 display: none !important;
             }
+
             /* Forzar salto de página cada 10 items (divs) dentro del grid de grupos */
             .group-grid > div:nth-child(10n) {
                 break-after: page;
                 page-break-after: always;
             }
+
+            /* Asegurar que los contenedores ocupen todo el ancho al reducir el zoom */
             .max-w-6xl, .max-w-\[95\%\] {
-                max-width: 100% !important;
+                max-width: none !important;
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
