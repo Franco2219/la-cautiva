@@ -506,7 +506,7 @@ export const useTournamentData = () => {
             const iSurname = iTokens[0];
             const iInitial = iTokens.length > 1 ? iTokens[1][0] : null;
 
-            // Verificar duplicados de apellido en el ranking para decidir rigurosidad
+            // 1. Conteo de duplicados de apellido en el ranking
             const surnameDuplicates = playersRanking.filter(pr => {
                  const prName = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                  return prName.split(/\s+/)[0] === iSurname;
@@ -518,19 +518,19 @@ export const useTournamentData = () => {
                 const rSurname = rTokens[0];
                 const rInitial = rTokens.length > 1 ? rTokens[1][0] : null;
 
-                // 1. Coincidencia de Apellido
+                // Coincidencia básica de apellido
                 if (rSurname !== iSurname) return false;
 
-                // 2. Coincidencia Estricta de Inicial (Si ambos tienen nombre)
-                // Esto previene que "Suarez Roman" matchee con "Suarez Cris" aunque sea el unico Suarez
-                if (iInitial && rInitial && iInitial !== rInitial) return false;
-
-                // 3. Manejo de Ambigüedad (Si falta alguna inicial)
-                // Si hay duplicados en ranking y no podemos distinguir por inicial, fallar.
+                // 3. Validación de Iniciales de jugadores duplicados
                 if (surnameDuplicates > 1) {
-                     if (!iInitial || !rInitial) return false; 
+                    // Si hay duplicados, exigimos coincidencia de inicial
+                    if (!iInitial || !rInitial) return false; 
+                    if (iInitial !== rInitial) return false; 
                 }
-
+                
+                // 2. Validación de apellidos de jugadores no duplicados
+                // Si surnameDuplicates === 1, permitimos match solo por apellido (Rizzo Tito -> Rizzo Edu)
+                
                 return true;
             });
             return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
@@ -605,6 +605,7 @@ export const useTournamentData = () => {
           const iSurname = iTokens[0];
           const iInitial = iTokens.length > 1 ? iTokens[1][0] : null;
 
+          // 1. Conteo de duplicados de apellido en el ranking
           const surnameDuplicates = playersRanking.filter(pr => {
                const prName = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                return prName.split(/\s+/)[0] === iSurname;
@@ -616,11 +617,19 @@ export const useTournamentData = () => {
               const rSurname = rTokens[0];
               const rInitial = rTokens.length > 1 ? rTokens[1][0] : null;
 
+              // Coincidencia básica de apellido
               if (rSurname !== iSurname) return false;
-              if (iInitial && rInitial && iInitial !== rInitial) return false;
+
+              // 3. Validación de Iniciales de jugadores duplicados
               if (surnameDuplicates > 1) {
-                   if (!iInitial || !rInitial) return false; 
+                  // Si hay duplicados, exigimos coincidencia de inicial
+                  if (!iInitial || !rInitial) return false; 
+                  if (iInitial !== rInitial) return false; 
               }
+              
+              // 2. Validación de apellidos de jugadores no duplicados
+              // Si surnameDuplicates === 1, permitimos match solo por apellido
+              
               return true;
           });
           return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
