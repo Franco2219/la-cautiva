@@ -96,8 +96,24 @@ export default function Home() {
         onTouchEnd={onTouchEnd}
     >
       
-      {/* ESTILOS DE IMPRESIÓN DINÁMICOS */}
-<style jsx global>{PRINT_STYLES}</style>
+      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - MODIFICADO PARA VERTICAL Y MAXIMO ANCHO */}
+      <style jsx global>{`
+        ${PRINT_STYLES}
+        @media print {
+            @page {
+                size: portrait;
+                margin: 0.5cm;
+            }
+            /* Forzar que los contenedores ocupen todo el ancho al imprimir */
+            .max-w-6xl, .max-w-\[95\%\] {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+        }
+      `}</style>
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         

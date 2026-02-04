@@ -91,7 +91,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                   </td>
                   {group.players.map((p2: string, j: number) => (
                     <td key={j} className={`p-2 border-r text-center font-black text-slate-700 whitespace-nowrap text-sm md:text-base ${i === j ? 'bg-slate-100 text-slate-300' : ''}`}>
-                      {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : "-")}
+                      {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : <span className="print:text-transparent">-</span>)}
                     </td>
                   ))}
                   {isComplete && (

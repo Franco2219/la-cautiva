@@ -323,6 +323,12 @@ export const useTournamentData = () => {
                 }
             }
         });
+
+        // --- CORRECCION: SI SON 2 JUGADORES, AGREGAR FILA VACIA EN WHATSAPP ---
+        if (g.players.length === 2) {
+            mensaje += "-\n";
+        }
+        // ----------------------------------------------------------------------
     });
     
     mensaje += `\n\n*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}`;
@@ -513,26 +519,29 @@ export const useTournamentData = () => {
                 });
                 if (matchTokens) return true;
 
-                // 3. SOLO APELLIDO (Última instancia: Estricto)
-                // Solo si el ranking tiene un nombre muy corto (ej: "Doffigny") 
-                // O si la PRIMERA palabra del ranking (Apellido) está en el inscripto.
-                // Esto evita que "Mauri Di Giacomo" coincida con "Ramos Mauri" solo por "Mauri".
+                // 3. SOLO APELLIDO (Última instancia: Estricto con verificación de duplicados)
                 const rSig = rTokens.filter(t => t.length > 2);
                 const iSig = iTokens.filter(t => t.length > 2);
                 
                 if (rSig.length > 0) {
-                    // Si el nombre en ranking es una sola palabra significativa (ej: "Orso"), permitimos coincidencia flexible
-                    if (rSig.length === 1 && iSig.includes(rSig[0])) return true;
-                    // Si son varias palabras, exigimos que la PRIMERA palabra del ranking (Apellido) esté presente
-                    if (rSig.length > 1 && iSig.includes(rSig[0])) return true;
+                    // Verificamos si este apellido/palabra clave se repite en otros jugadores del ranking
+                    const keyword = rSig[0];
+                    const isAmbiguous = playersRanking.filter(pr2 => 
+                        pr2.name.toLowerCase().includes(keyword)
+                    ).length > 1;
+
+                    if (!isAmbiguous) {
+                        if (rSig.length === 1 && iSig.includes(keyword)) return true;
+                        if (rSig.length > 1 && iSig.includes(keyword)) return true;
+                    }
                 }
 
                 return false;
             });
             return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
         }).sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points; // Primero por puntos
-            return a.originalIndex - b.originalIndex; // Desempate por orden original del ranking
+            if (b.points !== a.points) return b.points - a.points; 
+            return a.originalIndex - b.originalIndex; 
         });
         // --------------------------------------
 
@@ -614,25 +623,29 @@ export const useTournamentData = () => {
               });
               if (matchTokens) return true;
 
-              // 3. SOLO APELLIDO (Última instancia: Estricto)
-              // Solo si el ranking tiene un nombre muy corto (ej: "Doffigny") 
-              // O si la PRIMERA palabra del ranking (Apellido) está en el inscripto.
+              // 3. SOLO APELLIDO (Última instancia: Estricto con verificación de duplicados)
               const rSig = rTokens.filter(t => t.length > 2);
               const iSig = iTokens.filter(t => t.length > 2);
               
               if (rSig.length > 0) {
-                 // Si el nombre en ranking es una sola palabra significativa (ej: "Orso"), permitimos coincidencia flexible
-                 if (rSig.length === 1 && iSig.includes(rSig[0])) return true;
-                 // Si son varias palabras, exigimos que la PRIMERA palabra del ranking (Apellido) esté presente
-                 if (rSig.length > 1 && iSig.includes(rSig[0])) return true;
+                 // Verificamos si este apellido/palabra clave se repite en otros jugadores del ranking
+                 const keyword = rSig[0];
+                 const isAmbiguous = playersRanking.filter(pr2 => 
+                     pr2.name.toLowerCase().includes(keyword)
+                 ).length > 1;
+
+                 if (!isAmbiguous) {
+                     if (rSig.length === 1 && iSig.includes(keyword)) return true;
+                     if (rSig.length > 1 && iSig.includes(keyword)) return true;
+                 }
               }
 
               return false;
           });
           return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
       }).sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points; // Primero por puntos
-          return a.originalIndex - b.originalIndex; // Desempate por orden original del ranking
+          if (b.points !== a.points) return b.points - a.points; 
+          return a.originalIndex - b.originalIndex; 
       });
       // --------------------------------------
 
