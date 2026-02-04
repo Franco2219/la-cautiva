@@ -468,7 +468,15 @@ export const useTournamentData = () => {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
-        const playersRanking = parseCSV(rankCsv).slice(1).map(row => ({ name: row[1] || "", total: row[11] ? parseInt(row[11]) : 0 })).filter(p => p.name !== "");
+        
+        // --- SE GUARDA EL ÍNDICE ORIGINAL PARA DESEMPATE ---
+        const playersRanking = parseCSV(rankCsv).slice(1).map((row, i) => ({ 
+            name: row[1] || "", 
+            total: row[11] ? parseInt(row[11]) : 0,
+            originalIndex: i 
+        })).filter(p => p.name !== "");
+        // ---------------------------------------------------
+
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
         const inscRes = await fetch(inscUrl);
         const inscCsv = await inscRes.text();
@@ -491,32 +499,41 @@ export const useTournamentData = () => {
                 const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                 const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
                 
-                // LÓGICA DE COMPARACIÓN MEJORADA (PRIORIDAD DE 3 PASOS)
-                const rTokens = rankClean.split(/\s+/);
-                const iTokens = inscClean.split(/\s+/);
-
                 // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
                 if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
 
+                const rTokens = rankClean.split(/\s+/);
+                const iTokens = inscClean.split(/\s+/);
+
                 // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
                 const matchTokens = rTokens.every(rt => {
-                    // Si la palabra está exacta en el inscripto
                     if (iTokens.includes(rt)) return true;
-                    // Si es una inicial y coincide con el inicio de alguna palabra del inscripto (o viceversa)
                     if (iTokens.some(it => (rt.length === 1 && it.startsWith(rt)) || (it.length === 1 && rt.startsWith(it)))) return true;
                     return false;
                 });
                 if (matchTokens) return true;
 
-                // 3. SOLO APELLIDO (Última instancia: palabras significativas > 2 letras coinciden)
+                // 3. SOLO APELLIDO (Última instancia: Estricto)
+                // Solo si el ranking tiene un nombre muy corto (ej: "Doffigny") 
+                // O si la PRIMERA palabra del ranking (Apellido) está en el inscripto.
+                // Esto evita que "Mauri Di Giacomo" coincida con "Ramos Mauri" solo por "Mauri".
                 const rSig = rTokens.filter(t => t.length > 2);
                 const iSig = iTokens.filter(t => t.length > 2);
-                if (rSig.length > 0 && rSig.some(rs => iSig.includes(rs))) return true;
+                
+                if (rSig.length > 0) {
+                    // Si el nombre en ranking es una sola palabra significativa (ej: "Orso"), permitimos coincidencia flexible
+                    if (rSig.length === 1 && iSig.includes(rSig[0])) return true;
+                    // Si son varias palabras, exigimos que la PRIMERA palabra del ranking (Apellido) esté presente
+                    if (rSig.length > 1 && iSig.includes(rSig[0])) return true;
+                }
 
                 return false;
             });
-            return { name: n, points: p ? p.total : 0 }; 
-        }).sort((a, b) => b.points - a.points);
+            return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
+        }).sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points; // Primero por puntos
+            return a.originalIndex - b.originalIndex; // Desempate por orden original del ranking
+        });
         // --------------------------------------
 
         const totalPlayers = entryList.length;
@@ -553,7 +570,15 @@ export const useTournamentData = () => {
       const rankRes = await fetch(rankUrl); const rankCsv = await rankRes.text();
       const rawRows = parseCSV(rankCsv); if (!rawRows || rawRows.length === 0) throw new Error("CSV vacío");
       const headerRow = rawRows[0]; let totalIndex = headerRow.findIndex(h => h && h.toUpperCase().trim() === "TOTAL"); if (totalIndex === -1) totalIndex = 11;
-      const playersRanking = rawRows.slice(1).map(row => ({ name: row[1] || "", total: row[totalIndex] ? parseInt(row[totalIndex]) : 0 })).filter(p => p.name !== "");
+      
+      // --- SE GUARDA EL ÍNDICE ORIGINAL PARA DESEMPATE ---
+      const playersRanking = rawRows.slice(1).map((row, i) => ({ 
+          name: row[1] || "", 
+          total: row[totalIndex] ? parseInt(row[totalIndex]) : 0,
+          originalIndex: i 
+      })).filter(p => p.name !== "");
+      // ---------------------------------------------------
+
       const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
       const inscRes = await fetch(inscUrl); const inscCsv = await inscRes.text();
       
@@ -575,12 +600,11 @@ export const useTournamentData = () => {
               const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
               const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
 
-              // LÓGICA DE COMPARACIÓN MEJORADA (PRIORIDAD DE 3 PASOS)
-              const rTokens = rankClean.split(/\s+/);
-              const iTokens = inscClean.split(/\s+/);
-
               // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
               if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
+
+              const rTokens = rankClean.split(/\s+/);
+              const iTokens = inscClean.split(/\s+/);
 
               // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
               const matchTokens = rTokens.every(rt => {
@@ -590,15 +614,26 @@ export const useTournamentData = () => {
               });
               if (matchTokens) return true;
 
-              // 3. SOLO APELLIDO (Última instancia: palabras significativas > 2 letras coinciden)
+              // 3. SOLO APELLIDO (Última instancia: Estricto)
+              // Solo si el ranking tiene un nombre muy corto (ej: "Doffigny") 
+              // O si la PRIMERA palabra del ranking (Apellido) está en el inscripto.
               const rSig = rTokens.filter(t => t.length > 2);
               const iSig = iTokens.filter(t => t.length > 2);
-              if (rSig.length > 0 && rSig.some(rs => iSig.includes(rs))) return true;
+              
+              if (rSig.length > 0) {
+                 // Si el nombre en ranking es una sola palabra significativa (ej: "Orso"), permitimos coincidencia flexible
+                 if (rSig.length === 1 && iSig.includes(rSig[0])) return true;
+                 // Si son varias palabras, exigimos que la PRIMERA palabra del ranking (Apellido) esté presente
+                 if (rSig.length > 1 && iSig.includes(rSig[0])) return true;
+              }
 
               return false;
           });
-          return { name: n, points: p ? p.total : 0 }; 
-      }).sort((a, b) => b.points - a.points);
+          return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
+      }).sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points; // Primero por puntos
+          return a.originalIndex - b.originalIndex; // Desempate por orden original del ranking
+      });
       // --------------------------------------
 
       const totalPlayers = entryList.length; if (totalPlayers < 2) { alert("Mínimo 2 jugadores."); setIsLoading(false); return; }
