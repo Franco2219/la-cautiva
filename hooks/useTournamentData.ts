@@ -512,6 +512,12 @@ export const useTournamentData = () => {
                  return prName.split(/\s+/)[0] === iSurname;
             }).length;
 
+            // 2. Conteo de duplicados en la lista de Inscriptos (NUEVO)
+            const inscriptoDuplicates = filteredInscriptos.filter(insc => {
+                 const clean = insc.toLowerCase().replace(/[,.]/g, "").trim();
+                 return clean.split(/\s+/)[0] === iSurname;
+            }).length;
+
             const p = playersRanking.find(pr => {
                 const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                 const rTokens = rankClean.split(/\s+/);
@@ -521,15 +527,11 @@ export const useTournamentData = () => {
                 // Coincidencia básica de apellido
                 if (rSurname !== iSurname) return false;
 
-                // 3. Validación de Iniciales de jugadores duplicados
-                if (surnameDuplicates > 1) {
-                    // Si hay duplicados, exigimos coincidencia de inicial
+                // 3. Validación Estricta si hay duplicados en Ranking O en Inscriptos
+                if (surnameDuplicates > 1 || inscriptoDuplicates > 1) {
                     if (!iInitial || !rInitial) return false; 
                     if (iInitial !== rInitial) return false; 
                 }
-                
-                // 2. Validación de apellidos de jugadores no duplicados
-                // Si surnameDuplicates === 1, permitimos match solo por apellido (Rizzo Tito -> Rizzo Edu)
                 
                 return true;
             });
@@ -611,6 +613,12 @@ export const useTournamentData = () => {
                return prName.split(/\s+/)[0] === iSurname;
           }).length;
 
+          // 2. Conteo de duplicados en la lista de Inscriptos (NUEVO)
+          const inscriptoDuplicates = filteredInscriptos.filter(insc => {
+                 const clean = insc.toLowerCase().replace(/[,.]/g, "").trim();
+                 return clean.split(/\s+/)[0] === iSurname;
+          }).length;
+
           const p = playersRanking.find(pr => {
               const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
               const rTokens = rankClean.split(/\s+/);
@@ -620,15 +628,11 @@ export const useTournamentData = () => {
               // Coincidencia básica de apellido
               if (rSurname !== iSurname) return false;
 
-              // 3. Validación de Iniciales de jugadores duplicados
-              if (surnameDuplicates > 1) {
-                  // Si hay duplicados, exigimos coincidencia de inicial
+              // 3. Validación Estricta si hay duplicados en Ranking O en Inscriptos
+              if (surnameDuplicates > 1 || inscriptoDuplicates > 1) {
                   if (!iInitial || !rInitial) return false; 
                   if (iInitial !== rInitial) return false; 
               }
-              
-              // 2. Validación de apellidos de jugadores no duplicados
-              // Si surnameDuplicates === 1, permitimos match solo por apellido
               
               return true;
           });
