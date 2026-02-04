@@ -96,28 +96,40 @@ export default function Home() {
         onTouchEnd={onTouchEnd}
     >
       
-      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - MODIFICADO PARA VERTICAL Y MAXIMO ANCHO */}
+      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - MODIFICADO */}
       <style jsx global>{`
         ${PRINT_STYLES}
         @media print {
             @page {
                 size: portrait;
-                margin: 0.5cm;
+                margin: 2cm; /* Margen superior e inferior de 2cm */
             }
-            /* Forzar que los contenedores ocupen todo el ancho al imprimir */
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background-color: white !important;
+            }
+            .print\\:hidden {
+                display: none !important;
+            }
+            /* Forzar salto de página cada 10 items (divs) dentro del grid de grupos */
+            .group-grid > div:nth-child(10n) {
+                break-after: page;
+                page-break-after: always;
+            }
             .max-w-6xl, .max-w-\[95\%\] {
                 max-width: 100% !important;
                 width: 100% !important;
-            }
-            body {
-                -webkit-print-color-adjust: exact;
+                margin: 0 !important;
+                padding: 0 !important;
             }
         }
       `}</style>
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
-        <div className="text-center mb-8">
+        {/* HEADER LA CAUTIVA - OCULTO EN IMPRESIÓN */}
+        <div className="text-center mb-8 print:hidden">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-400/30 to-[#b35a38]/20 blur-2xl rounded-full opacity-100 transition-opacity duration-500" />
@@ -128,9 +140,9 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER (Se mantiene visible por si no saben usar el gesto) --- */}
+        {/* --- BOTÓN VOLVER (Se mantiene visible por si no saben usar el gesto) - OCULTO EN IMPRESIÓN --- */}
         {navState.level !== "home" && (
-            <div className="flex justify-center mb-8 w-full">
+            <div className="flex justify-center mb-8 w-full print:hidden">
                 <Button 
                     onClick={goBack} 
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
@@ -141,10 +153,10 @@ export default function Home() {
             </div>
         )}
         
-        {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
+        {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center print:hidden"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
-        <div className="space-y-4 max-w-xl mx-auto">
-          {/* --- AVISO DE RÉCORD (NUEVO) --- SI LO QUIERO APAGAR PONGO FALSE EN EL ARRANQUE DE LA 142 */}
+        <div className="space-y-4 max-w-xl mx-auto print:w-full print:max-w-none">
+          {/* --- AVISO DE RÉCORD (NUEVO) --- */}
           {navState.level === "home" && (
             <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <div className="bg-white/90 backdrop-blur-sm border-2 border-[#b35a38] text-[#b35a38] py-3 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 mx-4 transform hover:scale-105 transition-transform duration-300">
@@ -472,7 +484,7 @@ export default function Home() {
                     <div className="w-full">
                         <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
-                            <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50">
+                            <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                                 {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
                                 <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
@@ -500,8 +512,8 @@ export default function Home() {
         )}
 
         {navState.level === "group-phase" && (
-          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center">
-            <div className="flex justify-between items-center mb-8">
+          <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl min-h-[600px] text-center print:border-0 print:shadow-none print:p-0">
+            <div className="flex justify-between items-center mb-8 print:hidden">
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
                 <div className="flex space-x-2 text-center text-center">
@@ -512,12 +524,13 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className={`${currentStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden`}>
+            <div className={`${currentStyle.color} p-4 rounded-2xl mb-8 text-center text-white italic relative flex items-center justify-between overflow-hidden print:mb-4`}>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.logo && <Image src={currentStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}</div>
                <div className="flex-1"><h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(activeTour)} - Fase de Grupos</h2><p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p></div>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.pointsLogo && <Image src={currentStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}</div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* AÑADIDO: Clase group-grid para controlar los saltos de página */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start group-grid">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} tournamentShort={activeTour} />)}
             </div>
           </div>
@@ -537,8 +550,8 @@ export default function Home() {
 
       </div>
       
-      {/* Footer con el botón de Contacto */}
-      <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse">
+      {/* Footer con el botón de Contacto - OCULTO EN IMPRESIÓN */}
+      <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse print:hidden">
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {

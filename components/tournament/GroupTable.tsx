@@ -40,8 +40,8 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
   const style = getTournamentStyle(tournamentShort);
 
   return (
-    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor} print:break-inside-avoid`}>
-      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center`}>
+    <div className={`bg-white border-2 border-opacity-20 rounded-2xl shadow-lg mb-4 text-center h-fit overflow-hidden ${style.borderColor} print:break-inside-avoid print:border-2`}>
+      <div className={`${style.color} p-3 text-white font-black italic text-center uppercase tracking-wider relative flex items-center justify-center print:text-white print:bg-[color:var(--tw-bg-opacity)]`}>
           <span className="text-3xl">{group.groupName}</span>
       </div>
       
