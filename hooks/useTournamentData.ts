@@ -490,12 +490,30 @@ export const useTournamentData = () => {
             const p = playersRanking.find(pr => {
                 const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                 const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
-                // 1. Coincidencia directa (incluye apellido único)
-                if (rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
-                // 2. Coincidencia por partes (desordenado)
-                const rankParts = rankClean.split(/\s+/);
-                const inscParts = inscClean.split(/\s+/);
-                return inscParts.every(ip => rankParts.some(rp => rp.includes(ip)));
+                
+                // LÓGICA DE COMPARACIÓN MEJORADA (PRIORIDAD DE 3 PASOS)
+                const rTokens = rankClean.split(/\s+/);
+                const iTokens = inscClean.split(/\s+/);
+
+                // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
+                if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
+
+                // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
+                const matchTokens = rTokens.every(rt => {
+                    // Si la palabra está exacta en el inscripto
+                    if (iTokens.includes(rt)) return true;
+                    // Si es una inicial y coincide con el inicio de alguna palabra del inscripto (o viceversa)
+                    if (iTokens.some(it => (rt.length === 1 && it.startsWith(rt)) || (it.length === 1 && rt.startsWith(it)))) return true;
+                    return false;
+                });
+                if (matchTokens) return true;
+
+                // 3. SOLO APELLIDO (Última instancia: palabras significativas > 2 letras coinciden)
+                const rSig = rTokens.filter(t => t.length > 2);
+                const iSig = iTokens.filter(t => t.length > 2);
+                if (rSig.length > 0 && rSig.some(rs => iSig.includes(rs))) return true;
+
+                return false;
             });
             return { name: n, points: p ? p.total : 0 }; 
         }).sort((a, b) => b.points - a.points);
@@ -556,12 +574,28 @@ export const useTournamentData = () => {
           const p = playersRanking.find(pr => {
               const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
               const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
-              // 1. Coincidencia directa (incluye apellido único)
-              if (rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
-              // 2. Coincidencia por partes (desordenado)
-              const rankParts = rankClean.split(/\s+/);
-              const inscParts = inscClean.split(/\s+/);
-              return inscParts.every(ip => rankParts.some(rp => rp.includes(ip)));
+
+              // LÓGICA DE COMPARACIÓN MEJORADA (PRIORIDAD DE 3 PASOS)
+              const rTokens = rankClean.split(/\s+/);
+              const iTokens = inscClean.split(/\s+/);
+
+              // 1. APELLIDO + NOMBRE COMPLETO (o coincidencia exacta/inclusión total)
+              if (rankClean === inscClean || rankClean.includes(inscClean) || inscClean.includes(rankClean)) return true;
+
+              // 2. APELLIDO + INICIAL (verificamos palabra por palabra permitiendo iniciales)
+              const matchTokens = rTokens.every(rt => {
+                  if (iTokens.includes(rt)) return true;
+                  if (iTokens.some(it => (rt.length === 1 && it.startsWith(rt)) || (it.length === 1 && rt.startsWith(it)))) return true;
+                  return false;
+              });
+              if (matchTokens) return true;
+
+              // 3. SOLO APELLIDO (Última instancia: palabras significativas > 2 letras coinciden)
+              const rSig = rTokens.filter(t => t.length > 2);
+              const iSig = iTokens.filter(t => t.length > 2);
+              if (rSig.length > 0 && rSig.some(rs => iSig.includes(rs))) return true;
+
+              return false;
           });
           return { name: n, points: p ? p.total : 0 }; 
       }).sort((a, b) => b.points - a.points);
