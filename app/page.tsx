@@ -108,6 +108,7 @@ export default function Home() {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 background-color: white !important;
+                zoom: 70%;
             }
             .print\\:hidden {
                 display: none !important;
