@@ -1,22 +1,18 @@
 "use client";
 
-import { useState } from "react"; // Agregamos useState para el gesto
+import { useState } from "react"; 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-// AGREGADO: Importamos BarChart2, TrendingUp y History para los nuevos botones
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History } from "lucide-react";
 import { tournaments, PRINT_STYLES } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
 import { sendGAEvent } from '@next/third-parties/google';
 
-// Componentes extraídos
 import { GroupTable } from "@/components/tournament/GroupTable";
 import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
-
-// --- NUEVO COMPONENTE DE ESTADÍSTICAS ---
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
 
 export default function Home() {
@@ -43,21 +39,17 @@ export default function Home() {
     showInscriptosModal,
     setShowInscriptosModal,
     fetchInscriptos,
-    // NUEVAS FUNCIONES DE CONTACTO
     contactStatus,
     sendContactForm
   } = useTournamentData();
 
-  // --- LOGICA DEL GESTO DESLIZAR (SWIPE) ---
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  const minSwipeDistance = 50; // Distancia mínima para considerar un swipe
+  const minSwipeDistance = 50; 
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
-    // Solo detectamos si empieza en el borde izquierdo (25% de la pantalla)
-    // Esto evita que choques con el scroll horizontal de las tablas
     if (e.targetTouches[0].clientX < window.innerWidth * 0.20) {
         setTouchStart(e.targetTouches[0].clientX);
     } else {
@@ -74,71 +66,52 @@ export default function Home() {
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance < -minSwipeDistance; // Negativo significa hacia la derecha
+    const isLeftSwipe = distance < -minSwipeDistance; 
     
     if (isLeftSwipe && navState.level !== "home") {
-      goBack(); // Ejecutamos la función volver
+      goBack(); 
     }
   }
-  // ----------------------------------------
 
   const buttonStyle = "w-full text-lg h-20 border-2 border-[#b35a38]/20 bg-white text-[#b35a38] hover:bg-[#b35a38] hover:text-white transform hover:scale-[1.01] transition-all duration-300 font-semibold shadow-md rounded-2xl flex items-center justify-center text-center";
   
   const activeTour = navState.tournamentShort || navState.currentTour;
   const currentStyle = getTournamentStyle(activeTour);
-
-  // AQUI ESTA TU CODIGO DE FORMSPREE
   const FORMSPREE_ID = "xpqpqzdg";
 
   return (
-    // Agregamos los eventos de Touch al div principal
     <div 
         className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-[#fffaf5]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
     >
-      
-      {/* ESTILOS DE IMPRESIÓN DINÁMICOS - CORREGIDOS Y REFORZADOS */}
       <style jsx global>{`
         ${PRINT_STYLES}
         @media print {
             @page {
-                size: auto;   /* Auto funciona mejor para adaptar márgenes */
-                margin: 0.5cm; /* Márgenes reducidos para aprovechar la hoja */
+                size: auto; 
+                margin: 0.5cm; 
             }
-            
-            /* REGLA MAESTRA: Forzar impresión de fondos en TODOS los elementos */
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
             }
-
             body {
                 background-color: white !important;
-                
-                /* Escala Forzada para Chrome/Edge */
                 zoom: 0.7 !important; 
-                
-                /* Escala Forzada para Firefox (backup) */
                 -moz-transform: scale(0.7);
                 -moz-transform-origin: top left;
-                
                 width: 100%;
             }
-
             .print\\:hidden {
                 display: none !important;
             }
-
-            /* Forzar salto de página cada 10 items (divs) dentro del grid de grupos */
             .group-grid > div:nth-child(10n) {
                 break-after: page;
                 page-break-after: always;
             }
-
-            /* Asegurar que los contenedores ocupen todo el ancho al reducir el zoom */
             .max-w-6xl, .max-w-\[95\%\] {
                 max-width: none !important;
                 width: 100% !important;
@@ -150,7 +123,6 @@ export default function Home() {
 
       <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
-        {/* HEADER LA CAUTIVA - OCULTO EN IMPRESIÓN */}
         <div className="text-center mb-8 print:hidden">
             <div className="flex justify-center mb-5 text-center">
                 <div className="relative group w-64 h-64">
@@ -162,7 +134,7 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER (Se mantiene visible por si no saben usar el gesto) - OCULTO EN IMPRESIÓN --- */}
+        {/* --- BOTÓN VOLVER GLOBAL --- */}
         {navState.level !== "home" && (
             <div className="flex justify-center mb-8 w-full print:hidden">
                 <Button 
@@ -170,7 +142,11 @@ export default function Home() {
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
                     <ArrowLeft className="w-6 h-6 shrink-0" />
-                    <span>{navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : "VOLVER"}</span>
+                    <span>
+                        {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
+                         navState.level === "stats-tournaments" ? "VOLVER A TORNEOS" : 
+                         "VOLVER"}
+                    </span>
                 </Button>
             </div>
         )}
@@ -178,7 +154,6 @@ export default function Home() {
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center print:hidden"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
         <div className="space-y-4 max-w-xl mx-auto print:w-full print:max-w-none">
-          {/* --- AVISO DE RÉCORD (NUEVO) --- */}
           {navState.level === "home" && (
             <div className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
               <div className="bg-white/90 backdrop-blur-sm border-2 border-[#b35a38] text-[#b35a38] py-3 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 mx-4 transform hover:scale-105 transition-transform duration-300">
@@ -192,14 +167,13 @@ export default function Home() {
               </div>
             </div>
           )}
-          {/* -------------------------------- */}
+          
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           
           {navState.level === "main-menu" && (
             <div className="grid grid-cols-1 gap-4 text-center">
               <Button onClick={() => setNavState({ level: "category-selection", type: "caballeros" })} className={buttonStyle}>CABALLEROS</Button>
               <Button onClick={() => {
-                  // AVISO A GOOGLE: DAMAS (AGREGADO)
                   sendGAEvent('event', 'button_click', { event_label: 'Menu: Damas' });
                   setNavState({ level: "category-selection", type: "damas" });
               }} className={buttonStyle}>DAMAS</Button>
@@ -209,7 +183,6 @@ export default function Home() {
                 }} className={buttonStyle}>
                 <Trophy className="mr-2 opacity-50" /> RANKING
               </Button>
-              {/* --- AGREGADO: BOTÓN ESTADÍSTICAS --- */}
               <Button onClick={() => {
                   sendGAEvent('event', 'button_click', { event_label: 'Menu Principal: Estadisticas' });
                   setNavState({ level: "statistics-menu" })
@@ -219,7 +192,6 @@ export default function Home() {
             </div>
           )}
 
-            {/* --- AGREGADO: MENÚ DE ESTADÍSTICAS --- */}
             {navState.level === "statistics-menu" && (
             <div className="grid grid-cols-1 gap-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Button onClick={() => {
@@ -238,7 +210,6 @@ export default function Home() {
             </div>
             )}
 
-            {/* --- AGREGADO: VISTA ESTADÍSTICAS POR JUGADOR (PRÓXIMAMENTE) --- */}
             {navState.level === "stats-player" && (
             <div className="bg-white border-4 border-[#b35a38]/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-w-2xl mx-auto text-center animate-in zoom-in duration-300">
                 <TrendingUp className="w-24 h-24 text-[#b35a38] mx-auto mb-6 opacity-80" />
@@ -259,22 +230,18 @@ export default function Home() {
             </div>
             )}
 
-            {/* --- NUEVA VISTA: ESTADÍSTICAS POR TORNEO --- */}
             {navState.level === "stats-tournaments" && (
-               // AQUI REEMPLAZAMOS EL TEXTO "PROXIMAMENTE" POR TU NUEVO COMPONENTE
                <TournamentHistoryView onBack={() => setNavState({ level: "statistics-menu" })} />
             )}
 
           {navState.level === "year-selection" && (
             <div className="space-y-4 text-center">
                 <Button onClick={() => {
-                    // AVISO A GOOGLE: RANKING 2025 (AGREGADO)
                     sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2025' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2025" });
                 }} className={buttonStyle}>Ranking 2025</Button>
                 
                 <Button onClick={() => {
-                    // AVISO A GOOGLE: RANKING 2026 (AGREGADO)
                     sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2026' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2026" });
                 }} className={buttonStyle}>Ranking 2026</Button>
@@ -286,7 +253,6 @@ export default function Home() {
               {["Categoría A", "Categoría B1", "Categoría B2", "Categoría C"].map((cat) => (
                 <Button key={cat} onClick={() => {
                   const catShort = cat.replace("Categoría ", "");
-                  // AVISO A GOOGLE: CATEGORIAS (Caballeros o Ranking)
                   if (navState.type === "ranking") {
                       sendGAEvent('event', 'button_click', { event_label: `Ranking ${navState.year} ${cat}` });
                   } else if (navState.type === "caballeros") {
@@ -351,7 +317,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* --- PANTALLA DE CONTACTO --- */}
         {navState.level === "contact" && (
           <div className="bg-white border-4 border-[#b35a38] rounded-[2rem] p-8 md:p-12 shadow-2xl max-w-5xl mx-auto text-left relative overflow-hidden">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -536,7 +501,6 @@ export default function Home() {
                <div className="flex-1"><h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(activeTour)} - Fase de Grupos</h2><p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p></div>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.pointsLogo && <Image src={currentStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}</div>
             </div>
-            {/* AÑADIDO: Clase group-grid para controlar los saltos de página */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start group-grid">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} tournamentShort={activeTour} />)}
             </div>
@@ -557,12 +521,10 @@ export default function Home() {
 
       </div>
       
-      {/* Footer con el botón de Contacto - OCULTO EN IMPRESIÓN */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse print:hidden">
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
-             // AVISO A GOOGLE: CONTACTO
              sendGAEvent('event', 'button_click', { event_label: 'Footer: Contacto' });
              setNavState({ level: "contact" });
          }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>
