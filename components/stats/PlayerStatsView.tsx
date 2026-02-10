@@ -3,17 +3,14 @@ import { Search, Filter, User } from "lucide-react";
 import { useStatsData } from "@/hooks/useStatsData"; 
 import { PlayerDetailView } from "./PlayerDetailView"; 
 
-interface MatchData {
-  jugador?: string;
-  Jugador?: string;
-  rival?: string;
-  Rival?: string;
-  categoria?: string;
-  Categoria?: string;
-  category?: string; 
-}
+// --- NORMALIZADOR ---
+const normalizeName = (name: string) => {
+    if (!name) return "";
+    return name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+};
 
 export const PlayerStatsView = () => {
+  // 1. AHORA PEDIMOS TAMBIÉN 'profiles'
   const { matches, profiles, isLoadingStats, fetchMatches } = useStatsData(); 
   
   useEffect(() => {
@@ -24,6 +21,7 @@ export const PlayerStatsView = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // 2. LÓGICA DE FILTRADO (MOVIDA ARRIBA DEL IF)
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
@@ -55,24 +53,22 @@ export const PlayerStatsView = () => {
     return players;
   }, [matches, selectedCategory, searchTerm]);
 
-  // VISTA DE DETALLE
+  // 3. VISTA DE DETALLE (AHORA PASAMOS profileData)
   if (selectedPlayer) {
-      // BUSQUEDA INSENSIBLE A MAYÚSCULAS/MINÚSCULAS
-      // Esto asegura que "FERRO , FRANCO" encuentre "Ferro , Franco"
-      const normalizeKey = selectedPlayer.trim().toLowerCase();
+      const normalizeKey = normalizeName(selectedPlayer);
       const playerProfile = profiles[normalizeKey] || null;
 
       return (
           <PlayerDetailView 
               playerName={selectedPlayer} 
-              profileData={playerProfile} 
+              profileData={playerProfile} // <--- ¡AQUÍ ESTÁ LA CLAVE!
               onBack={() => setSelectedPlayer(null)}
               matchesData={matches} 
           />
       );
   }
 
-  // RENDERIZADO PRINCIPAL
+  // 4. RENDERIZADO PRINCIPAL
   return (
     <div className="w-full max-w-4xl lg:max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
       
@@ -129,8 +125,8 @@ export const PlayerStatsView = () => {
         ) : filteredPlayers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-y md:divide-y-0 gap-px bg-slate-100">
             {filteredPlayers.map((player, idx) => {
-               // Buscamos si tiene foto para mostrarla en miniatura (opcional, pero queda lindo)
-               const normalizeKey = player.trim().toLowerCase();
+               // Mostramos miniatura si existe
+               const normalizeKey = normalizeName(player);
                const profile = profiles[normalizeKey];
                
                return (

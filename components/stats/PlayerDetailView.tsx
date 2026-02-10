@@ -19,6 +19,7 @@ interface MatchRecord {
   score: string;
 }
 
+// Interfaz para la data del perfil
 interface ProfileData {
   name: string;
   age: string;
@@ -30,7 +31,7 @@ interface PlayerDetailViewProps {
   playerName: string;
   onBack: () => void;
   matchesData: MatchRecord[];
-  profileData?: ProfileData | null; 
+  profileData?: ProfileData | null; // <--- AHORA ACEPTAMOS ESTE DATO
 }
 
 export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData }: PlayerDetailViewProps) => {
@@ -86,7 +87,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     });
   }, [matchesData, playerName]);
 
-  // --- MEJOR RESULTADO 2026 (CORREGIDO: CAMPEÓN vs FINALISTA) ---
+  // --- MEJOR RESULTADO 2026 ---
   const bestResults2026 = useMemo(() => {
     const matches2026 = playerMatches.filter((m: any) => {
        const d = parseDate(getDate(m));
@@ -96,7 +97,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     if (matches2026.length === 0) return ["Sin torneos en 2026"];
 
     const roundHierarchy: Record<string, number> = {
-        "campeon": 12, // Nuevo nivel máximo
+        "campeon": 12, 
         "final": 10, "semifinal": 8, "semi": 8, "cuartos": 6, "octavos": 4, "zona": 1, "grupo": 1
     };
 
@@ -111,20 +112,18 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
         const tourName = getTour(m);
         const niceRound = getRound(m);
 
-        // LÓGICA CORREGIDA AQUÍ
         if (roundKey === "final") {
             const p1 = getP1(m);
-            // Si el jugador es el "P1" (Columna Jugador), es el que ganó la final -> CAMPEÓN
+            // Si el jugador es el "P1" (Columna Jugador), es el que ganó -> CAMPEÓN
             if (p1 === playerName) {
-                points = 12; // Más puntos que finalista
+                points = 12;
                 resultLabel = `Campeón ${tourName}`;
             } else {
-                points = 10; // Perdió la final
+                points = 10;
                 resultLabel = `Finalista ${tourName}`;
             }
         }
         else if (points === 0) {
-            // Fallback para otras rondas
             if (roundKey.includes("semi")) points = 8;
             else if (roundKey.includes("cuartos")) points = 6;
             else if (roundKey.includes("octavos")) points = 4;

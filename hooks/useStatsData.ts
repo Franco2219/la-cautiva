@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-const CACHE_KEY_MATCHES = "db_cache_v8_final_link"; // Subo versión para borrar caché viejo
+// IMPORTANTE: Cambié la versión a 'v9' para obligar a borrar cualquier dato viejo
+const CACHE_KEY_MATCHES = "db_cache_v9_full_reload"; 
 const CACHE_TIME = 1000 * 60 * 30; 
 
 export interface ChampionRecord {
@@ -109,7 +110,7 @@ export const useStatsData = () => {
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. CARGAR PERFILES (CORREGIDO: Link de la captura del Excel "Torneos 2026")
+    // A. CARGAR PERFILES (Este es el LINK NUEVO de tu captura de pantalla)
     const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=597400315&single=true&output=csv";
     
     try {
@@ -119,8 +120,8 @@ export const useStatsData = () => {
             const pRows = robustCSVParser(pText);
             const profilesMap: Record<string, PlayerProfile> = {};
             
+            // Asumimos: Col A=Jugador, B=Edad, C=Mano, D=Foto (Indices 0, 1, 2, 3)
             pRows.slice(1).forEach(row => {
-                // A: Jugador, B: Edad, C: Mano, D: Foto
                 if (row[0]) {
                     const nameKey = normalizeName(row[0]); 
                     profilesMap[nameKey] = {
@@ -206,7 +207,7 @@ export const useStatsData = () => {
   return {
     historyData,
     matches,
-    profiles,
+    profiles, // <--- ESTO ES VITAL: EXPORTAR LOS PERFILES
     isLoadingStats,
     fetchChampionHistory,
     fetchMatches
