@@ -1,7 +1,12 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
-// --- INTERFACES ---
+// CONFIGURACIÓN DEL CACHÉ
+const CACHE_KEY_MATCHES = "db_master_cache_v1"; // Nombre para guardar en memoria
+const CACHE_TIME = 1000 * 60 * 30; // 30 Minutos (tiempo que duran los datos sin recargar)
+
+const SHEET_GID_DATA = "1288809117"; 
+
 export interface ChampionRecord {
   year: string;
   tournament: string;
@@ -12,7 +17,6 @@ export interface ChampionRecord {
 }
 
 export interface MatchRecord {
-  // Campos obligatorios
   Torneo: string;
   Categoria: string;
   Fase: string;
@@ -20,7 +24,6 @@ export interface MatchRecord {
   Rival: string;
   Resultado: string;
   Fecha: string;
-  // Alias para compatibilidad con componentes
   tournament: string;
   category: string;
   round: string;
@@ -30,7 +33,7 @@ export interface MatchRecord {
   score: string;
 }
 
-// Parser robusto que maneja comas dentro de nombres (ej: "Perez, Juan")
+// Parser optimizado
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
   return lines.map(line => {
@@ -55,10 +58,10 @@ const robustCSVParser = (csvText: string) => {
 
 export const useStatsData = () => {
   const [historyData, setHistoryData] = useState<ChampionRecord[]>([]);
-  const [matches, setMatches] = useState<MatchRecord[]>([]); // <--- ESTO FALTABA
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. HISTORIAL CAMPEONES
+  // 1. HISTORIAL CAMPEONES (Sin cambios)
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
@@ -67,7 +70,7 @@ export const useStatsData = () => {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = robustCSVParser(csvText);
-
+      // ... procesamiento ...
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
         tournament: row[1] || "",
@@ -93,11 +96,29 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS (Usando TU enlace publicado)
+  // 2. BUSCAR PARTIDOS (CON SISTEMA DE CACHÉ)
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // USAMOS EL ENLACE QUE PUBLICASTE (ESTO ES CLAVE)
+    // A. REVISAR SI YA TENEMOS LOS DATOS GUARDADOS
+    const cached = localStorage.getItem(CACHE_KEY_MATCHES);
+    if (cached) {
+        try {
+            const { data, timestamp } = JSON.parse(cached);
+            const now = Date.now();
+            // Si los datos son "frescos" (menores a 30 mins), los usamos y NO descargamos nada
+            if (now - timestamp < CACHE_TIME) {
+                console.log("⚡ Usando datos de caché (Carga Instantánea)");
+                setMatches(data);
+                setIsLoadingStats(false);
+                return; // Salimos de la función aquí
+            }
+        } catch (e) {
+            console.warn("Error leyendo caché, descargando de nuevo...");
+        }
+    }
+
+    // B. SI NO HAY CACHÉ O ES VIEJO, DESCARGAMOS DE GOOGLE
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {
@@ -106,11 +127,7 @@ export const useStatsData = () => {
         const rows = robustCSVParser(csvText);
 
         const mappedMatches = rows.slice(1).map(row => {
-            // Verificación básica: Si la fila tiene menos de 4 columnas, la ignoramos
             if (row.length < 4) return null;
-
-            // MAPEO COMPLETO
-            // A=0, B=1, C=2, D=3, E=4, F=5, G=6
             return {
                 Torneo: row[0] || "",
                 Categoria: row[1] || "",
@@ -120,7 +137,6 @@ export const useStatsData = () => {
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
                 
-                // Alias en inglés para que el componente funcione
                 tournament: row[0] || "",
                 category: row[1] || "",
                 round: row[2] || "",
@@ -130,19 +146,21 @@ export const useStatsData = () => {
                 date: row[6] || ""
             };
         }).filter((m): m is MatchRecord => {
-            // Filtros de seguridad
             if (!m) return false;
-            // Que tenga datos reales y no sea el encabezado
             if (!m.Jugador || !m.Torneo) return false;
             if (m.Jugador === "Jugador") return false; 
-            
-            // Filtro anti-basura (por si acaso lee otra cosa)
             if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 4) return false;
-            
             return true; 
         });
 
-        console.log(`Partidos cargados correctamente: ${mappedMatches.length}`);
+        console.log(`Datos descargados y guardados: ${mappedMatches.length}`);
+        
+        // C. GUARDAR EN CACHÉ PARA LA PRÓXIMA VEZ
+        localStorage.setItem(CACHE_KEY_MATCHES, JSON.stringify({
+            data: mappedMatches,
+            timestamp: Date.now()
+        }));
+
         setMatches(mappedMatches);
 
     } catch (error) {
@@ -154,9 +172,9 @@ export const useStatsData = () => {
 
   return {
     historyData,
-    matches,              // <--- ESTO FALTABA
+    matches,
     isLoadingStats,
     fetchChampionHistory,
-    fetchMatches          // <--- ESTO FALTABA
+    fetchMatches
   };
 };
