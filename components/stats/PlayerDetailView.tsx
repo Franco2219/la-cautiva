@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-// CORRECCIÓN 1: Agregamos 'User' a los imports para que no falle la foto de perfil
 import { ArrowLeft, Search, User } from "lucide-react";
 
 interface MatchRecord {
@@ -28,18 +27,25 @@ interface PlayerDetailViewProps {
 export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDetailViewProps) => {
   const [rivalSearch, setRivalSearch] = useState("");
 
-  // Helpers seguros
-  const getP1 = (m: any) => m.jugador || m.Jugador || "";
-  const getP2 = (m: any) => m.rival || m.Rival || "";
-  const getRound = (m: any) => m.round || m.Fase || "-";
-  const getScore = (m: any) => m.score || m.Resultado || "-";
-  const getTour = (m: any) => m.tournament || m.Torneo || "-";
-  
-  // CORRECCIÓN 2: Parser de fechas inteligente (DD/MM/YYYY -> Date Object)
-  // Esto evita errores si el navegador no entiende el formato argentino
-  const parseDate = (dateStr: string) => {
+  // --- HELPERS BLINDADOS (Convierten todo a String para evitar crashes) ---
+  const safeStr = (val: any) => {
+      if (val === null || val === undefined) return "";
+      return String(val); // Convierte números o cualquier cosa a texto
+  };
+
+  const getP1 = (m: any) => safeStr(m.jugador || m.Jugador).trim();
+  const getP2 = (m: any) => safeStr(m.rival || m.Rival).trim();
+  const getRound = (m: any) => safeStr(m.round || m.Fase || "-").trim();
+  const getScore = (m: any) => safeStr(m.score || m.Resultado || "-").trim();
+  const getTour = (m: any) => safeStr(m.tournament || m.Torneo || "-").trim();
+  const getDate = (m: any) => safeStr(m.date || m.Fecha || "");
+
+  // --- PARSER DE FECHAS SEGURO ---
+  const parseDate = (dateVal: any) => {
+    const dateStr = safeStr(dateVal); // Aseguramos que sea texto
     if (!dateStr) return new Date();
-    // Si viene como DD/MM/YYYY
+
+    // Formato DD/MM/YYYY
     if (dateStr.includes("/")) {
         const parts = dateStr.split("/");
         if (parts.length === 3) {
@@ -47,26 +53,31 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDeta
             return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
         }
     }
+    // Intento estándar
     return new Date(dateStr);
   };
 
-  const getDate = (m: any) => m.date || m.Fecha || "";
-
-  // FILTRAR PARTIDOS
+  // --- FILTRAR PARTIDOS ---
   const playerMatches = useMemo(() => {
-    if (!matchesData) return [];
+    // Si matchesData es nulo (por error de carga), devolvemos array vacío para no romper
+    if (!matchesData || !Array.isArray(matchesData)) return [];
+
     return matchesData.filter((m: any) => {
-      const p1 = getP1(m).trim();
-      const p2 = getP2(m).trim();
+      const p1 = getP1(m);
+      const p2 = getP2(m);
+      // Usamos includes por si hay espacios extra invisibles
       return p1 === playerName || p2 === playerName;
     }).sort((a: any, b: any) => {
         const dateA = parseDate(getDate(a)).getTime();
         const dateB = parseDate(getDate(b)).getTime();
-        return dateB - dateA; // Más recientes primero
+        // Si la fecha es inválida (NaN), la mandamos al final
+        if (isNaN(dateA)) return 1;
+        if (isNaN(dateB)) return -1;
+        return dateB - dateA; 
     });
   }, [matchesData, playerName]);
 
-  // MEJOR RESULTADO 2026
+  // --- MEJOR RESULTADO 2026 ---
   const bestResults2026 = useMemo(() => {
     const matches2026 = playerMatches.filter((m: any) => {
        const d = parseDate(getDate(m));
@@ -83,19 +94,30 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDeta
     let bestTournaments: string[] = [];
 
     matches2026.forEach((m: any) => {
-        const roundKey = getRound(m).toLowerCase().trim();
-        const p1 = getP1(m).trim();
+        // SafeStr y toLowerCase para evitar crash si viene un número
+        const roundKey = getRound(m).toLowerCase();
         let points = roundHierarchy[roundKey] || 0;
-        let resultLabel = "";
-
-        // Si ganó la final (asumimos que si dice Final y él es Jugador, ganó, 
-        // pero idealmente deberíamos chequear el score o una col winner. Por ahora simplificado)
-        if (roundKey === "final") resultLabel = `Finalista ${getTour(m)}`;
-        else if (roundKey.includes("semi")) resultLabel = `Semifinal ${getTour(m)}`;
-        else if (roundKey.includes("cuartos")) resultLabel = `Cuartos ${getTour(m)}`;
-        else if (roundKey.includes("octavos")) resultLabel = `Octavos ${getTour(m)}`;
         
-        if (!resultLabel) resultLabel = `${getRound(m)} ${getTour(m)}`;
+        // Búsquedas parciales si no coincide exacto
+        if (points === 0) {
+            if (roundKey.includes("final")) points = 10;
+            else if (roundKey.includes("semi")) points = 8;
+            else if (roundKey.includes("cuartos")) points = 6;
+            else if (roundKey.includes("octavos")) points = 4;
+            else if (roundKey.includes("zona") || roundKey.includes("grupo")) points = 1;
+        }
+
+        let resultLabel = "";
+        const tourName = getTour(m);
+        const niceRound = getRound(m); // Nombre original (ej: "Cuartos")
+
+        // Construimos la etiqueta
+        if (roundKey === "final") resultLabel = `Finalista ${tourName}`;
+        else if (roundKey.includes("semi")) resultLabel = `Semifinal ${tourName}`;
+        else if (roundKey.includes("cuartos")) resultLabel = `Cuartos ${tourName}`;
+        else if (roundKey.includes("octavos")) resultLabel = `Octavos ${tourName}`;
+        
+        if (!resultLabel) resultLabel = `${niceRound} ${tourName}`;
 
         if (points >= maxPoints) {
             if (points > maxPoints) {
@@ -108,14 +130,14 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDeta
     });
     
     if (bestTournaments.length === 0) return ["Participante"];
-    // Eliminar duplicados y devolver
     return [...new Set(bestTournaments)];
   }, [playerMatches, playerName]);
 
-  // FILTRO RIVAL
+  // --- FILTRO RIVAL (HEAD TO HEAD) ---
   const displayedMatches = useMemo(() => {
     if (!rivalSearch) return playerMatches;
     const search = rivalSearch.toLowerCase();
+    
     return playerMatches.filter((m: any) => {
         const p1 = getP1(m);
         const p2 = getP2(m);
@@ -124,11 +146,12 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDeta
     });
   }, [playerMatches, rivalSearch, playerName]);
 
-  const lastCategory = playerMatches.length > 0 ? (playerMatches[0] as any).Categoria || (playerMatches[0] as any).category : "-";
+  // Datos extra
+  const lastCategory = playerMatches.length > 0 ? safeStr((playerMatches[0] as any).Categoria || (playerMatches[0] as any).category) : "-";
   
-  const formatDateDisplay = (dateStr: any) => {
+  const formatDateDisplay = (dateVal: any) => {
       try {
-        const d = parseDate(dateStr);
+        const d = parseDate(dateVal);
         if (isNaN(d.getTime())) return "-";
         const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
         return `${months[d.getMonth()]} ${d.getFullYear()}`;
