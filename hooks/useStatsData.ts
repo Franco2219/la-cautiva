@@ -111,7 +111,7 @@ export const useStatsData = () => {
     
     // A. CARGAR PERFILES (USANDO EL LINK DIRECTO DE TU CAPTURA)
     // Este es el link exacto del Excel "Ranking e Inscriptos 2026" Hoja "Perfiles"
-    const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuo2mnttQPBYkPexcADjlZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg/pub?gid=542404536&single=true&output=csv";
+    const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg/pub?gid=542404536&single=true&output=csv";
     
     try {
         const pResponse = await fetch(profilesUrl);
