@@ -1,54 +1,60 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, Filter, User } from "lucide-react";
-import { useStatsData } from "@/hooks/useStatsData";
+import { useStatsData, MatchRecord } from "@/hooks/useStatsData";
 import { PlayerDetailView } from "./PlayerDetailView"; 
 
 // Ajustamos la interfaz a TU hoja de Google Sheets (DB_Master)
 interface MatchData {
-  // Las hojas suelen devolver las keys en minúscula o tal cual el header
   jugador?: string;
   Jugador?: string;
   rival?: string;
   Rival?: string;
   categoria?: string;
   Categoria?: string;
-  category?: string; // Por si acaso el hook ya lo transformaba
+  category?: string; 
 }
 
 export const PlayerStatsView = () => {
-  const { matches, isLoadingStats } = useStatsData(); 
+  // 1. AQUI PEDIMOS LA FUNCIÓN fetchMatches AL HOOK
+  const { matches, isLoadingStats, fetchMatches } = useStatsData(); 
   
+  // 2. AQUI PONEMOS EL USEEFFECT PARA CARGAR LOS DATOS AL INICIAR
+  useEffect(() => {
+     fetchMatches();
+  }, [fetchMatches]);
+
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // --- 1. VISTA DE DETALLE ---
+  // --- VISTA DE DETALLE ---
   if (selectedPlayer) {
       return (
           <PlayerDetailView 
               playerName={selectedPlayer} 
-              onBack={() => setSelectedPlayer(null)} 
+              onBack={() => setSelectedPlayer(null)}
+              // Pasamos los partidos cargados al detalle para que no salgan vacíos
+              matchesData={matches} 
           />
       );
   }
 
-  // --- 2. LÓGICA DE FILTRADO CORREGIDA ---
+  // --- LÓGICA DE FILTRADO PARA EL LISTADO ---
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
-    // Normalizamos para encontrar la categoría sin importar si viene como "Categoria" o "category"
-    const getCat = (m: MatchData) => m.categoria || m.Categoria || m.category;
+    // Normalizamos para encontrar la categoría
+    const getCat = (m: any) => m.categoria || m.Categoria || m.category;
 
     // 1. Filtrar partidos por categoría
     const matchesInCategory = selectedCategory
-      ? matches.filter((m: MatchData) => getCat(m) === selectedCategory)
+      ? matches.filter((m: any) => getCat(m) === selectedCategory)
       : matches;
 
-    // 2. Extraer nombres únicos usando TUS columnas (Jugador / Rival)
+    // 2. Extraer nombres únicos
     const uniqueNames = new Set<string>();
     
-    matchesInCategory.forEach((m: MatchData) => {
-      // Intentamos leer 'jugador' (minúscula) o 'Jugador' (mayúscula)
+    matchesInCategory.forEach((m: any) => {
       const p1 = m.jugador || m.Jugador;
       const p2 = m.rival || m.Rival;
 
@@ -56,7 +62,7 @@ export const PlayerStatsView = () => {
       if (p2 && p2.trim() !== "" && p2 !== "BYE") uniqueNames.add(p2.trim());
     });
 
-    // 3. Convertir a lista y ordenar alfabéticamente
+    // 3. Convertir a lista y ordenar
     let players = Array.from(uniqueNames).sort();
 
     // 4. Buscador
@@ -75,15 +81,9 @@ export const PlayerStatsView = () => {
       
       {/* TÍTULO */}
       <div className="text-center mb-8 relative">
-        <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase italic drop-shadow-sm">
+        <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase italic drop-shadow-sm mt-4">
             Estadísticas por Jugador
         </h2>
-        
-        {/* BOTÓN "VOLVER" FLOTANTE (Opcional, si el global no es suficiente) */}
-        {/* Si quieres que se vea más integrado al diseño anterior: */}
-        <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2">
-             {/* Espacio reservado para acciones extra */}
-        </div>
       </div>
 
       {/* BARRA DE BÚSQUEDA */}
@@ -154,8 +154,6 @@ export const PlayerStatsView = () => {
              <p className="text-slate-300 text-sm font-medium">
                 {searchTerm ? `Sin resultados para "${searchTerm}"` : "Intenta cambiar el filtro de categoría."}
              </p>
-             {/* Debug simple (solo visible si inspeccionas, ayuda a saber si 'matches' llega vacío) */}
-             <p className="hidden">{matches?.length} registros analizados</p>
           </div>
         )}
       </div>
