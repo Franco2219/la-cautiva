@@ -177,7 +177,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan disponibles las estadisticas de los torneos!<span className="text-xl md:text-base">Vas a poder ver a todos los jugadores, su informacion, sus resultados y mucho mas!</span>
+                  Ya estan disponibles las estadisticas de los torneos y de los jugadores!<span className="text-xl md:text-base">Vas a poder ver tu historial, informacion de tus rivales, sus resultados y mucho mas!</span>
                 </p>
               </div>
             </div>
