@@ -1,9 +1,7 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
-// EL GID DE TU HOJA "DATA" (Confirmado por tu captura)
-const SHEET_GID_DATA = "1288809117"; 
-
+// --- INTERFACES ---
 export interface ChampionRecord {
   year: string;
   tournament: string;
@@ -14,7 +12,7 @@ export interface ChampionRecord {
 }
 
 export interface MatchRecord {
-  // Campos obligatorios para que no te de error la línea roja
+  // Campos obligatorios
   Torneo: string;
   Categoria: string;
   Fase: string;
@@ -22,7 +20,7 @@ export interface MatchRecord {
   Rival: string;
   Resultado: string;
   Fecha: string;
-  // Alias
+  // Alias para compatibilidad con componentes
   tournament: string;
   category: string;
   round: string;
@@ -32,7 +30,7 @@ export interface MatchRecord {
   score: string;
 }
 
-// Parser CSV
+// Parser robusto que maneja comas dentro de nombres (ej: "Perez, Juan")
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
   return lines.map(line => {
@@ -63,7 +61,6 @@ export const useStatsData = () => {
   // 1. HISTORIAL CAMPEONES
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
-    // Este endpoint suele funcionar bien por nombre de hoja
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
 
     try {
@@ -96,26 +93,24 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS (Usando endpoint PUB + GID)
+  // 2. BUSCAR PARTIDOS (Usando TU enlace publicado)
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // CAMBIO CLAVE: Usamos 'pub' en vez de 'gviz'. Esto OBLIGA a Google a respetar el GID.
-    // Requiere que hayas hecho el Paso 1 (Publicar en la web)
-    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/pub?gid=${SHEET_GID_DATA}&single=true&output=csv`;
+    // USAMOS EL ENLACE QUE ME PASASTE
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Error de red o hoja no publicada");
-        
         const csvText = await response.text();
         const rows = robustCSVParser(csvText);
 
         const mappedMatches = rows.slice(1).map(row => {
-            // Verificación básica de columnas
+            // Verificación básica: Si la fila tiene menos de 4 columnas, la ignoramos
             if (row.length < 4) return null;
 
-            // Mapeo completo (¡NO BORRES ESTAS LÍNEAS! Son las que faltaban en tu captura)
+            // MAPEO COMPLETO (¡Esto es lo que faltaba!)
+            // A=0, B=1, C=2, D=3, E=4, F=5, G=6
             return {
                 Torneo: row[0] || "",
                 Categoria: row[1] || "",
@@ -125,7 +120,7 @@ export const useStatsData = () => {
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
                 
-                // Alias en inglés
+                // Alias en inglés para que el componente funcione
                 tournament: row[0] || "",
                 category: row[1] || "",
                 round: row[2] || "",
@@ -137,16 +132,17 @@ export const useStatsData = () => {
         }).filter((m): m is MatchRecord => {
             // Filtros de seguridad
             if (!m) return false;
+            // Que tenga datos reales y no sea el encabezado
             if (!m.Jugador || !m.Torneo) return false;
-            if (m.Jugador === "Jugador") return false; // Ignorar header repetido
+            if (m.Jugador === "Jugador") return false; 
             
-            // Filtro anti-basura (por si acaso)
+            // Filtro anti-basura (por si acaso lee otra cosa)
             if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 4) return false;
             
             return true; 
         });
 
-        console.log(`Partidos cargados: ${mappedMatches.length}`);
+        console.log(`Partidos cargados correctamente: ${mappedMatches.length}`);
         setMatches(mappedMatches);
 
     } catch (error) {
