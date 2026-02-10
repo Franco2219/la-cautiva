@@ -27,7 +27,7 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
 
       // 2. Contar victorias y GUARDAR TORNEOS por jugador
       const winCounts: Record<string, number> = {};
-      const winTrophies: Record<string, string[]> = {}; // Guardamos los códigos de torneos ganados
+      const winTrophies: Record<string, string[]> = {}; 
 
       filteredByCat.forEach(record => {
           const name = record.champion.trim();
@@ -35,11 +35,9 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
 
           if (!winTrophies[name]) winTrophies[name] = [];
           
-          // Intentamos matchear el nombre del Excel con nuestros IDs internos para sacar el logo
           const tourObj = tournaments.find(t => t.name.toLowerCase() === record.tournament.toLowerCase().trim()) 
                           || tournaments.find(t => t.id.toLowerCase() === record.tournament.toLowerCase().trim());
           
-          // Si encontramos el torneo usamos su short code, sino usamos el nombre tal cual
           const tourCode = tourObj ? tourObj.short : record.tournament;
           winTrophies[name].push(tourCode);
       });
@@ -49,7 +47,6 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Variable auxiliar para manejar las posiciones con empate
       let currentRank = 0;
       let lastCount = -1;
 
@@ -97,11 +94,10 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                 </div>
             </div>
 
-            {/* Lista de Ganadores */}
+            {/* Lista de Ganadores (DISEÑO INVERTIDO) */}
             <div className="space-y-3 pb-12">
                 {ranking.length > 0 ? (
                     ranking.map((player, idx) => {
-                        // LÓGICA DE POSICIONES CON EMPATE
                         if (player.count !== lastCount) {
                             currentRank = idx + 1;
                             lastCount = player.count;
@@ -110,21 +106,25 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                         const isFirst = currentRank === 1;
 
                         return (
-                            <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group gap-2 md:gap-0">
+                            <div key={idx} className="bg-[#b35a38] rounded-2xl shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center border-l-8 border-white hover:shadow-md transition-all group gap-2 md:gap-0">
                                 <div className="flex items-center w-full md:w-auto">
-                                    <div className="w-14 text-center font-black text-slate-300 text-3xl italic mr-2 shrink-0">
+                                    {/* POSICIÓN EN BLANCO TRASLUCIDO */}
+                                    <div className="w-14 text-center font-black text-white/50 text-3xl italic mr-2 shrink-0">
                                         #{currentRank}
                                     </div>
                                     <div className="flex-1 flex flex-wrap items-baseline gap-2">
-                                        <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
+                                        {/* NOMBRE EN NEGRO */}
+                                        <span className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight leading-none drop-shadow-sm">
                                             {player.name}
                                         </span>
+                                        {/* CONTADOR EN BLANCO */}
                                         {player.count > 1 && (
-                                            <span className="text-[#b35a38] font-black text-xl leading-none">
+                                            <span className="text-white font-black text-xl leading-none">
                                                 ({player.count})
                                             </span>
                                         )}
-                                        {isFirst && <Trophy className="w-6 h-6 text-amber-400 drop-shadow-sm shrink-0 md:hidden ml-2" />}
+                                        {/* COPA EN BLANCO (Móvil) */}
+                                        {isFirst && <Trophy className="w-6 h-6 text-white drop-shadow-sm shrink-0 md:hidden ml-2" />}
                                     </div>
                                 </div>
 
@@ -146,8 +146,8 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                                     })}
                                 </div>
 
-                                {/* Copa para los primeros (Desktop) */}
-                                {isFirst && <Trophy className="w-8 h-8 text-amber-400 drop-shadow-sm shrink-0 ml-auto hidden md:block" />}
+                                {/* COPA EN BLANCO (Desktop) */}
+                                {isFirst && <Trophy className="w-8 h-8 text-white drop-shadow-sm shrink-0 ml-auto hidden md:block" />}
                             </div>
                         );
                     })
@@ -301,6 +301,7 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none mb-0.5">Campeón</span>
                          <span className="font-black text-xl text-slate-800 uppercase leading-none flex items-baseline gap-2">
                             {record.champion}
+                            {/* CONTADOR EN PARENTESIS COLOR */}
                             {record.winCount && record.winCount > 1 && (
                                <span className={`text-lg font-black ml-1 ${textColorClass}`}>
                                  ({record.winCount})
