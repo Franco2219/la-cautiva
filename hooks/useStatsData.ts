@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-const CACHE_KEY_MATCHES = "db_master_cache_v1"; // Nombre para guardar en memoria
+const CACHE_KEY_MATCHES = "db_master_cache_v2"; // Nombre para guardar en memoria
 const CACHE_TIME = 1000 * 60 * 30; // 30 Minutos (tiempo que duran los datos sin recargar)
 
 const SHEET_GID_DATA = "1288809117"; 
