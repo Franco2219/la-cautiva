@@ -43,6 +43,9 @@ export default function Home() {
     sendContactForm
   } = useTournamentData();
 
+  // Estado para controlar la navegación interna del historial
+  const [historyTourSelected, setHistoryTourSelected] = useState<string | null>(null);
+
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -63,13 +66,22 @@ export default function Home() {
     }
   }
 
+  // Función de vuelta personalizada para manejar el historial
+  const handleBackAction = () => {
+    if (navState.level === "stats-tournaments" && historyTourSelected) {
+        setHistoryTourSelected(null); // Volver a la grilla de torneos
+    } else {
+        goBack(); // Comportamiento normal (volver al menú anterior)
+    }
+  }
+
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance < -minSwipeDistance; 
     
     if (isLeftSwipe && navState.level !== "home") {
-      goBack(); 
+        handleBackAction(); 
     }
   }
 
@@ -134,17 +146,17 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER GLOBAL --- */}
+        {/* --- BOTÓN VOLVER GLOBAL MODIFICADO --- */}
         {navState.level !== "home" && (
             <div className="flex justify-center mb-8 w-full print:hidden">
                 <Button 
-                    onClick={goBack} 
+                    onClick={handleBackAction} // Usamos la nueva función
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
                     <ArrowLeft className="w-6 h-6 shrink-0" />
                     <span>
                         {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
-                         navState.level === "stats-tournaments" ? "VOLVER A TORNEOS" : 
+                         (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : // Solo si hay torneo seleccionado
                          "VOLVER"}
                     </span>
                 </Button>
@@ -231,7 +243,11 @@ export default function Home() {
             )}
 
             {navState.level === "stats-tournaments" && (
-               <TournamentHistoryView onBack={() => setNavState({ level: "statistics-menu" })} />
+               // Pasamos el estado y el setter al componente
+               <TournamentHistoryView 
+                 selectedTour={historyTourSelected} 
+                 onSelectTour={setHistoryTourSelected} 
+               />
             )}
 
           {navState.level === "year-selection" && (
@@ -501,6 +517,7 @@ export default function Home() {
                <div className="flex-1"><h2 className="text-2xl md:text-3xl font-black uppercase tracking-wider">{getTournamentName(activeTour)} - Fase de Grupos</h2><p className="text-xs opacity-80 mt-1 font-bold uppercase">{navState.currentCat}</p></div>
                <div className="w-20 h-20 flex items-center justify-center relative">{currentStyle.pointsLogo && <Image src={currentStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}</div>
             </div>
+            {/* AÑADIDO: Clase group-grid para controlar los saltos de página */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start group-grid">
               {groupData.map((group, idx) => <GroupTable key={idx} group={group} tournamentShort={activeTour} />)}
             </div>
@@ -521,10 +538,12 @@ export default function Home() {
 
       </div>
       
+      {/* Footer con el botón de Contacto - OCULTO EN IMPRESIÓN */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse print:hidden">
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
+             // AVISO A GOOGLE: CONTACTO
              sendGAEvent('event', 'button_click', { event_label: 'Footer: Contacto' });
              setNavState({ level: "contact" });
          }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>

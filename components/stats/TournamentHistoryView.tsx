@@ -5,13 +5,15 @@ import { tournaments } from "@/lib/constants";
 import { getTournamentStyle, getTournamentName } from "@/lib/utils";
 import { useStatsData } from "@/hooks/useStatsData";
 
+// Interfaz actualizada para recibir el estado desde el padre
 interface TournamentHistoryViewProps {
-  onBack: () => void;
+  selectedTour: string | null;
+  onSelectTour: (tour: string | null) => void;
 }
 
-export const TournamentHistoryView = ({ onBack }: TournamentHistoryViewProps) => {
+export const TournamentHistoryView = ({ selectedTour, onSelectTour }: TournamentHistoryViewProps) => {
   const { historyData, isLoadingStats, fetchChampionHistory } = useStatsData();
-  const [selectedTourShort, setSelectedTourShort] = useState<string | null>(null);
+  // El estado del torneo seleccionado ahora viene por props
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export const TournamentHistoryView = ({ onBack }: TournamentHistoryViewProps) =>
   }, [fetchChampionHistory]);
 
   // --- VISTA 1: GRILLA DE SELECCIÓN DE TORNEOS ---
-  if (!selectedTourShort) {
+  if (!selectedTour) {
     return (
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-4xl mx-auto px-2 md:px-0">
         <h2 className="text-3xl font-black text-[#b35a38] uppercase italic mb-8 text-center mt-4">
@@ -31,14 +33,15 @@ export const TournamentHistoryView = ({ onBack }: TournamentHistoryViewProps) =>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {tournaments
-              // FILTRO CORREGIDO: Usamos ID y toLowerCase para asegurar que se borren
+              // FILTRO: Sacamos todo lo que tenga "adelaide" o "s8" en su ID
               .filter(t => !t.id.toLowerCase().includes("adelaide") && !t.id.toLowerCase().includes("s8"))
               .map((t) => {
               const style = getTournamentStyle(t.short);
               return (
                 <div 
                   key={t.id}
-                  onClick={() => setSelectedTourShort(t.short)}
+                  // Al hacer click, usamos la función del padre para actualizar el estado global
+                  onClick={() => onSelectTour(t.short)}
                   className={`${style.color} border-4 border-white/20 rounded-[2rem] p-4 md:p-6 flex flex-col items-center justify-center gap-3 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 aspect-square group relative overflow-hidden`}
                 >
                   <div className="relative w-20 h-20 md:w-28 md:h-28 drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-110 duration-300">
@@ -64,9 +67,12 @@ export const TournamentHistoryView = ({ onBack }: TournamentHistoryViewProps) =>
   }
 
   // --- VISTA 2: DETALLE DEL TORNEO SELECCIONADO ---
-  const style = getTournamentStyle(selectedTourShort);
-  const tourName = getTournamentName(selectedTourShort);
+  const style = getTournamentStyle(selectedTour);
+  const tourName = getTournamentName(selectedTour);
   
+  // Obtenemos la clase de color de TEXTO basada en el color de FONDO del torneo
+  const textColorClass = style.color.replace('bg-', 'text-');
+
   const filteredData = historyData.filter(d => {
     const excelNameBtn = d.tournament.toLowerCase().trim();
     const appNameBtn = tourName.toLowerCase().trim();
@@ -143,9 +149,10 @@ export const TournamentHistoryView = ({ onBack }: TournamentHistoryViewProps) =>
                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none mb-0.5">Campeón</span>
                          <span className="font-black text-xl text-slate-800 uppercase leading-none flex items-baseline gap-2">
                             {record.champion}
+                            {/* MODIFICADO: Contador entre paréntesis y con el color del texto del torneo */}
                             {record.winCount && record.winCount > 1 && (
-                               <span className={`text-sm text-white px-2 rounded-full font-black relative -top-0.5 ${style.color}`}>
-                                 x{record.winCount}
+                               <span className={`text-lg font-black ml-1 ${textColorClass}`}>
+                                 ({record.winCount})
                                </span>
                             )}
                          </span>
