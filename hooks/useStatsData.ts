@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
-import { parseCSV } from "@/lib/utils";
 
+// --- INTERFACES ---
 export interface ChampionRecord {
   year: string;
   tournament: string;
@@ -11,7 +11,6 @@ export interface ChampionRecord {
   winCount?: number; 
 }
 
-// Nueva interfaz para los partidos de DB_Master
 export interface MatchRecord {
   Torneo: string;
   Categoria: string;
@@ -20,29 +19,55 @@ export interface MatchRecord {
   Rival: string;
   Resultado: string;
   Fecha: string;
-  // Alias en minúscula por compatibilidad
+  // Alias para compatibilidad
   tournament: string;
   category: string;
   round: string;
-  winner: string; // Usaremos Jugador como winner genérico para compatibilidad
-  loser: string;  // Usaremos Rival como loser genérico
+  winner: string; 
+  loser: string;  
   date: string;
 }
 
+// --- PARSER ROBUSTO (Maneja comas dentro de comillas) ---
+const robustCSVParser = (csvText: string) => {
+  const lines = csvText.split(/\r?\n/);
+  
+  return lines.map(line => {
+    const values = [];
+    let current = '';
+    let inQuote = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuote = !inQuote;
+      } else if (char === ',' && !inQuote) {
+        values.push(current.trim().replace(/^"|"$/g, '')); // Quitar comillas extra
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim().replace(/^"|"$/g, ''));
+    return values;
+  });
+};
+
 export const useStatsData = () => {
   const [historyData, setHistoryData] = useState<ChampionRecord[]>([]);
-  const [matches, setMatches] = useState<MatchRecord[]>([]); // <--- ESTADO NUEVO
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   // 1. TRAER HISTORIAL DE CAMPEONES
   const fetchChampionHistory = useCallback(async () => {
+    // ... (Esta parte estaba bien, la mantenemos igual)
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
 
     try {
       const response = await fetch(url);
       const csvText = await response.text();
-      const rows = parseCSV(csvText);
+      const rows = robustCSVParser(csvText); // Usamos el nuevo parser
 
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
@@ -72,37 +97,52 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. TRAER PARTIDOS DE DB_MASTER (NUEVA FUNCIÓN)
+  // 2. TRAER PARTIDOS DE DB_MASTER
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
-    // Conectamos con la hoja "DB_Master"
+    // IMPORTANTE: Asegúrate que la hoja se llame DB_Master (sin espacios al final)
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=DB_Master`;
 
     try {
         const response = await fetch(url);
         const csvText = await response.text();
-        const rows = parseCSV(csvText);
+        
+        // Usamos el parser robusto aquí también
+        const rows = robustCSVParser(csvText);
 
-        // Mapeamos las columnas segun tu foto:
-        // A=Torneo, B=Categoria, C=Fase, D=Jugador, E=Rival, F=Resultado, G=Fecha
-        const mappedMatches = rows.slice(1).map(row => ({
-            Torneo: row[0] || "",
-            Categoria: row[1] || "",
-            Fase: row[2] || "",
-            Jugador: row[3] || "",
-            Rival: row[4] || "",
-            Resultado: row[5] || "",
-            Fecha: row[6] || "",
+        const mappedMatches = rows.slice(1).map(row => {
+            // Validación extra: Si la fila no tiene suficientes columnas, la ignoramos
+            if (row.length < 5) return null;
+
+            return {
+                Torneo: row[0] || "",
+                Categoria: row[1] || "",
+                Fase: row[2] || "",
+                Jugador: row[3] || "",
+                Rival: row[4] || "",
+                Resultado: row[5] || "",
+                Fecha: row[6] || "",
+                
+                // Duplicados
+                tournament: row[0] || "",
+                category: row[1] || "",
+                round: row[2] || "",
+                winner: row[3] || "",
+                loser: row[4] || "",
+                score: row[5] || "",
+                date: row[6] || ""
+            };
+        }).filter((m): m is MatchRecord => {
+            // --- FILTROS DE SEGURIDAD ---
+            if (!m) return false; // Fila nula
+            if (!m.Jugador || !m.Torneo) return false; // Datos vacíos
+            if (m.Jugador === "Jugador") return false; // Es el header repetido
             
-            // Duplicamos datos en inglés/minúscula para que los componentes lo encuentren fácil
-            tournament: row[0] || "",
-            category: row[1] || "",
-            round: row[2] || "",
-            winner: row[3] || "", // Asumimos Jugador en col D
-            loser: row[4] || "",  // Asumimos Rival en col E
-            score: row[5] || "",
-            date: row[6] || ""
-        })).filter(m => m.Jugador && m.Torneo); // Filtramos filas vacías
+            // FILTRO CLAVE: Si el nombre del jugador es un número (ej: "100", "200"), ES BASURA DE OTRA HOJA
+            if (!isNaN(parseFloat(m.Jugador)) && isFinite(Number(m.Jugador))) return false;
+            
+            return true; 
+        });
 
         setMatches(mappedMatches);
     } catch (error) {
@@ -114,9 +154,9 @@ export const useStatsData = () => {
 
   return {
     historyData,
-    matches,               // <--- EXPORTAMOS LOS PARTIDOS
+    matches,
     isLoadingStats,
     fetchChampionHistory,
-    fetchMatches           // <--- EXPORTAMOS LA FUNCIÓN DE CARGA
+    fetchMatches
   };
 };
