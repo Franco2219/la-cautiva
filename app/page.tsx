@@ -14,6 +14,8 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
+// --- NUEVO IMPORT ---
+import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
 export default function Home() {
   const {
@@ -68,10 +70,16 @@ export default function Home() {
 
   // Función de vuelta personalizada para manejar el historial
   const handleBackAction = () => {
+    // Si estamos en historial de torneos y hay uno seleccionado, volvemos a la lista
     if (navState.level === "stats-tournaments" && historyTourSelected) {
-        setHistoryTourSelected(null); // Volver a la grilla de torneos
-    } else {
-        goBack(); // Comportamiento normal (volver al menú anterior)
+        setHistoryTourSelected(null); 
+    } 
+    // Si estamos en stats de jugador (dentro del componente PlayerStatsView manejan su propio "volver" interno si quisieras, 
+    // pero el botón global aquí te saca del módulo).
+    // NOTA: PlayerStatsView tiene su propio botón "Volver al listado". 
+    // Este botón global "VOLVER" te llevará al menú de Estadísticas.
+    else {
+        goBack(); 
     }
   }
 
@@ -222,25 +230,11 @@ export default function Home() {
             </div>
             )}
 
+            {/* --- AQUÍ ESTÁ EL CAMBIO --- */}
             {navState.level === "stats-player" && (
-            <div className="bg-white border-4 border-[#b35a38]/20 rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-w-2xl mx-auto text-center animate-in zoom-in duration-300">
-                <TrendingUp className="w-24 h-24 text-[#b35a38] mx-auto mb-6 opacity-80" />
-                <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase mb-6 italic">
-                    Estadísticas Personales
-                </h2>
-                <div className="space-y-4 text-slate-600 font-medium text-lg leading-relaxed">
-                    <p>
-                        <span className="font-bold text-slate-800">¡Muy pronto!</span> Estamos trabajando para que tengas todas tus estadísticas de los <span className="font-bold">partidos de torneos.</span>
-                    </p>
-                    <p>
-                        Vas a poder consultar tu "Head to Head" (historial contra rivales), revisar tu desempeño en cada torneo y categoría, y analizar todos tus resultados del año en un solo lugar.
-                    </p>
-                </div>
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200">
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Próximamente</p>
-                </div>
-            </div>
+               <PlayerStatsView />
             )}
+            {/* --------------------------- */}
 
             {navState.level === "stats-tournaments" && (
                // Pasamos el estado y el setter al componente

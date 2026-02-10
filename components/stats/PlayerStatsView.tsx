@@ -1,45 +1,55 @@
 import React, { useState, useMemo } from "react";
 import { Search, Filter, User } from "lucide-react";
 import { useStatsData } from "@/hooks/useStatsData";
+import { PlayerDetailView } from "./PlayerDetailView"; 
 
-// Definimos una interfaz básica para lo que esperamos de un partido en Db_Master
-// Ajusta estos campos si en tu DB se llaman diferente (ej: 'ganador', 'perdedor', etc.)
+// Ajusta la interfaz si tus datos vienen con otros nombres
 interface MatchData {
   winner: string;
   loser: string;
   category: string;
-  // ... otros campos
 }
 
 export const PlayerStatsView = () => {
-  // Asumimos que el hook nos provee la data maestra de partidos.
-  // NOTA: Si tu hook 'useStatsData' aún no exporta 'matches' (o dbMaster),
-  // asegúrate de retornarlo ahí.
   const { matches, isLoadingStats } = useStatsData(); 
   
+  // ESTADO PARA NAVEGACIÓN: Si hay un jugador seleccionado, mostramos su perfil
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+
+  // ESTADOS DE FILTRO
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Lógica para extraer jugadores únicos y filtrarlos
+  // --- 1. SI HAY JUGADOR SELECCIONADO, RENDERIZAMOS SU DETALLE ---
+  if (selectedPlayer) {
+      return (
+          <PlayerDetailView 
+              playerName={selectedPlayer} 
+              onBack={() => setSelectedPlayer(null)} 
+          />
+      );
+  }
+
+  // --- 2. LÓGICA DE FILTRADO PARA EL LISTADO GENERAL ---
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
-    // 1. Primero filtramos los partidos según la categoría seleccionada (si hay una)
+    // Filtrar partidos por categoría seleccionada
     const matchesInCategory = selectedCategory
       ? matches.filter((m: MatchData) => m.category === selectedCategory)
       : matches;
 
-    // 2. Extraemos todos los nombres únicos (ganadores y perdedores) de esos partidos
+    // Extraer nombres únicos (ganadores y perdedores)
     const uniqueNames = new Set<string>();
     matchesInCategory.forEach((m: MatchData) => {
       if (m.winner) uniqueNames.add(m.winner.trim());
       if (m.loser) uniqueNames.add(m.loser.trim());
     });
 
-    // 3. Convertimos a array
+    // Convertir a lista ordenada
     let players = Array.from(uniqueNames).sort();
 
-    // 4. Aplicamos el buscador por nombre
+    // Filtrar por buscador de nombre
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       players = players.filter((name) =>
@@ -50,15 +60,16 @@ export const PlayerStatsView = () => {
     return players;
   }, [matches, selectedCategory, searchTerm]);
 
+  // --- 3. RENDERIZADO DEL LISTADO (BUSCADOR + GRILLA) ---
   return (
     <div className="w-full max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
       
-      {/* --- TÍTULO --- */}
+      {/* TÍTULO */}
       <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] uppercase italic mb-6 text-center mt-4 drop-shadow-sm">
         Estadísticas por Jugador
       </h2>
 
-      {/* --- BARRA DE BÚSQUEDA --- */}
+      {/* BARRA DE BÚSQUEDA */}
       <div className="relative max-w-xl mx-auto mb-6">
         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
           <Search className="w-5 h-5 text-slate-400" />
@@ -72,7 +83,7 @@ export const PlayerStatsView = () => {
         />
       </div>
 
-      {/* --- FILTROS DE CATEGORÍA --- */}
+      {/* FILTROS DE CATEGORÍA */}
       <div className="mb-10 text-center space-y-3">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
            <Filter className="w-3 h-3" /> Filtrar por categoría
@@ -94,7 +105,7 @@ export const PlayerStatsView = () => {
         </div>
       </div>
 
-      {/* --- LISTADO DE JUGADORES --- */}
+      {/* GRILLA DE JUGADORES */}
       <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden min-h-[300px]">
         {isLoadingStats ? (
            <div className="flex justify-center items-center py-20">
@@ -105,8 +116,7 @@ export const PlayerStatsView = () => {
             {filteredPlayers.map((player, idx) => (
               <div 
                 key={idx}
-                // Aquí dejaremos el onClick listo para la "Segunda Tarea"
-                onClick={() => console.log("Click en jugador:", player)}
+                onClick={() => setSelectedPlayer(player)} // <--- AQUÍ SE ACTIVA LA VISTA DE DETALLE
                 className="bg-white p-5 flex items-center gap-4 cursor-pointer hover:bg-orange-50 transition-colors group"
               >
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300">
