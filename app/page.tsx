@@ -14,7 +14,6 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
-// --- AHORA SI LO USAMOS ---
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
 export default function Home() {
@@ -45,8 +44,10 @@ export default function Home() {
     sendContactForm
   } = useTournamentData();
 
-  // Estado para controlar la navegación interna del historial
+  // Estado para historial de torneos
   const [historyTourSelected, setHistoryTourSelected] = useState<string | null>(null);
+  // NUEVO ESTADO: Para historial de jugadores
+  const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<string | null>(null);
 
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -68,11 +69,17 @@ export default function Home() {
     }
   }
 
-  // Función de vuelta personalizada para manejar el historial
+  // --- LOGICA DEL BOTON VOLVER MODIFICADA ---
   const handleBackAction = () => {
+    // Si estamos en stats de torneos y hay uno seleccionado, volvemos a la lista
     if (navState.level === "stats-tournaments" && historyTourSelected) {
         setHistoryTourSelected(null); 
     } 
+    // NUEVO: Si estamos en stats de jugador y hay uno seleccionado, volvemos a la lista
+    else if (navState.level === "stats-player" && selectedPlayerForStats) {
+        setSelectedPlayerForStats(null);
+    }
+    // Si no, comportamiento normal (volver al menú anterior)
     else {
         goBack(); 
     }
@@ -157,9 +164,11 @@ export default function Home() {
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
                     <ArrowLeft className="w-6 h-6 shrink-0" />
+                    {/* ETIQUETA DINÁMICA DEL BOTÓN */}
                     <span>
                         {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
                          (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : 
+                         (navState.level === "stats-player" && selectedPlayerForStats) ? "VOLVER AL LISTADO" : // NUEVA ETIQUETA
                          "VOLVER"}
                     </span>
                 </Button>
@@ -177,7 +186,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan disponibles las estadisticas de los torneos y de los jugadores!<span className="text-xl md:text-base">  Vas a poder ver tu historial, informacion de tus rivales, sus resultados y mucho mas!</span>
+                  Ya comenzó el torneo! <span className="text-xl md:text-2xl">+140</span> inscriptos en el Australian Open, mira los resultados actualizados al momento!
                 </p>
               </div>
             </div>
@@ -226,7 +235,11 @@ export default function Home() {
             )}
 
             {navState.level === "stats-player" && (
-               <PlayerStatsView />
+               <PlayerStatsView 
+                 // PASAMOS EL ESTADO Y EL SETTER DESDE AQUÍ
+                 selectedPlayer={selectedPlayerForStats}
+                 onSelectPlayer={setSelectedPlayerForStats}
+               />
             )}
 
             {navState.level === "stats-tournaments" && (
