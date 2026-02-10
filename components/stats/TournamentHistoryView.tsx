@@ -113,8 +113,8 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                                         #{currentRank}
                                     </div>
                                     <div className="flex-1 flex flex-wrap items-baseline gap-2">
-                                        {/* NOMBRE EN NEGRO */}
-                                        <span className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight leading-none drop-shadow-sm">
+                                        {/* NOMBRE AHORA EN BLANCO (Antes text-slate-900) */}
+                                        <span className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-none drop-shadow-sm">
                                             {player.name}
                                         </span>
                                         {/* CONTADOR EN BLANCO */}
@@ -128,13 +128,14 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                                     </div>
                                 </div>
 
-                                {/* LOGOS DE LOS TORNEOS GANADOS */}
+                                {/* LOGOS DE LOS TORNEOS GANADOS - AGRANDADOS APENAS */}
                                 <div className="flex flex-wrap gap-1.5 ml-14 md:ml-4 mt-1 md:mt-0">
                                     {winTrophies[player.name] && winTrophies[player.name].map((tourCode, tIdx) => {
                                         const tStyle = getTournamentStyle(tourCode);
                                         if (!tStyle.logo) return null;
                                         return (
-                                            <div key={tIdx} className="relative w-6 h-6 md:w-7 md:h-7 hover:scale-125 transition-transform" title={tourCode}>
+                                            /* Se cambió w-6 h-6 a w-8 h-8 y md:w-7 a md:w-9 */
+                                            <div key={tIdx} className="relative w-8 h-8 md:w-9 md:h-9 hover:scale-125 transition-transform" title={tourCode}>
                                                 <Image 
                                                     src={tStyle.logo} 
                                                     alt={tourCode} 
