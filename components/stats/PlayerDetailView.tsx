@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ArrowLeft, Search, User } from "lucide-react";
+import { ArrowLeft, Search, User, Crown } from "lucide-react"; // Agregué Crown
 import Image from "next/image"; 
 
 interface MatchRecord {
@@ -19,7 +19,6 @@ interface MatchRecord {
   score: string;
 }
 
-// Interfaz para la data del perfil
 interface ProfileData {
   name: string;
   age: string;
@@ -31,26 +30,24 @@ interface PlayerDetailViewProps {
   playerName: string;
   onBack: () => void;
   matchesData: MatchRecord[];
-  profileData?: ProfileData | null; // <--- AHORA ACEPTAMOS ESTE DATO
+  profileData?: ProfileData | null;
 }
 
 export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData }: PlayerDetailViewProps) => {
   const [rivalSearch, setRivalSearch] = useState("");
 
-  // --- HELPERS BLINDADOS ---
   const safeStr = (val: any) => {
       if (val === null || val === undefined) return "";
       return String(val).trim();
   };
 
-  const getP1 = (m: any) => safeStr(m.jugador || m.Jugador);
-  const getP2 = (m: any) => safeStr(m.rival || m.Rival);
+  const getP1 = (m: any) => safeStr(m.jugador || m.Jugador); // SIEMPRE ES EL GANADOR
+  const getP2 = (m: any) => safeStr(m.rival || m.Rival);     // SIEMPRE ES EL PERDEDOR
   const getRound = (m: any) => safeStr(m.round || m.Fase || "-");
   const getScore = (m: any) => safeStr(m.score || m.Resultado || "-");
   const getTour = (m: any) => safeStr(m.tournament || m.Torneo || "-");
   const getDate = (m: any) => safeStr(m.date || m.Fecha || "");
 
-  // --- PARSER DE FECHAS SEGURO ---
   const parseDate = (dateVal: any): Date | null => {
     const dateStr = safeStr(dateVal);
     if (!dateStr) return null;
@@ -70,7 +67,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     }
   };
 
-  // --- FILTRAR PARTIDOS ---
   const playerMatches = useMemo(() => {
     if (!matchesData || !Array.isArray(matchesData)) return [];
 
@@ -87,7 +83,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     });
   }, [matchesData, playerName]);
 
-  // --- MEJOR RESULTADO 2026 ---
   const bestResults2026 = useMemo(() => {
     const matches2026 = playerMatches.filter((m: any) => {
        const d = parseDate(getDate(m));
@@ -114,7 +109,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
 
         if (roundKey === "final") {
             const p1 = getP1(m);
-            // Si el jugador es el "P1" (Columna Jugador), es el que ganó -> CAMPEÓN
             if (p1 === playerName) {
                 points = 12;
                 resultLabel = `Campeón ${tourName}`;
@@ -151,7 +145,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     return [...new Set(bestTournaments)];
   }, [playerMatches, playerName]);
 
-  // --- FILTRO RIVAL ---
   const displayedMatches = useMemo(() => {
     if (!rivalSearch) return playerMatches;
     const search = rivalSearch.toLowerCase();
@@ -163,7 +156,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     });
   }, [playerMatches, rivalSearch, playerName]);
 
-  // Helpers de visualización
   const lastCategory = playerMatches.length > 0 ? safeStr((playerMatches[0] as any).Categoria || (playerMatches[0] as any).category) : "-";
   
   const formatDateDisplay = (dateVal: any) => {
@@ -189,7 +181,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 flex flex-col items-center text-center mb-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#b35a38]/10 to-transparent pointer-events-none" />
         
-        {/* AVATAR: LÓGICA PARA FOTO O ICONO */}
         <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-white shadow-lg bg-slate-200 overflow-hidden relative mb-4 z-10 flex items-center justify-center">
              {profileData && profileData.photo ? (
                  <img 
@@ -206,7 +197,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
             {playerName}
         </h1>
         <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full z-10">
-            {/* USAMOS LA DATA REAL O EL GUIÓN SI NO HAY */}
             <InfoBox label="Mano Habil" value={profileData?.hand || "-"} />
             <InfoBox label="Edad" value={profileData?.age || "-"} />
             
@@ -238,21 +228,43 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
       <div className="space-y-3">
         {displayedMatches.length > 0 ? (
             displayedMatches.map((match, idx) => {
-                const p1 = getP1(match);
-                const p2 = getP2(match);
-                const isP1 = p1 === playerName;
+                const p1 = getP1(match); // GANADOR
+                const p2 = getP2(match); // PERDEDOR
                 
+                // Determinamos si el dueño del perfil ganó este partido
+                const didProfileWin = (p1 === playerName);
+                const isP1Profile = (p1 === playerName);
+
                 return (
-                    <div key={idx} className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4 border-l-4 border-slate-300">
+                    <div key={idx} className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4 border-l-4 ${didProfileWin ? 'border-green-500' : 'border-red-400'}`}>
                         <div className="flex flex-col items-center min-w-[60px] border-r border-slate-100 pr-4">
                             <span className="text-xs font-black text-slate-400 uppercase">{formatDateDisplay(getDate(match))}</span>
                             <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full mt-1">{getTour(match)}</span>
                         </div>
+                        
+                        {/* SCORE CENTRAL */}
                         <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4 text-center">
-                            <div className={`text-right font-bold text-sm md:text-base ${isP1 ? 'text-slate-900' : 'text-slate-500'}`}>{p1}</div>
-                            <div className="bg-slate-100 px-3 py-1 rounded-lg font-black text-slate-700 tracking-widest text-sm whitespace-nowrap">{getScore(match)}</div>
-                            <div className={`text-left font-bold text-sm md:text-base ${!isP1 ? 'text-slate-900' : 'text-slate-500'}`}>{p2}</div>
+                            
+                            {/* JUGADOR IZQUIERDA (GANADOR) */}
+                            <div className={`flex items-center justify-end gap-1 font-bold text-sm md:text-base ${isP1Profile ? 'text-slate-900' : 'text-slate-500'}`}>
+                                {p1} <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            </div>
+
+                            {/* RESULTADO (SEMÁFORO) */}
+                            <div className={`px-3 py-1 rounded-lg font-black tracking-widest text-sm whitespace-nowrap border-2 ${
+                                didProfileWin 
+                                ? 'bg-green-100 text-green-700 border-green-200' 
+                                : 'bg-red-50 text-red-700 border-red-100'
+                            }`}>
+                                {getScore(match)}
+                            </div>
+
+                            {/* JUGADOR DERECHA (PERDEDOR) */}
+                            <div className={`text-left font-bold text-sm md:text-base ${!isP1Profile ? 'text-slate-900' : 'text-slate-500'}`}>
+                                {p2}
+                            </div>
                         </div>
+
                         <div className="hidden md:flex flex-col items-end min-w-[80px] pl-4 border-l border-slate-100">
                              <span className="text-xs font-bold text-slate-400 uppercase">Instancia</span>
                              <span className="font-black text-slate-700 text-sm uppercase">{getRound(match)}</span>
