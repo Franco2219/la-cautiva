@@ -14,7 +14,7 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
-// --- DEJAMOS EL IMPORT PERO NO LO USAMOS POR AHORA ---
+// --- AHORA SI LO USAMOS ---
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
 export default function Home() {
@@ -225,21 +225,9 @@ export default function Home() {
             </div>
             )}
 
-            {/* --- CARTEL DE CONSTRUCCIÓN PROVISORIO --- */}
             {navState.level === "stats-player" && (
-               <div className="bg-white border-4 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto animate-in zoom-in duration-300">
-                  <div className="p-10 border-4 border-dashed border-orange-100 rounded-3xl bg-orange-50/50">
-                    <Construction className="w-24 h-24 text-[#b35a38] mx-auto mb-6 animate-pulse" />
-                    <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] mb-4 uppercase italic">
-                       Sección en Construcción
-                    </h2>
-                    <p className="text-slate-500 font-bold text-lg md:text-xl uppercase tracking-wide leading-relaxed">
-                       Estamos preparando las estadísticas detalladas.<br/>¡Volvé mañana para verlas!
-                    </p>
-                  </div>
-               </div>
+               <PlayerStatsView />
             )}
-            {/* ----------------------------------------- */}
 
             {navState.level === "stats-tournaments" && (
                <TournamentHistoryView 

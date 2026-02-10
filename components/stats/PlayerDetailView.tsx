@@ -27,37 +27,40 @@ interface PlayerDetailViewProps {
 export const PlayerDetailView = ({ playerName, onBack, matchesData }: PlayerDetailViewProps) => {
   const [rivalSearch, setRivalSearch] = useState("");
 
-  // --- HELPERS BLINDADOS (Todo a String) ---
+  // --- HELPERS BLINDADOS (Todo a String y Limpio) ---
   const safeStr = (val: any) => {
       if (val === null || val === undefined) return "";
-      return String(val);
+      return String(val).trim();
   };
 
-  const getP1 = (m: any) => safeStr(m.jugador || m.Jugador).trim();
-  const getP2 = (m: any) => safeStr(m.rival || m.Rival).trim();
-  const getRound = (m: any) => safeStr(m.round || m.Fase || "-").trim();
-  const getScore = (m: any) => safeStr(m.score || m.Resultado || "-").trim();
-  const getTour = (m: any) => safeStr(m.tournament || m.Torneo || "-").trim();
+  const getP1 = (m: any) => safeStr(m.jugador || m.Jugador);
+  const getP2 = (m: any) => safeStr(m.rival || m.Rival);
+  const getRound = (m: any) => safeStr(m.round || m.Fase || "-");
+  const getScore = (m: any) => safeStr(m.score || m.Resultado || "-");
+  const getTour = (m: any) => safeStr(m.tournament || m.Torneo || "-");
   const getDate = (m: any) => safeStr(m.date || m.Fecha || "");
 
-  // --- PARSER DE FECHAS SEGURO (SOLUCIÓN DEL ERROR) ---
+  // --- PARSER DE FECHAS SEGURO (SOLUCIÓN DEFINITIVA) ---
   const parseDate = (dateVal: any): Date | null => {
     const dateStr = safeStr(dateVal);
-    // Si no hay fecha, devolvemos NULL en lugar de new Date() para evitar errores de hidratación
     if (!dateStr) return null;
 
-    // Formato Argentino DD/MM/YYYY
-    if (dateStr.includes("/")) {
-        const parts = dateStr.split("/");
-        if (parts.length === 3) {
-            const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            if (!isNaN(d.getTime())) return d;
+    try {
+        // Intento 1: Formato Argentino DD/MM/YYYY
+        if (dateStr.includes("/")) {
+            const parts = dateStr.split("/");
+            if (parts.length === 3) {
+                const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                if (!isNaN(d.getTime())) return d;
+            }
         }
+        
+        // Intento 2: Formato estándar ISO
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+    } catch (e) {
+        return null;
     }
-    
-    // Intento estándar
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
   };
 
   // --- FILTRAR PARTIDOS ---
