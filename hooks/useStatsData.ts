@@ -1,12 +1,10 @@
 import { useState, useCallback } from "react";
-import { ID_DATOS_GENERALES } from "@/lib/constants";
+// CAMBIO 1: Importamos ID_2025 que es el del Ranking/Inscriptos
+import { ID_DATOS_GENERALES, ID_2025 } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-// CAMBIADO: Nombre nuevo para obligar a recargar la base de datos hoy
 const CACHE_KEY_MATCHES = "db_master_cache_v3_fix"; 
-const CACHE_TIME = 1000 * 60 * 30; // 30 Minutos (tiempo que duran los datos sin recargar)
-
-const SHEET_GID_DATA = "1288809117"; 
+const CACHE_TIME = 1000 * 60 * 30; // 30 Minutos
 
 export interface ChampionRecord {
   year: string;
@@ -34,7 +32,13 @@ export interface MatchRecord {
   score: string;
 }
 
-// Parser optimizado
+export interface PlayerProfile {
+  name: string;
+  age: string;
+  hand: string;
+  photo: string;
+}
+
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
   return lines.map(line => {
@@ -60,9 +64,10 @@ const robustCSVParser = (csvText: string) => {
 export const useStatsData = () => {
   const [historyData, setHistoryData] = useState<ChampionRecord[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, PlayerProfile>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. HISTORIAL CAMPEONES (Sin cambios)
+  // 1. HISTORIAL CAMPEONES (Sigue usando ID_DATOS_GENERALES, correcto)
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
@@ -71,7 +76,7 @@ export const useStatsData = () => {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = robustCSVParser(csvText);
-      // ... procesamiento ...
+      
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
         tournament: row[1] || "",
@@ -97,29 +102,55 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS (CON SISTEMA DE CACHÉ)
+  // 2. BUSCAR PARTIDOS Y PERFILES
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. REVISAR SI YA TENEMOS LOS DATOS GUARDADOS
+    // A. CARGAR PERFILES (Ahora desde ID_2025 -> Excel de Ranking/Inscriptos)
+    // CAMBIO 2: Usamos ID_2025 aquí
+    const profilesUrl = `https://docs.google.com/spreadsheets/d/${ID_2025}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Perfiles")}`;
+    
+    try {
+        const pResponse = await fetch(profilesUrl);
+        if (pResponse.ok) {
+            const pText = await pResponse.text();
+            const pRows = robustCSVParser(pText);
+            const profilesMap: Record<string, PlayerProfile> = {};
+            
+            // Asumimos fila 1 encabezados. A=Nombre, B=Edad, C=Mano, D=Foto
+            pRows.slice(1).forEach(row => {
+                if (row[0]) {
+                    const nameKey = row[0].trim(); 
+                    profilesMap[nameKey] = {
+                        name: row[0],
+                        age: row[1] || "-",
+                        hand: row[2] || "Diestro",
+                        photo: row[3] || ""
+                    };
+                }
+            });
+            setProfiles(profilesMap);
+        }
+    } catch (e) {
+        console.warn("No se pudo cargar la hoja Perfiles (quizás no exista aún en el Excel de Ranking).", e);
+    }
+
+    // B. REVISAR CACHÉ DE PARTIDOS
     const cached = localStorage.getItem(CACHE_KEY_MATCHES);
     if (cached) {
         try {
             const { data, timestamp } = JSON.parse(cached);
             const now = Date.now();
-            // Si los datos son "frescos" (menores a 30 mins), los usamos y NO descargamos nada
             if (now - timestamp < CACHE_TIME) {
-                console.log("⚡ Usando datos de caché (Carga Instantánea)");
+                console.log("⚡ Usando datos de caché");
                 setMatches(data);
                 setIsLoadingStats(false);
-                return; // Salimos de la función aquí
+                return; 
             }
-        } catch (e) {
-            console.warn("Error leyendo caché, descargando de nuevo...");
-        }
+        } catch (e) { console.warn("Cache error"); }
     }
 
-    // B. SI NO HAY CACHÉ O ES VIEJO, DESCARGAMOS DE GOOGLE
+    // C. DESCARGAR PARTIDOS DE GOOGLE (Esto sigue igual, viene del Excel de Partidos)
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {
@@ -137,7 +168,6 @@ export const useStatsData = () => {
                 Rival: row[4] || "",
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
-                
                 tournament: row[0] || "",
                 category: row[1] || "",
                 round: row[2] || "",
@@ -154,9 +184,6 @@ export const useStatsData = () => {
             return true; 
         });
 
-        console.log(`Datos descargados y guardados: ${mappedMatches.length}`);
-        
-        // C. GUARDAR EN CACHÉ PARA LA PRÓXIMA VEZ
         localStorage.setItem(CACHE_KEY_MATCHES, JSON.stringify({
             data: mappedMatches,
             timestamp: Date.now()
@@ -174,6 +201,7 @@ export const useStatsData = () => {
   return {
     historyData,
     matches,
+    profiles,
     isLoadingStats,
     fetchChampionHistory,
     fetchMatches
