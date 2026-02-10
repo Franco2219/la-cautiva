@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
+// ESTE ES EL ID DE TU HOJA "DATA" (DB_Master) QUE VIMOS EN TU CAPTURA
+// Al usar export + GID, obligamos a Google a darnos esta hoja exacta.
+const SHEET_GID_DATA = "1288809117"; 
+
 // --- INTERFACES ---
 export interface ChampionRecord {
   year: string;
@@ -19,6 +23,7 @@ export interface MatchRecord {
   Rival: string;
   Resultado: string;
   Fecha: string;
+  // Alias
   tournament: string;
   category: string;
   round: string;
@@ -27,34 +32,27 @@ export interface MatchRecord {
   date: string;
 }
 
-// Parser simple y efectivo para CSV de Google
-const parseCSV = (text: string) => {
-  const rows = [];
-  let currentRow = [];
-  let currentVal = '';
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    // Manejo de comillas para nombres como "Perez, Juan"
-    if (char === '"') {
-      insideQuotes = !insideQuotes;
-    } else if (char === ',' && !insideQuotes) {
-      currentRow.push(currentVal.trim());
-      currentVal = '';
-    } else if (char === '\n') {
-      currentRow.push(currentVal.trim());
-      rows.push(currentRow);
-      currentRow = [];
-      currentVal = '';
-      insideQuotes = false;
-    } else if (char !== '\r') {
-      currentVal += char;
+// Parser robusto (Maneja comas dentro de las comillas)
+const robustCSVParser = (csvText: string) => {
+  const lines = csvText.split(/\r?\n/);
+  return lines.map(line => {
+    const values = [];
+    let current = '';
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuote = !inQuote;
+      } else if (char === ',' && !inQuote) {
+        values.push(current.trim().replace(/^"|"$/g, '')); 
+        current = '';
+      } else {
+        current += char;
+      }
     }
-  }
-  if (currentVal) currentRow.push(currentVal.trim());
-  if (currentRow.length > 0) rows.push(currentRow);
-  return rows;
+    values.push(current.trim().replace(/^"|"$/g, ''));
+    return values;
+  });
 };
 
 export const useStatsData = () => {
@@ -62,7 +60,7 @@ export const useStatsData = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. HISTORIAL CAMPEONES
+  // 1. HISTORIAL CAMPEONES (Sin cambios)
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
@@ -70,7 +68,7 @@ export const useStatsData = () => {
     try {
       const response = await fetch(url);
       const csvText = await response.text();
-      const rows = parseCSV(csvText);
+      const rows = robustCSVParser(csvText);
 
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
@@ -97,30 +95,29 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS EN LA HOJA "DATA"
+  // 2. BUSCAR PARTIDOS (USANDO EXPORT + GID + FILTROS DE SEGURIDAD)
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // IMPORTANTE: Asegúrate de renombrar la hoja en tu Excel a "DATA"
-    const sheetName = "DATA"; 
-    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    // USAMOS EL ENDPOINT DE EXPORTACIÓN DIRECTA CON EL GID
+    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/export?format=csv&gid=${SHEET_GID_DATA}`;
 
     try {
         const response = await fetch(url);
         const csvText = await response.text();
-        const rows = parseCSV(csvText);
+        const rows = robustCSVParser(csvText);
 
-        // Mapeamos asumiendo el orden de tu captura:
-        // A:Torneo, B:Categoria, C:Fase, D:Jugador, E:Rival, F:Resultado, G:Fecha
         const mappedMatches = rows.slice(1).map(row => {
-            if (row.length < 5) return null; // Fila incompleta
+            // Mapeo basado en tu hoja DATA:
+            // A=0, B=1, C=2, D=3, E=4, F=5, G=6
+            if (row.length < 4) return null; // Si la fila está muy vacía, la descartamos
 
             return {
                 Torneo: row[0] || "",
                 Categoria: row[1] || "",
                 Fase: row[2] || "",
-                Jugador: row[3] || "", // Columna D
-                Rival: row[4] || "",   // Columna E
+                Jugador: row[3] || "",
+                Rival: row[4] || "",
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
                 
@@ -134,11 +131,26 @@ export const useStatsData = () => {
                 date: row[6] || ""
             };
         }).filter((m): m is MatchRecord => {
-             // Validar que tenga datos reales y no sea el header repetido
-             return !!(m && m.Jugador && m.Torneo && m.Jugador !== "Jugador");
+            // --- FILTROS DE SEGURIDAD ---
+            
+            // 1. Que el objeto exista
+            if (!m) return false;
+            
+            // 2. Que tenga datos esenciales
+            if (!m.Jugador || !m.Torneo) return false;
+            
+            // 3. Que no sea el encabezado repetido
+            if (m.Jugador === "Jugador") return false;
+
+            // 4. FILTRO ANTI-NÚMEROS (CRUCIAL):
+            // Si el nombre del jugador es un número (ej: "100"), lo ignoramos.
+            // Esto evita que salga basura si Google lee la hoja incorrecta.
+            if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 5) return false;
+            
+            return true; 
         });
 
-        console.log("Partidos cargados:", mappedMatches.length);
+        console.log(`Partidos cargados correctamente: ${mappedMatches.length}`);
         setMatches(mappedMatches);
 
     } catch (error) {
