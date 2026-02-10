@@ -3,7 +3,7 @@ import { Search, Filter, User } from "lucide-react";
 import { useStatsData, MatchRecord } from "@/hooks/useStatsData";
 import { PlayerDetailView } from "./PlayerDetailView"; 
 
-// Ajustamos la interfaz a TU hoja de Google Sheets (DB_Master)
+// Interfaz para el mapeo de datos
 interface MatchData {
   jugador?: string;
   Jugador?: string;
@@ -15,10 +15,9 @@ interface MatchData {
 }
 
 export const PlayerStatsView = () => {
-  // 1. AQUI PEDIMOS LA FUNCIÓN fetchMatches AL HOOK
+  // Lógica de datos (INTACTA)
   const { matches, isLoadingStats, fetchMatches } = useStatsData(); 
   
-  // 2. AQUI PONEMOS EL USEEFFECT PARA CARGAR LOS DATOS AL INICIAR
   useEffect(() => {
      fetchMatches();
   }, [fetchMatches]);
@@ -27,31 +26,27 @@ export const PlayerStatsView = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // --- VISTA DE DETALLE ---
+  // VISTA DE DETALLE (INTACTA)
   if (selectedPlayer) {
       return (
           <PlayerDetailView 
               playerName={selectedPlayer} 
               onBack={() => setSelectedPlayer(null)}
-              // Pasamos los partidos cargados al detalle para que no salgan vacíos
               matchesData={matches} 
           />
       );
   }
 
-  // --- LÓGICA DE FILTRADO PARA EL LISTADO ---
+  // LÓGICA DE FILTRADO (INTACTA)
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
-    // Normalizamos para encontrar la categoría
     const getCat = (m: any) => m.categoria || m.Categoria || m.category;
 
-    // 1. Filtrar partidos por categoría
     const matchesInCategory = selectedCategory
       ? matches.filter((m: any) => getCat(m) === selectedCategory)
       : matches;
 
-    // 2. Extraer nombres únicos
     const uniqueNames = new Set<string>();
     
     matchesInCategory.forEach((m: any) => {
@@ -62,10 +57,8 @@ export const PlayerStatsView = () => {
       if (p2 && p2.trim() !== "" && p2 !== "BYE") uniqueNames.add(p2.trim());
     });
 
-    // 3. Convertir a lista y ordenar
     let players = Array.from(uniqueNames).sort();
 
-    // 4. Buscador
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       players = players.filter((name) =>
@@ -77,7 +70,8 @@ export const PlayerStatsView = () => {
   }, [matches, selectedCategory, searchTerm]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
+    // CAMBIO 1: Aumentamos el ancho máximo en desktop (lg:max-w-6xl) para que las 3 columnas tengan espacio
+    <div className="w-full max-w-4xl lg:max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
       
       {/* TÍTULO */}
       <div className="text-center mb-8 relative">
@@ -137,10 +131,11 @@ export const PlayerStatsView = () => {
                 onClick={() => setSelectedPlayer(player)}
                 className="bg-white p-5 flex items-center gap-4 cursor-pointer hover:bg-orange-50 transition-colors group"
               >
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0">
                     <User className="w-5 h-5 text-slate-400 group-hover:text-white" />
                 </div>
-                <span className="font-bold text-slate-700 text-lg group-hover:text-[#b35a38] transition-colors truncate">
+                {/* CAMBIO 2: Quitamos 'truncate' para que el nombre se vea entero, y agregamos leading-tight por si ocupa 2 lineas */}
+                <span className="font-bold text-slate-700 text-lg group-hover:text-[#b35a38] transition-colors leading-tight">
                     {player}
                 </span>
               </div>
