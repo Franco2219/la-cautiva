@@ -177,7 +177,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya comenzó el torneo! <span className="text-xl md:text-2xl">+140</span> inscriptos en el Australian Open, mira los resultados actualizados al momento!
+                  Ya estan disponibles las estadisticas de los torneos!<span className="text-xl md:text-2xl">Vas a poder ver a todos los jugadores, sus partidos y sus resultados y mucho mas!</span>
                 </p>
               </div>
             </div>
