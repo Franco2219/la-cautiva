@@ -15,7 +15,7 @@ interface MatchData {
 }
 
 export const PlayerStatsView = () => {
-  // Lógica de datos (INTACTA)
+  // 1. TODOS LOS HOOKS PRIMERO (SIEMPRE ARRIBA)
   const { matches, isLoadingStats, fetchMatches } = useStatsData(); 
   
   useEffect(() => {
@@ -26,18 +26,7 @@ export const PlayerStatsView = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // VISTA DE DETALLE (INTACTA)
-  if (selectedPlayer) {
-      return (
-          <PlayerDetailView 
-              playerName={selectedPlayer} 
-              onBack={() => setSelectedPlayer(null)}
-              matchesData={matches} 
-          />
-      );
-  }
-
-  // LÓGICA DE FILTRADO (INTACTA)
+  // MOVIDO ARRIBA: El useMemo debe estar antes de cualquier return
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
@@ -69,8 +58,19 @@ export const PlayerStatsView = () => {
     return players;
   }, [matches, selectedCategory, searchTerm]);
 
+  // 2. AHORA SÍ, LOS CONDICIONALES (RETURN)
+  if (selectedPlayer) {
+      return (
+          <PlayerDetailView 
+              playerName={selectedPlayer} 
+              onBack={() => setSelectedPlayer(null)}
+              matchesData={matches} 
+          />
+      );
+  }
+
+  // 3. RENDERIZADO PRINCIPAL
   return (
-    // CAMBIO 1: Aumentamos el ancho máximo en desktop (lg:max-w-6xl) para que las 3 columnas tengan espacio
     <div className="w-full max-w-4xl lg:max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
       
       {/* TÍTULO */}
@@ -134,7 +134,7 @@ export const PlayerStatsView = () => {
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0">
                     <User className="w-5 h-5 text-slate-400 group-hover:text-white" />
                 </div>
-                {/* CAMBIO 2: Quitamos 'truncate' para que el nombre se vea entero, y agregamos leading-tight por si ocupa 2 lineas */}
+                {/* CAMBIO 2: Quitamos 'truncate' y agregamos leading-tight */}
                 <span className="font-bold text-slate-700 text-lg group-hover:text-[#b35a38] transition-colors leading-tight">
                     {player}
                 </span>
