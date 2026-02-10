@@ -37,6 +37,10 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count);
 
+      // Variable auxiliar para manejar las posiciones con empate
+      let currentRank = 0;
+      let lastCount = -1;
+
       return (
         <div className="w-full max-w-3xl mx-auto animate-in zoom-in-95 duration-300 px-2 md:px-0">
             {/* Header Naranja */}
@@ -53,6 +57,11 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                     </div>
                 </div>
             </div>
+
+            {/* LEYENDA AGREGADA */}
+            <p className="text-center text-slate-400 font-bold text-xs uppercase tracking-widest mb-2 opacity-80">
+                Incluye Torneos Atp 500 y 250
+            </p>
 
             {/* Filtros */}
             <div className="mb-8 text-center space-y-4 sticky top-4 z-20 bg-[#fffaf5]/80 backdrop-blur-md py-4 rounded-2xl md:static md:bg-transparent md:backdrop-blur-none md:py-0">
@@ -79,24 +88,36 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
             {/* Lista de Ganadores */}
             <div className="space-y-3 pb-12">
                 {ranking.length > 0 ? (
-                    ranking.map((player, idx) => (
-                        <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group">
-                            <div className="w-12 text-center font-black text-slate-300 text-2xl italic mr-4">
-                                #{idx + 1}
-                            </div>
-                            <div className="flex-1 flex items-baseline gap-2">
-                                <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
-                                    {player.name}
-                                </span>
-                                {player.count > 1 && (
-                                    <span className="text-[#b35a38] font-black text-xl leading-none">
-                                        ({player.count})
+                    ranking.map((player, idx) => {
+                        // LÓGICA DE POSICIONES CON EMPATE
+                        if (player.count !== lastCount) {
+                            currentRank = idx + 1;
+                            lastCount = player.count;
+                        }
+                        
+                        // Si es puesto #1 (incluso si hay empate), lleva copa
+                        const isFirst = currentRank === 1;
+
+                        return (
+                            <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group">
+                                <div className="w-14 text-center font-black text-slate-300 text-3xl italic mr-2">
+                                    #{currentRank}
+                                </div>
+                                <div className="flex-1 flex items-baseline gap-2">
+                                    <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
+                                        {player.name}
                                     </span>
-                                )}
+                                    {player.count > 1 && (
+                                        <span className="text-[#b35a38] font-black text-xl leading-none">
+                                            ({player.count})
+                                        </span>
+                                    )}
+                                </div>
+                                {/* Mostrar copa para TODOS los que estén en el puesto #1 */}
+                                {isFirst && <Trophy className="w-8 h-8 text-amber-400 drop-shadow-sm shrink-0" />}
                             </div>
-                            {idx === 0 && <Trophy className="w-6 h-6 text-amber-400 drop-shadow-sm" />}
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="text-center py-16 bg-white rounded-[2rem] border-4 border-dashed border-slate-100 shadow-sm mx-4">
                         <p className="text-slate-400 font-bold text-lg">No hay campeones registrados<br/>para esta selección.</p>
@@ -146,15 +167,17 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
               );
             })}
 
-            {/* --- NUEVO BOTÓN: MAS GANADORES POR CATEGORIA --- */}
+            {/* --- NUEVO BOTÓN AJUSTADO: MAS GANADORES POR CATEGORIA --- */}
             <div 
                 onClick={() => onSelectTour("most_winners")}
                 className="bg-[#b35a38] border-4 border-white/20 rounded-[2rem] p-4 md:p-6 flex flex-col items-center justify-center gap-3 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 aspect-square group relative overflow-hidden text-center"
             >
-                <div className="relative w-20 h-20 md:w-28 md:h-28 flex items-center justify-center drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-110 duration-300">
-                    <Trophy className="w-16 h-16 md:w-20 md:h-20 text-white" />
+                {/* ÍCONO MÁS CHICO */}
+                <div className="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-110 duration-300">
+                    <Trophy className="w-full h-full text-white" />
                 </div>
-                <h3 className="font-black text-white uppercase text-sm md:text-lg text-center leading-tight drop-shadow-sm tracking-wider">
+                {/* LETRA MÁS CHICA Y LEGIBLE */}
+                <h3 className="font-black text-white uppercase text-xs md:text-sm text-center leading-tight drop-shadow-sm tracking-wider">
                     MÁS GANADORES<br/>POR CATEGORÍA
                 </h3>
             </div>
@@ -247,7 +270,7 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none mb-0.5">Campeón</span>
                          <span className="font-black text-xl text-slate-800 uppercase leading-none flex items-baseline gap-2">
                             {record.champion}
-                            {/* CONTADOR ARREGLADO: Entre paréntesis y con el color del texto */}
+                            {/* CONTADOR EN PARENTESIS COLOR */}
                             {record.winCount && record.winCount > 1 && (
                                <span className={`text-lg font-black ml-1 ${textColorClass}`}>
                                  ({record.winCount})
