@@ -1,11 +1,9 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
-// ESTE ES EL ID DE TU HOJA "DATA" (DB_Master) QUE VIMOS EN TU CAPTURA
-// Al usar export + GID, obligamos a Google a darnos esta hoja exacta.
+// EL GID DE TU HOJA "DATA" (Confirmado por tu captura)
 const SHEET_GID_DATA = "1288809117"; 
 
-// --- INTERFACES ---
 export interface ChampionRecord {
   year: string;
   tournament: string;
@@ -16,6 +14,7 @@ export interface ChampionRecord {
 }
 
 export interface MatchRecord {
+  // Campos obligatorios para que no te de error la línea roja
   Torneo: string;
   Categoria: string;
   Fase: string;
@@ -30,9 +29,10 @@ export interface MatchRecord {
   winner: string; 
   loser: string;  
   date: string;
+  score: string;
 }
 
-// Parser robusto (Maneja comas dentro de las comillas)
+// Parser CSV
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
   return lines.map(line => {
@@ -60,9 +60,10 @@ export const useStatsData = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. HISTORIAL CAMPEONES (Sin cambios)
+  // 1. HISTORIAL CAMPEONES
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
+    // Este endpoint suele funcionar bien por nombre de hoja
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
 
     try {
@@ -95,23 +96,26 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS (USANDO EXPORT + GID + FILTROS DE SEGURIDAD)
+  // 2. BUSCAR PARTIDOS (Usando endpoint PUB + GID)
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // USAMOS EL ENDPOINT DE EXPORTACIÓN DIRECTA CON EL GID
-    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/export?format=csv&gid=${SHEET_GID_DATA}`;
+    // CAMBIO CLAVE: Usamos 'pub' en vez de 'gviz'. Esto OBLIGA a Google a respetar el GID.
+    // Requiere que hayas hecho el Paso 1 (Publicar en la web)
+    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/pub?gid=${SHEET_GID_DATA}&single=true&output=csv`;
 
     try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error("Error de red o hoja no publicada");
+        
         const csvText = await response.text();
         const rows = robustCSVParser(csvText);
 
         const mappedMatches = rows.slice(1).map(row => {
-            // Mapeo basado en tu hoja DATA:
-            // A=0, B=1, C=2, D=3, E=4, F=5, G=6
-            if (row.length < 4) return null; // Si la fila está muy vacía, la descartamos
+            // Verificación básica de columnas
+            if (row.length < 4) return null;
 
+            // Mapeo completo (¡NO BORRES ESTAS LÍNEAS! Son las que faltaban en tu captura)
             return {
                 Torneo: row[0] || "",
                 Categoria: row[1] || "",
@@ -121,7 +125,7 @@ export const useStatsData = () => {
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
                 
-                // Alias
+                // Alias en inglés
                 tournament: row[0] || "",
                 category: row[1] || "",
                 round: row[2] || "",
@@ -131,26 +135,18 @@ export const useStatsData = () => {
                 date: row[6] || ""
             };
         }).filter((m): m is MatchRecord => {
-            // --- FILTROS DE SEGURIDAD ---
-            
-            // 1. Que el objeto exista
+            // Filtros de seguridad
             if (!m) return false;
-            
-            // 2. Que tenga datos esenciales
             if (!m.Jugador || !m.Torneo) return false;
+            if (m.Jugador === "Jugador") return false; // Ignorar header repetido
             
-            // 3. Que no sea el encabezado repetido
-            if (m.Jugador === "Jugador") return false;
-
-            // 4. FILTRO ANTI-NÚMEROS (CRUCIAL):
-            // Si el nombre del jugador es un número (ej: "100"), lo ignoramos.
-            // Esto evita que salga basura si Google lee la hoja incorrecta.
-            if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 5) return false;
+            // Filtro anti-basura (por si acaso)
+            if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 4) return false;
             
             return true; 
         });
 
-        console.log(`Partidos cargados correctamente: ${mappedMatches.length}`);
+        console.log(`Partidos cargados: ${mappedMatches.length}`);
         setMatches(mappedMatches);
 
     } catch (error) {
