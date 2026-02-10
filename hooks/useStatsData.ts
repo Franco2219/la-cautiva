@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-const CACHE_KEY_MATCHES = "db_cache_v6_direct_link"; // Nueva versión
+const CACHE_KEY_MATCHES = "db_cache_v8_final_link"; // Subo versión para borrar caché viejo
 const CACHE_TIME = 1000 * 60 * 30; 
 
 export interface ChampionRecord {
@@ -109,9 +109,8 @@ export const useStatsData = () => {
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. CARGAR PERFILES (USANDO EL LINK DIRECTO DE TU CAPTURA)
-    // Este es el link exacto del Excel "Ranking e Inscriptos 2026" Hoja "Perfiles"
-    const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTUo2mnttQPBYkPexcADjIZ3tcCEPgQOgqkB-z2lsx3QcLmLmpfGpdJLd9uxH-gjg/pub?gid=542404536&single=true&output=csv";
+    // A. CARGAR PERFILES (CORREGIDO: Link de la captura del Excel "Torneos 2026")
+    const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=597400315&single=true&output=csv";
     
     try {
         const pResponse = await fetch(profilesUrl);
@@ -127,12 +126,12 @@ export const useStatsData = () => {
                     profilesMap[nameKey] = {
                         name: row[0],
                         age: row[1] || "-",
-                        hand: row[2] || "Diestro", // Default si está vacío
+                        hand: row[2] || "Diestro", 
                         photo: row[3] || ""
                     };
                 }
             });
-            console.log("✅ Perfiles cargados con éxito:", Object.keys(profilesMap).length);
+            console.log("✅ Perfiles cargados:", Object.keys(profilesMap).length);
             setProfiles(profilesMap);
         } else {
             console.error("❌ Error descargando perfiles. Status:", pResponse.status);
@@ -156,7 +155,7 @@ export const useStatsData = () => {
         } catch (e) { console.warn("Cache error"); }
     }
 
-    // C. DESCARGAR PARTIDOS (Link del Excel de Partidos)
+    // C. DESCARGAR PARTIDOS
     const matchesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {
