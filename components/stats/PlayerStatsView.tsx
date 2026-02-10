@@ -9,19 +9,25 @@ const normalizeName = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
 };
 
-export const PlayerStatsView = () => {
-  // 1. AHORA PEDIMOS TAMBIÉN 'profiles'
+// NUEVA INTERFAZ DE PROPS
+interface PlayerStatsViewProps {
+  selectedPlayer: string | null;
+  onSelectPlayer: (player: string | null) => void;
+}
+
+// AHORA RECIBE PROPS
+export const PlayerStatsView = ({ selectedPlayer, onSelectPlayer }: PlayerStatsViewProps) => {
   const { matches, profiles, isLoadingStats, fetchMatches } = useStatsData(); 
   
   useEffect(() => {
      fetchMatches();
   }, [fetchMatches]);
 
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  // ELIMINADO EL ESTADO INTERNO: const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // 2. LÓGICA DE FILTRADO (MOVIDA ARRIBA DEL IF)
+  // 2. LÓGICA DE FILTRADO
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
@@ -53,7 +59,8 @@ export const PlayerStatsView = () => {
     return players;
   }, [matches, selectedCategory, searchTerm]);
 
-  // 3. VISTA DE DETALLE (AHORA PASAMOS profileData)
+  // 3. VISTA DE DETALLE
+  // Usamos la prop 'selectedPlayer' que viene de page.tsx
   if (selectedPlayer) {
       const normalizeKey = normalizeName(selectedPlayer);
       const playerProfile = profiles[normalizeKey] || null;
@@ -61,8 +68,8 @@ export const PlayerStatsView = () => {
       return (
           <PlayerDetailView 
               playerName={selectedPlayer} 
-              profileData={playerProfile} // <--- ¡AQUÍ ESTÁ LA CLAVE!
-              onBack={() => setSelectedPlayer(null)}
+              profileData={playerProfile} 
+              onBack={() => onSelectPlayer(null)} // Usamos la prop 'onSelectPlayer'
               matchesData={matches} 
           />
       );
@@ -125,14 +132,13 @@ export const PlayerStatsView = () => {
         ) : filteredPlayers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-y md:divide-y-0 gap-px bg-slate-100">
             {filteredPlayers.map((player, idx) => {
-               // Mostramos miniatura si existe
                const normalizeKey = normalizeName(player);
                const profile = profiles[normalizeKey];
                
                return (
                 <div 
                     key={idx}
-                    onClick={() => setSelectedPlayer(player)}
+                    onClick={() => onSelectPlayer(player)} // Usamos la prop 'onSelectPlayer'
                     className="bg-white p-5 flex items-center gap-4 cursor-pointer hover:bg-orange-50 transition-colors group"
                 >
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0 overflow-hidden">
