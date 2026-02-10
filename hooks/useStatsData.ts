@@ -2,8 +2,7 @@ import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-// IMPORTANTE: Cambié la versión a 'v9' para obligar a borrar cualquier dato viejo
-const CACHE_KEY_MATCHES = "db_cache_v9_full_reload"; 
+const CACHE_KEY_MATCHES = "db_cache_v10_local_images"; // Versión 10: Fotos Locales
 const CACHE_TIME = 1000 * 60 * 30; 
 
 export interface ChampionRecord {
@@ -110,7 +109,7 @@ export const useStatsData = () => {
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. CARGAR PERFILES (Este es el LINK NUEVO de tu captura de pantalla)
+    // A. CARGAR PERFILES (EXCEL TORNEOS 2026)
     const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=597400315&single=true&output=csv";
     
     try {
@@ -120,15 +119,30 @@ export const useStatsData = () => {
             const pRows = robustCSVParser(pText);
             const profilesMap: Record<string, PlayerProfile> = {};
             
-            // Asumimos: Col A=Jugador, B=Edad, C=Mano, D=Foto (Indices 0, 1, 2, 3)
             pRows.slice(1).forEach(row => {
+                // A: Jugador, B: Edad, C: Mano, D: Foto (Nombre del archivo)
                 if (row[0]) {
                     const nameKey = normalizeName(row[0]); 
+                    
+                    // LÓGICA INTELIGENTE DE FOTO:
+                    // Si la celda D tiene texto, le agregamos la ruta "/jugadores/"
+                    // Si empieza con "http", respetamos el link externo (por si acaso dejaste alguno viejo)
+                    let photoPath = "";
+                    const rawPhoto = row[3] ? row[3].trim() : "";
+                    
+                    if (rawPhoto) {
+                        if (rawPhoto.startsWith("http")) {
+                            photoPath = rawPhoto; // Es un link de internet
+                        } else {
+                            photoPath = `/jugadores/${rawPhoto}`; // Es un archivo local
+                        }
+                    }
+
                     profilesMap[nameKey] = {
                         name: row[0],
                         age: row[1] || "-",
                         hand: row[2] || "Diestro", 
-                        photo: row[3] || ""
+                        photo: photoPath
                     };
                 }
             });
@@ -207,7 +221,7 @@ export const useStatsData = () => {
   return {
     historyData,
     matches,
-    profiles, // <--- ESTO ES VITAL: EXPORTAR LOS PERFILES
+    profiles,
     isLoadingStats,
     fetchChampionHistory,
     fetchMatches
