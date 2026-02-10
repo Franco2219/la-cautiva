@@ -3,7 +3,7 @@
 import { useState } from "react"; 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History } from "lucide-react";
+import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History, Construction } from "lucide-react";
 import { tournaments, PRINT_STYLES } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
 import { getTournamentName, getTournamentStyle } from "@/lib/utils";
@@ -14,7 +14,7 @@ import { BracketView } from "@/components/tournament/BracketView";
 import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
-// --- NUEVO IMPORT ---
+// --- DEJAMOS EL IMPORT PERO NO LO USAMOS POR AHORA ---
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
 export default function Home() {
@@ -70,14 +70,9 @@ export default function Home() {
 
   // Función de vuelta personalizada para manejar el historial
   const handleBackAction = () => {
-    // Si estamos en historial de torneos y hay uno seleccionado, volvemos a la lista
     if (navState.level === "stats-tournaments" && historyTourSelected) {
         setHistoryTourSelected(null); 
     } 
-    // Si estamos en stats de jugador (dentro del componente PlayerStatsView manejan su propio "volver" interno si quisieras, 
-    // pero el botón global aquí te saca del módulo).
-    // NOTA: PlayerStatsView tiene su propio botón "Volver al listado". 
-    // Este botón global "VOLVER" te llevará al menú de Estadísticas.
     else {
         goBack(); 
     }
@@ -158,13 +153,13 @@ export default function Home() {
         {navState.level !== "home" && (
             <div className="flex justify-center mb-8 w-full print:hidden">
                 <Button 
-                    onClick={handleBackAction} // Usamos la nueva función
+                    onClick={handleBackAction} 
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
                     <ArrowLeft className="w-6 h-6 shrink-0" />
                     <span>
                         {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
-                         (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : // Solo si hay torneo seleccionado
+                         (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : 
                          "VOLVER"}
                     </span>
                 </Button>
@@ -230,14 +225,23 @@ export default function Home() {
             </div>
             )}
 
-            {/* --- AQUÍ ESTÁ EL CAMBIO --- */}
+            {/* --- CARTEL DE CONSTRUCCIÓN PROVISORIO --- */}
             {navState.level === "stats-player" && (
-               <PlayerStatsView />
+               <div className="bg-white border-4 border-[#b35a38]/10 rounded-[2.5rem] p-12 shadow-2xl text-center max-w-2xl mx-auto animate-in zoom-in duration-300">
+                  <div className="p-10 border-4 border-dashed border-orange-100 rounded-3xl bg-orange-50/50">
+                    <Construction className="w-24 h-24 text-[#b35a38] mx-auto mb-6 animate-pulse" />
+                    <h2 className="text-3xl md:text-4xl font-black text-[#b35a38] mb-4 uppercase italic">
+                       Sección en Construcción
+                    </h2>
+                    <p className="text-slate-500 font-bold text-lg md:text-xl uppercase tracking-wide leading-relaxed">
+                       Estamos preparando las estadísticas detalladas.<br/>¡Volvé mañana para verlas!
+                    </p>
+                  </div>
+               </div>
             )}
-            {/* --------------------------- */}
+            {/* ----------------------------------------- */}
 
             {navState.level === "stats-tournaments" && (
-               // Pasamos el estado y el setter al componente
                <TournamentHistoryView 
                  selectedTour={historyTourSelected} 
                  onSelectTour={setHistoryTourSelected} 
