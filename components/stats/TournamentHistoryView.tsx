@@ -25,11 +25,23 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
         ? historyData.filter(d => d.category === selectedCategory)
         : historyData;
 
-      // 2. Contar victorias por jugador
+      // 2. Contar victorias y GUARDAR TORNEOS por jugador
       const winCounts: Record<string, number> = {};
+      const winTrophies: Record<string, string[]> = {}; // Guardamos los códigos de torneos ganados
+
       filteredByCat.forEach(record => {
           const name = record.champion.trim();
           winCounts[name] = (winCounts[name] || 0) + 1;
+
+          if (!winTrophies[name]) winTrophies[name] = [];
+          
+          // Intentamos matchear el nombre del Excel con nuestros IDs internos para sacar el logo
+          const tourObj = tournaments.find(t => t.name.toLowerCase() === record.tournament.toLowerCase().trim()) 
+                          || tournaments.find(t => t.id.toLowerCase() === record.tournament.toLowerCase().trim());
+          
+          // Si encontramos el torneo usamos su short code, sino usamos el nombre tal cual
+          const tourCode = tourObj ? tourObj.short : record.tournament;
+          winTrophies[name].push(tourCode);
       });
 
       // 3. Convertir a array y ordenar
@@ -58,7 +70,7 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                 </div>
             </div>
 
-            {/* LEYENDA AGREGADA */}
+            {/* LEYENDA */}
             <p className="text-center text-slate-400 font-bold text-xs uppercase tracking-widest mb-2 opacity-80">
                 Incluye Torneos Atp 500 y 250
             </p>
@@ -95,26 +107,47 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                             lastCount = player.count;
                         }
                         
-                        // Si es puesto #1 (incluso si hay empate), lleva copa
                         const isFirst = currentRank === 1;
 
                         return (
-                            <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group">
-                                <div className="w-14 text-center font-black text-slate-300 text-3xl italic mr-2">
-                                    #{currentRank}
-                                </div>
-                                <div className="flex-1 flex items-baseline gap-2">
-                                    <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
-                                        {player.name}
-                                    </span>
-                                    {player.count > 1 && (
-                                        <span className="text-[#b35a38] font-black text-xl leading-none">
-                                            ({player.count})
+                            <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex flex-col md:flex-row items-start md:items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group gap-2 md:gap-0">
+                                <div className="flex items-center w-full md:w-auto">
+                                    <div className="w-14 text-center font-black text-slate-300 text-3xl italic mr-2 shrink-0">
+                                        #{currentRank}
+                                    </div>
+                                    <div className="flex-1 flex flex-wrap items-baseline gap-2">
+                                        <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
+                                            {player.name}
                                         </span>
-                                    )}
+                                        {player.count > 1 && (
+                                            <span className="text-[#b35a38] font-black text-xl leading-none">
+                                                ({player.count})
+                                            </span>
+                                        )}
+                                        {isFirst && <Trophy className="w-6 h-6 text-amber-400 drop-shadow-sm shrink-0 md:hidden ml-2" />}
+                                    </div>
                                 </div>
-                                {/* Mostrar copa para TODOS los que estén en el puesto #1 */}
-                                {isFirst && <Trophy className="w-8 h-8 text-amber-400 drop-shadow-sm shrink-0" />}
+
+                                {/* LOGOS DE LOS TORNEOS GANADOS */}
+                                <div className="flex flex-wrap gap-1.5 ml-14 md:ml-4 mt-1 md:mt-0">
+                                    {winTrophies[player.name] && winTrophies[player.name].map((tourCode, tIdx) => {
+                                        const tStyle = getTournamentStyle(tourCode);
+                                        if (!tStyle.logo) return null;
+                                        return (
+                                            <div key={tIdx} className="relative w-6 h-6 md:w-7 md:h-7 hover:scale-125 transition-transform" title={tourCode}>
+                                                <Image 
+                                                    src={tStyle.logo} 
+                                                    alt={tourCode} 
+                                                    fill 
+                                                    className="object-contain" 
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Copa para los primeros (Desktop) */}
+                                {isFirst && <Trophy className="w-8 h-8 text-amber-400 drop-shadow-sm shrink-0 ml-auto hidden md:block" />}
                             </div>
                         );
                     })
@@ -167,16 +200,14 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
               );
             })}
 
-            {/* --- NUEVO BOTÓN AJUSTADO: MAS GANADORES POR CATEGORIA --- */}
+            {/* --- BOTÓN MAS GANADORES POR CATEGORIA --- */}
             <div 
                 onClick={() => onSelectTour("most_winners")}
                 className="bg-[#b35a38] border-4 border-white/20 rounded-[2rem] p-4 md:p-6 flex flex-col items-center justify-center gap-3 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 aspect-square group relative overflow-hidden text-center"
             >
-                {/* ÍCONO MÁS CHICO */}
                 <div className="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-110 duration-300">
                     <Trophy className="w-full h-full text-white" />
                 </div>
-                {/* LETRA MÁS CHICA Y LEGIBLE */}
                 <h3 className="font-black text-white uppercase text-xs md:text-sm text-center leading-tight drop-shadow-sm tracking-wider">
                     MÁS GANADORES<br/>POR CATEGORÍA
                 </h3>
@@ -270,7 +301,6 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none mb-0.5">Campeón</span>
                          <span className="font-black text-xl text-slate-800 uppercase leading-none flex items-baseline gap-2">
                             {record.champion}
-                            {/* CONTADOR EN PARENTESIS COLOR */}
                             {record.winCount && record.winCount > 1 && (
                                <span className={`text-lg font-black ml-1 ${textColorClass}`}>
                                  ({record.winCount})
