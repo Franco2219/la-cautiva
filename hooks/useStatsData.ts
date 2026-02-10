@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
-// CAMBIO 1: Importamos ID_2025 que es el del Ranking/Inscriptos
+// Asegurate que ID_2025 sea el ID correcto de tu Excel de Ranking
 import { ID_DATOS_GENERALES, ID_2025 } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-const CACHE_KEY_MATCHES = "db_master_cache_v3_fix"; 
-const CACHE_TIME = 1000 * 60 * 30; // 30 Minutos
+const CACHE_KEY_MATCHES = "db_master_cache_v4_profiles"; // Cambié versión para recargar
+const CACHE_TIME = 1000 * 60 * 30; 
 
 export interface ChampionRecord {
   year: string;
@@ -67,16 +67,13 @@ export const useStatsData = () => {
   const [profiles, setProfiles] = useState<Record<string, PlayerProfile>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. HISTORIAL CAMPEONES (Sigue usando ID_DATOS_GENERALES, correcto)
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
-
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = robustCSVParser(csvText);
-      
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
         tournament: row[1] || "",
@@ -102,12 +99,10 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. BUSCAR PARTIDOS Y PERFILES
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. CARGAR PERFILES (Ahora desde ID_2025 -> Excel de Ranking/Inscriptos)
-    // CAMBIO 2: Usamos ID_2025 aquí
+    // A. CARGAR PERFILES (Normalizando a minúsculas)
     const profilesUrl = `https://docs.google.com/spreadsheets/d/${ID_2025}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Perfiles")}`;
     
     try {
@@ -117,10 +112,10 @@ export const useStatsData = () => {
             const pRows = robustCSVParser(pText);
             const profilesMap: Record<string, PlayerProfile> = {};
             
-            // Asumimos fila 1 encabezados. A=Nombre, B=Edad, C=Mano, D=Foto
             pRows.slice(1).forEach(row => {
                 if (row[0]) {
-                    const nameKey = row[0].trim(); 
+                    // CLAVE EN MINÚSCULA PARA QUE NO IMPORTE CÓMO SE ESCRIBA
+                    const nameKey = row[0].trim().toLowerCase(); 
                     profilesMap[nameKey] = {
                         name: row[0],
                         age: row[1] || "-",
@@ -129,13 +124,16 @@ export const useStatsData = () => {
                     };
                 }
             });
+            console.log("✅ Perfiles cargados:", Object.keys(profilesMap).length);
             setProfiles(profilesMap);
+        } else {
+            console.warn("⚠️ Error al cargar Perfiles: Estado", pResponse.status);
         }
     } catch (e) {
-        console.warn("No se pudo cargar la hoja Perfiles (quizás no exista aún en el Excel de Ranking).", e);
+        console.warn("⚠️ Excepción cargando Perfiles (revisar si el Excel está publicado):", e);
     }
 
-    // B. REVISAR CACHÉ DE PARTIDOS
+    // B. REVISAR CACHÉ
     const cached = localStorage.getItem(CACHE_KEY_MATCHES);
     if (cached) {
         try {
@@ -150,7 +148,7 @@ export const useStatsData = () => {
         } catch (e) { console.warn("Cache error"); }
     }
 
-    // C. DESCARGAR PARTIDOS DE GOOGLE (Esto sigue igual, viene del Excel de Partidos)
+    // C. DESCARGAR PARTIDOS
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {

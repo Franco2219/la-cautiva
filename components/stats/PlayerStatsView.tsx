@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Search, Filter, User } from "lucide-react";
-import { useStatsData, MatchRecord } from "@/hooks/useStatsData";
+import { useStatsData } from "@/hooks/useStatsData"; 
 import { PlayerDetailView } from "./PlayerDetailView"; 
 
-// Interfaz para el mapeo de datos
 interface MatchData {
   jugador?: string;
   Jugador?: string;
@@ -15,8 +14,7 @@ interface MatchData {
 }
 
 export const PlayerStatsView = () => {
-  // 1. TODOS LOS HOOKS PRIMERO (SIEMPRE ARRIBA)
-  const { matches, isLoadingStats, fetchMatches } = useStatsData(); 
+  const { matches, profiles, isLoadingStats, fetchMatches } = useStatsData(); 
   
   useEffect(() => {
      fetchMatches();
@@ -26,7 +24,6 @@ export const PlayerStatsView = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // MOVIDO ARRIBA: El useMemo debe estar antes de cualquier return
   const filteredPlayers = useMemo(() => {
     if (!matches || matches.length === 0) return [];
 
@@ -58,18 +55,24 @@ export const PlayerStatsView = () => {
     return players;
   }, [matches, selectedCategory, searchTerm]);
 
-  // 2. AHORA SÍ, LOS CONDICIONALES (RETURN)
+  // VISTA DE DETALLE
   if (selectedPlayer) {
+      // BUSQUEDA INSENSIBLE A MAYÚSCULAS/MINÚSCULAS
+      // Esto asegura que "FERRO , FRANCO" encuentre "Ferro , Franco"
+      const normalizeKey = selectedPlayer.trim().toLowerCase();
+      const playerProfile = profiles[normalizeKey] || null;
+
       return (
           <PlayerDetailView 
               playerName={selectedPlayer} 
+              profileData={playerProfile} 
               onBack={() => setSelectedPlayer(null)}
               matchesData={matches} 
           />
       );
   }
 
-  // 3. RENDERIZADO PRINCIPAL
+  // RENDERIZADO PRINCIPAL
   return (
     <div className="w-full max-w-4xl lg:max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500 px-2 md:px-0 pb-20">
       
@@ -125,21 +128,30 @@ export const PlayerStatsView = () => {
            </div>
         ) : filteredPlayers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-y md:divide-y-0 gap-px bg-slate-100">
-            {filteredPlayers.map((player, idx) => (
-              <div 
-                key={idx}
-                onClick={() => setSelectedPlayer(player)}
-                className="bg-white p-5 flex items-center gap-4 cursor-pointer hover:bg-orange-50 transition-colors group"
-              >
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0">
-                    <User className="w-5 h-5 text-slate-400 group-hover:text-white" />
+            {filteredPlayers.map((player, idx) => {
+               // Buscamos si tiene foto para mostrarla en miniatura (opcional, pero queda lindo)
+               const normalizeKey = player.trim().toLowerCase();
+               const profile = profiles[normalizeKey];
+               
+               return (
+                <div 
+                    key={idx}
+                    onClick={() => setSelectedPlayer(player)}
+                    className="bg-white p-5 flex items-center gap-4 cursor-pointer hover:bg-orange-50 transition-colors group"
+                >
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#b35a38] group-hover:text-white transition-colors duration-300 shadow-sm shrink-0 overflow-hidden">
+                         {profile && profile.photo ? (
+                           <img src={profile.photo} alt={player} className="w-full h-full object-cover" />
+                         ) : (
+                           <User className="w-5 h-5 text-slate-400 group-hover:text-white" />
+                         )}
+                    </div>
+                    <span className="font-bold text-slate-700 text-lg group-hover:text-[#b35a38] transition-colors leading-tight">
+                        {player}
+                    </span>
                 </div>
-                {/* CAMBIO 2: Quitamos 'truncate' y agregamos leading-tight */}
-                <span className="font-bold text-slate-700 text-lg group-hover:text-[#b35a38] transition-colors leading-tight">
-                    {player}
-                </span>
-              </div>
-            ))}
+               );
+            })}
           </div>
         ) : (
           <div className="text-center py-20 px-4">
