@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
-// Asegurate que ID_2025 sea el ID correcto de tu Excel de Ranking
 import { ID_DATOS_GENERALES, ID_2025 } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
-const CACHE_KEY_MATCHES = "db_master_cache_v4_profiles"; // Cambié versión para recargar
+const CACHE_KEY_MATCHES = "db_cache_v5_supernorm"; // Versión nueva para limpiar caché
 const CACHE_TIME = 1000 * 60 * 30; 
 
 export interface ChampionRecord {
@@ -38,6 +37,13 @@ export interface PlayerProfile {
   hand: string;
   photo: string;
 }
+
+// --- SUPER NORMALIZADOR: Borra espacios, comas, puntos y pasa a minúscula ---
+const normalizeName = (name: string) => {
+    if (!name) return "";
+    return name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+    // Ejemplo: "Ferro , Franco" -> "ferrofranco"
+};
 
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
@@ -102,38 +108,43 @@ export const useStatsData = () => {
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
-    // A. CARGAR PERFILES (Normalizando a minúsculas)
+    // A. CARGAR PERFILES (Con Super Normalización)
+    // ATENCIÓN: Asegurate que ID_2025 sea el ID del Excel donde está la hoja "Perfiles"
     const profilesUrl = `https://docs.google.com/spreadsheets/d/${ID_2025}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Perfiles")}`;
     
     try {
         const pResponse = await fetch(profilesUrl);
         if (pResponse.ok) {
             const pText = await pResponse.text();
-            const pRows = robustCSVParser(pText);
-            const profilesMap: Record<string, PlayerProfile> = {};
             
-            pRows.slice(1).forEach(row => {
-                if (row[0]) {
-                    // CLAVE EN MINÚSCULA PARA QUE NO IMPORTE CÓMO SE ESCRIBA
-                    const nameKey = row[0].trim().toLowerCase(); 
-                    profilesMap[nameKey] = {
-                        name: row[0],
-                        age: row[1] || "-",
-                        hand: row[2] || "Diestro",
-                        photo: row[3] || ""
-                    };
-                }
-            });
-            console.log("✅ Perfiles cargados:", Object.keys(profilesMap).length);
-            setProfiles(profilesMap);
-        } else {
-            console.warn("⚠️ Error al cargar Perfiles: Estado", pResponse.status);
+            // Verificación simple de error HTML (Login de Google)
+            if (pText.includes("<!DOCTYPE html>")) {
+                console.warn("⚠️ ERROR: La hoja 'Perfiles' no es pública o el ID es incorrecto.");
+            } else {
+                const pRows = robustCSVParser(pText);
+                const profilesMap: Record<string, PlayerProfile> = {};
+                
+                pRows.slice(1).forEach(row => {
+                    if (row[0]) {
+                        // USAMOS LA LLAVE LIMPIA
+                        const nameKey = normalizeName(row[0]); 
+                        profilesMap[nameKey] = {
+                            name: row[0],
+                            age: row[1] || "-",
+                            hand: row[2] || "Diestro",
+                            photo: row[3] || ""
+                        };
+                    }
+                });
+                console.log("✅ Perfiles cargados:", Object.keys(profilesMap).length);
+                setProfiles(profilesMap);
+            }
         }
     } catch (e) {
-        console.warn("⚠️ Excepción cargando Perfiles (revisar si el Excel está publicado):", e);
+        console.warn("Excepción cargando Perfiles:", e);
     }
 
-    // B. REVISAR CACHÉ
+    // B. REVISAR CACHÉ PARTIDOS
     const cached = localStorage.getItem(CACHE_KEY_MATCHES);
     if (cached) {
         try {
