@@ -5,7 +5,6 @@ import { tournaments } from "@/lib/constants";
 import { getTournamentStyle, getTournamentName } from "@/lib/utils";
 import { useStatsData } from "@/hooks/useStatsData";
 
-// Interfaz actualizada para recibir el estado desde el padre
 interface TournamentHistoryViewProps {
   selectedTour: string | null;
   onSelectTour: (tour: string | null) => void;
@@ -13,12 +12,100 @@ interface TournamentHistoryViewProps {
 
 export const TournamentHistoryView = ({ selectedTour, onSelectTour }: TournamentHistoryViewProps) => {
   const { historyData, isLoadingStats, fetchChampionHistory } = useStatsData();
-  // El estado del torneo seleccionado ahora viene por props
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     fetchChampionHistory();
   }, [fetchChampionHistory]);
+
+  // --- VISTA ESPECIAL: MÁS GANADORES POR CATEGORÍA ---
+  if (selectedTour === "most_winners") {
+      // 1. Filtrar por categoría si existe
+      const filteredByCat = selectedCategory 
+        ? historyData.filter(d => d.category === selectedCategory)
+        : historyData;
+
+      // 2. Contar victorias por jugador
+      const winCounts: Record<string, number> = {};
+      filteredByCat.forEach(record => {
+          const name = record.champion.trim();
+          winCounts[name] = (winCounts[name] || 0) + 1;
+      });
+
+      // 3. Convertir a array y ordenar
+      const ranking = Object.entries(winCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+
+      return (
+        <div className="w-full max-w-3xl mx-auto animate-in zoom-in-95 duration-300 px-2 md:px-0">
+            {/* Header Naranja */}
+            <div className="bg-[#b35a38] p-8 rounded-[2.5rem] shadow-xl text-white mb-8 relative overflow-hidden flex items-center justify-center min-h-[180px] mt-4">
+                <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none select-none">
+                    <Trophy className="w-64 h-64 scale-150" />
+                </div>
+                <div className="relative z-10 text-center">
+                    <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-wider mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
+                    Máximos Ganadores
+                    </h2>
+                    <div className="inline-block bg-white/20 px-6 py-2 rounded-full backdrop-blur-sm">
+                        <p className="text-white font-bold uppercase text-sm md:text-base tracking-[0.2em]">Ranking por Títulos</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filtros */}
+            <div className="mb-8 text-center space-y-4 sticky top-4 z-20 bg-[#fffaf5]/80 backdrop-blur-md py-4 rounded-2xl md:static md:bg-transparent md:backdrop-blur-none md:py-0">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+                    <Filter className="w-4 h-4" /> Filtrar por categoría
+                </p>
+                <div className="flex flex-wrap justify-center gap-3">
+                    {["A", "B1", "B2", "C"].map(cat => (
+                    <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                        className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base transition-all duration-200 shadow-md active:scale-95 ${
+                        selectedCategory === cat 
+                            ? "bg-[#b35a38] text-white border-2 border-white/20 ring-2 ring-offset-2 ring-[#b35a38]"
+                            : "bg-white text-slate-500 border-2 border-slate-100 hover:border-slate-300"
+                        }`}
+                    >
+                        {cat}
+                    </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Lista de Ganadores */}
+            <div className="space-y-3 pb-12">
+                {ranking.length > 0 ? (
+                    ranking.map((player, idx) => (
+                        <div key={idx} className="bg-white rounded-2xl shadow-sm p-5 flex items-center border-l-8 border-[#b35a38] hover:shadow-md transition-all group">
+                            <div className="w-12 text-center font-black text-slate-300 text-2xl italic mr-4">
+                                #{idx + 1}
+                            </div>
+                            <div className="flex-1 flex items-baseline gap-2">
+                                <span className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight leading-none">
+                                    {player.name}
+                                </span>
+                                {player.count > 1 && (
+                                    <span className="text-[#b35a38] font-black text-xl leading-none">
+                                        ({player.count})
+                                    </span>
+                                )}
+                            </div>
+                            {idx === 0 && <Trophy className="w-6 h-6 text-amber-400 drop-shadow-sm" />}
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-16 bg-white rounded-[2rem] border-4 border-dashed border-slate-100 shadow-sm mx-4">
+                        <p className="text-slate-400 font-bold text-lg">No hay campeones registrados<br/>para esta selección.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+      );
+  }
 
   // --- VISTA 1: GRILLA DE SELECCIÓN DE TORNEOS ---
   if (!selectedTour) {
@@ -33,14 +120,12 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {tournaments
-              // FILTRO: Sacamos todo lo que tenga "adelaide" o "s8" en su ID
               .filter(t => !t.id.toLowerCase().includes("adelaide") && !t.id.toLowerCase().includes("s8"))
               .map((t) => {
               const style = getTournamentStyle(t.short);
               return (
                 <div 
                   key={t.id}
-                  // Al hacer click, usamos la función del padre para actualizar el estado global
                   onClick={() => onSelectTour(t.short)}
                   className={`${style.color} border-4 border-white/20 rounded-[2rem] p-4 md:p-6 flex flex-col items-center justify-center gap-3 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 aspect-square group relative overflow-hidden`}
                 >
@@ -60,17 +145,30 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                 </div>
               );
             })}
+
+            {/* --- NUEVO BOTÓN: MAS GANADORES POR CATEGORIA --- */}
+            <div 
+                onClick={() => onSelectTour("most_winners")}
+                className="bg-[#b35a38] border-4 border-white/20 rounded-[2rem] p-4 md:p-6 flex flex-col items-center justify-center gap-3 cursor-pointer shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 aspect-square group relative overflow-hidden text-center"
+            >
+                <div className="relative w-20 h-20 md:w-28 md:h-28 flex items-center justify-center drop-shadow-[0_4px_4px_rgba(0,0,0,0.2)] transition-transform group-hover:scale-110 duration-300">
+                    <Trophy className="w-16 h-16 md:w-20 md:h-20 text-white" />
+                </div>
+                <h3 className="font-black text-white uppercase text-sm md:text-lg text-center leading-tight drop-shadow-sm tracking-wider">
+                    MÁS GANADORES<br/>POR CATEGORÍA
+                </h3>
+            </div>
+
           </div>
         )}
       </div>
     );
   }
 
-  // --- VISTA 2: DETALLE DEL TORNEO SELECCIONADO ---
+  // --- VISTA 2: DETALLE DEL TORNEO SELECCIONADO (LÓGICA INTACTA) ---
   const style = getTournamentStyle(selectedTour);
   const tourName = getTournamentName(selectedTour);
   
-  // Obtenemos la clase de color de TEXTO basada en el color de FONDO del torneo
   const textColorClass = style.color.replace('bg-', 'text-');
 
   const filteredData = historyData.filter(d => {
@@ -149,7 +247,7 @@ export const TournamentHistoryView = ({ selectedTour, onSelectTour }: Tournament
                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider leading-none mb-0.5">Campeón</span>
                          <span className="font-black text-xl text-slate-800 uppercase leading-none flex items-baseline gap-2">
                             {record.champion}
-                            {/* MODIFICADO: Contador entre paréntesis y con el color del texto del torneo */}
+                            {/* CONTADOR ARREGLADO: Entre paréntesis y con el color del texto */}
                             {record.winCount && record.winCount > 1 && (
                                <span className={`text-lg font-black ml-1 ${textColorClass}`}>
                                  ({record.winCount})
