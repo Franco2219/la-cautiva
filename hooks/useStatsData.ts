@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
 import { ID_DATOS_GENERALES } from "@/lib/constants";
 
+// --- PEGA AQUÍ EL NÚMERO GID QUE COPIASTE DE LA URL ---
+// Ejemplo: const SHEET_GID_DB_MASTER = "165432987";
+const SHEET_GID_DB_MASTER = "1288809117"; // <--- ¡¡CAMBIA ESTO POR TU NÚMERO!!
+
 // --- INTERFACES ---
 export interface ChampionRecord {
   year: string;
@@ -19,7 +23,6 @@ export interface MatchRecord {
   Rival: string;
   Resultado: string;
   Fecha: string;
-  // Alias para compatibilidad
   tournament: string;
   category: string;
   round: string;
@@ -28,21 +31,19 @@ export interface MatchRecord {
   date: string;
 }
 
-// --- PARSER ROBUSTO (Maneja comas dentro de comillas) ---
+// Parser robusto para manejar comas dentro de los nombres
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
-  
   return lines.map(line => {
     const values = [];
     let current = '';
     let inQuote = false;
-    
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
         inQuote = !inQuote;
       } else if (char === ',' && !inQuote) {
-        values.push(current.trim().replace(/^"|"$/g, '')); // Quitar comillas extra
+        values.push(current.trim().replace(/^"|"$/g, '')); 
         current = '';
       } else {
         current += char;
@@ -58,16 +59,15 @@ export const useStatsData = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  // 1. TRAER HISTORIAL DE CAMPEONES
+  // 1. TRAER HISTORIAL DE CAMPEONES (Esta usa nombre, si funciona no la tocamos)
   const fetchChampionHistory = useCallback(async () => {
-    // ... (Esta parte estaba bien, la mantenemos igual)
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
 
     try {
       const response = await fetch(url);
       const csvText = await response.text();
-      const rows = robustCSVParser(csvText); // Usamos el nuevo parser
+      const rows = robustCSVParser(csvText);
 
       const rawData = rows.slice(1).map(row => ({
         year: row[0] || "",
@@ -97,23 +97,23 @@ export const useStatsData = () => {
     }
   }, []);
 
-  // 2. TRAER PARTIDOS DE DB_MASTER
+  // 2. TRAER PARTIDOS DE DB_MASTER (AHORA USANDO GID)
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
-    // IMPORTANTE: Asegúrate que la hoja se llame DB_Master (sin espacios al final)
-    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=DB_Master`;
+    
+    // AQUÍ ESTÁ LA MAGIA: Usamos 'gid' en vez de 'sheet'
+    const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&gid=${SHEET_GID_DB_MASTER}`;
 
     try {
         const response = await fetch(url);
         const csvText = await response.text();
-        
-        // Usamos el parser robusto aquí también
         const rows = robustCSVParser(csvText);
 
         const mappedMatches = rows.slice(1).map(row => {
-            // Validación extra: Si la fila no tiene suficientes columnas, la ignoramos
             if (row.length < 5) return null;
 
+            // Mapeo directo según tu hoja DB_Master
+            // 0: Torneo, 1: Categoria, 2: Fase, 3: Jugador, 4: Rival, 5: Resultado, 6: Fecha
             return {
                 Torneo: row[0] || "",
                 Categoria: row[1] || "",
@@ -123,7 +123,7 @@ export const useStatsData = () => {
                 Resultado: row[5] || "",
                 Fecha: row[6] || "",
                 
-                // Duplicados
+                // Alias
                 tournament: row[0] || "",
                 category: row[1] || "",
                 round: row[2] || "",
@@ -133,17 +133,19 @@ export const useStatsData = () => {
                 date: row[6] || ""
             };
         }).filter((m): m is MatchRecord => {
-            // --- FILTROS DE SEGURIDAD ---
-            if (!m) return false; // Fila nula
-            if (!m.Jugador || !m.Torneo) return false; // Datos vacíos
-            if (m.Jugador === "Jugador") return false; // Es el header repetido
+            if (!m) return false;
+            // Filtro básico: debe tener Jugador y Torneo
+            if (!m.Jugador || !m.Torneo) return false;
+            // Filtramos el header si se coló
+            if (m.Jugador === "Jugador") return false;
             
-            // FILTRO CLAVE: Si el nombre del jugador es un número (ej: "100", "200"), ES BASURA DE OTRA HOJA
-            if (!isNaN(parseFloat(m.Jugador)) && isFinite(Number(m.Jugador))) return false;
-            
+            // Ya no necesitamos el filtro de números tan agresivo 
+            // porque ahora estamos seguros de leer la hoja correcta.
+            // Pero lo dejamos suave por si acaso.
             return true; 
         });
 
+        console.log(`Cargados ${mappedMatches.length} partidos desde DB_Master`);
         setMatches(mappedMatches);
     } catch (error) {
         console.error("Error fetching matches:", error);
