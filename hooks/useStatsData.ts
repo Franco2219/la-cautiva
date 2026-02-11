@@ -44,6 +44,42 @@ const normalizeName = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
 };
 
+// --- CALCULADOR DE EDAD AUTOMÁTICO ---
+const calculateAge = (birthdayStr: string): string => {
+    if (!birthdayStr || birthdayStr === "-" || birthdayStr.trim() === "") return "-";
+    
+    // Si el valor ya es un número de edad (ej: "28"), lo devolvemos tal cual
+    if (!isNaN(Number(birthdayStr)) && birthdayStr.trim().length <= 2) return birthdayStr;
+
+    try {
+        let birthDate: Date;
+        if (birthdayStr.includes("/")) {
+            const parts = birthdayStr.split("/");
+            if (parts.length === 3) {
+                // Formato DD/MM/YYYY
+                birthDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else {
+                return birthdayStr;
+            }
+        } else {
+            birthDate = new Date(birthdayStr);
+        }
+
+        if (isNaN(birthDate.getTime())) return birthdayStr;
+
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age.toString();
+    } catch (e) {
+        return birthdayStr;
+    }
+};
+
 const robustCSVParser = (csvText: string) => {
   const lines = csvText.split(/\r?\n/);
   return lines.map(line => {
@@ -120,27 +156,24 @@ export const useStatsData = () => {
             const profilesMap: Record<string, PlayerProfile> = {};
             
             pRows.slice(1).forEach(row => {
-                // A: Jugador, B: Edad, C: Mano, D: Foto (Nombre del archivo)
                 if (row[0]) {
                     const nameKey = normalizeName(row[0]); 
                     
-                    // LÓGICA INTELIGENTE DE FOTO:
-                    // Si la celda D tiene texto, le agregamos la ruta "/jugadores/"
-                    // Si empieza con "http", respetamos el link externo (por si acaso dejaste alguno viejo)
                     let photoPath = "";
                     const rawPhoto = row[3] ? row[3].trim() : "";
                     
                     if (rawPhoto) {
                         if (rawPhoto.startsWith("http")) {
-                            photoPath = rawPhoto; // Es un link de internet
+                            photoPath = rawPhoto;
                         } else {
-                            photoPath = `/jugadores/${rawPhoto}`; // Es un archivo local
+                            photoPath = `/jugadores/${rawPhoto}`;
                         }
                     }
 
                     profilesMap[nameKey] = {
                         name: row[0],
-                        age: row[1] || "-",
+                        // SE APLICA EL CÁLCULO AUTOMÁTICO AQUÍ
+                        age: calculateAge(row[1] || "-"), 
                         hand: row[2] || "Diestro", 
                         photo: photoPath
                     };
