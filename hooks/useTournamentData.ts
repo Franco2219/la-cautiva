@@ -324,11 +324,9 @@ export const useTournamentData = () => {
             }
         });
 
-        // --- CORRECCION: SI SON 2 JUGADORES, AGREGAR FILA VACIA EN WHATSAPP ---
         if (g.players.length === 2) {
             mensaje += "-\n";
         }
-        // ----------------------------------------------------------------------
     });
     
     mensaje += `\n\n*SORTEO CONFIRMADO - ${navState.currentTour}*\n*Categoría:* ${navState.currentCat}`;
@@ -785,6 +783,16 @@ export const useTournamentData = () => {
           const winner = (winnerIdx !== -1 && rows[0] && rows[0][winnerIdx]) ? rows[0][winnerIdx] : ""; const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[1][winnerIdx]) ? rows[1][winnerIdx] : "";
           const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : ""); const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
           
+          // --- PATCH: Función especial para asegurar el score de la final ---
+          const getFinalScoreData = (colIdx: number) => {
+              // Busca en las dos filas de la final. Si encuentra un score en alguna, lo usa para ambas.
+              const s1 = rows[0] && rows[0][colIdx] ? rows[0][colIdx] : "";
+              const s2 = rows[1] && rows[1][colIdx] ? rows[1][colIdx] : "";
+              const finalScore = s1.trim() !== "" ? s1 : s2;
+              return [finalScore, finalScore]; 
+          };
+          // ----------------------------------------------------------------
+
           if (bracketSize === 64) {
               rawData = { 
                   r1: getColData(0, 64), s1: getScoreData(1, 64), 
@@ -792,14 +800,14 @@ export const useTournamentData = () => {
                   r3: getColData(4, 16), s3: getScoreData(5, 16), 
                   r4: getColData(6, 8),  s4: getScoreData(7, 8), 
                   r5: getColData(8, 4),  s5: getScoreData(9, 4), 
-                  r6: getColData(10, 2), s6: getScoreData(11, 2), 
+                  r6: getColData(10, 2), s6: getFinalScoreData(11), // <--- USO DEL PATCH
                   winner: winner, runnerUp: runnerUp, 
                   bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
               };
           }
-          else if (bracketSize === 32) { rawData = { r1: getColData(0, 32), s1: getScoreData(1, 32), r2: getColData(2, 16), s2: getScoreData(3, 16), r3: getColData(4, 8),  s3: getScoreData(5, 8), r4: getColData(6, 4),  s4: getScoreData(7, 4), r5: getColData(8, 2),  s5: getScoreData(9, 2), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds }; } 
-          else if (bracketSize === 16) { rawData = { r1: getColData(0, 16), s1: getScoreData(1, 16), r2: getColData(2, 8),  s2: getScoreData(3, 8), r3: getColData(4, 4),  s3: getScoreData(5, 4), r4: getColData(6, 2),  s4: getScoreData(7, 2), winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds }; } 
-          else { rawData = { r1: getColData(0, 8), s1: getScoreData(1, 8), r2: getColData(2, 4), s2: getScoreData(3, 4), r3: getColData(4, 2), s3: getScoreData(5, 2), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds }; }
+          else if (bracketSize === 32) { rawData = { r1: getColData(0, 32), s1: getScoreData(1, 32), r2: getColData(2, 16), s2: getScoreData(3, 16), r3: getColData(4, 8),  s3: getScoreData(5, 8), r4: getColData(6, 4),  s4: getScoreData(7, 4), r5: getColData(8, 2),  s5: getFinalScoreData(9), winner: winner, runnerUp: runnerUp, bracketSize: 32, hasData: true, canGenerate: false, seeds: seeds }; } 
+          else if (bracketSize === 16) { rawData = { r1: getColData(0, 16), s1: getScoreData(1, 16), r2: getColData(2, 8),  s2: getScoreData(3, 8), r3: getColData(4, 4),  s3: getScoreData(5, 4), r4: getColData(6, 2),  s4: getFinalScoreData(7), winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds }; } 
+          else { rawData = { r1: getColData(0, 8), s1: getScoreData(1, 8), r2: getColData(2, 4), s2: getScoreData(3, 4), r3: getColData(4, 2), s3: getFinalScoreData(5), r4: [], s4: [], winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds }; }
           
           if (bracketSize !== 8) rawData = processByes(rawData); 
           setBracketData(rawData);
