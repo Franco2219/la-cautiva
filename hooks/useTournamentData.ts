@@ -785,9 +785,10 @@ export const useTournamentData = () => {
           
           // --- PATCH: Función especial para asegurar el score de la final ---
           const getFinalScoreData = (colIdx: number) => {
-              // Busca en las dos filas de la final. Si encuentra un score en alguna, lo usa para ambas.
+              // Busca en las dos filas de la final (la primera y la segunda).
               const s1 = rows[0] && rows[0][colIdx] ? rows[0][colIdx] : "";
               const s2 = rows[1] && rows[1][colIdx] ? rows[1][colIdx] : "";
+              // Si encuentra el score en cualquiera de las dos, lo usa.
               const finalScore = s1.trim() !== "" ? s1 : s2;
               return [finalScore, finalScore]; 
           };
