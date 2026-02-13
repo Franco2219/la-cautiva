@@ -174,6 +174,45 @@ export default function Home() {
                 </Button>
             </div>
         )}
+
+        {/* --- INICIO BANNER SPORTSLAB --- */}
+        {(navState.level === "stats-player" || navState.level === "stats-tournaments") && (
+            <div className="w-full max-w-4xl mx-auto bg-[#0a0a0a] rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between border border-gray-800 shadow-[0_4px_20px_rgba(204,255,0,0.1)] relative overflow-hidden mb-8 print:hidden animate-in fade-in zoom-in duration-500">
+                
+                {/* Glow de fondo para darle el toque de alto rendimiento */}
+                <div className="absolute top-0 left-0 w-64 h-64 bg-[#ccff00] opacity-15 rounded-full blur-[80px] -translate-x-10 -translate-y-10 pointer-events-none"></div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#ccff00] opacity-15 rounded-full blur-[80px] translate-x-10 translate-y-10 pointer-events-none"></div>
+                
+                {/* Rayos/Destellos amarillos estilo velocidad */}
+                <div className="absolute top-6 left-1/4 w-16 h-1 bg-[#ccff00] rotate-[-20deg] opacity-80 rounded-full shadow-[0_0_15px_#ccff00] pointer-events-none"></div>
+                <div className="absolute bottom-8 left-1/3 w-10 h-1 bg-[#ccff00] rotate-[-20deg] opacity-60 rounded-full shadow-[0_0_10px_#ccff00] pointer-events-none"></div>
+                <div className="absolute top-10 right-1/3 w-24 h-1.5 bg-[#ccff00] rotate-[-20deg] opacity-90 rounded-full shadow-[0_0_20px_#ccff00] pointer-events-none"></div>
+                <div className="absolute bottom-6 right-1/4 w-12 h-1 bg-[#ccff00] rotate-[-20deg] opacity-70 rounded-full shadow-[0_0_12px_#ccff00] pointer-events-none"></div>
+                
+                <div className="z-10 text-center sm:text-left mb-5 sm:mb-0">
+                    <div className="text-[#ccff00] font-black text-2xl italic tracking-widest mb-1">
+                        SPORTS<span className="text-white">LAB</span>
+                    </div>
+                    <h4 className="text-white font-bold text-xl sm:text-2xl leading-tight">
+                        Llevá tu tenis al próximo nivel.
+                    </h4>
+                    <p className="text-gray-400 text-sm sm:text-base mt-1">
+                        Entrená con el método de los profesionales.
+                    </p>
+                </div>
+
+                <a 
+                    href="https://sportslab-ar.com/agendar" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="z-10 bg-[#ccff00] text-black font-extrabold text-sm sm:text-base px-6 py-3 rounded-xl hover:bg-[#b3e600] transition-transform hover:scale-105 shadow-[0_0_15px_rgba(204,255,0,0.3)] whitespace-nowrap"
+                >
+                    QUIERO ENTRENAR COMO UN PROFESIONAL
+                </a>
+
+            </div>
+        )}
+        {/* --- FIN BANNER SPORTSLAB --- */}
         
         {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center print:hidden"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
 
@@ -236,7 +275,6 @@ export default function Home() {
 
             {navState.level === "stats-player" && (
                <PlayerStatsView 
-                 // PASAMOS EL ESTADO Y EL SETTER DESDE AQUÍ
                  selectedPlayer={selectedPlayerForStats}
                  onSelectPlayer={setSelectedPlayerForStats}
                />
