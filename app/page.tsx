@@ -288,6 +288,9 @@ export default function Home() {
             <div className="space-y-4 text-center">
               {tournaments.filter(t => {
                 if (t.id === "adelaide" && navState.gender === "damas") return false;
+                if (t.id === "adelaide_250" && navState.gender === "damas") return false;
+                if (t.id === "s8_500" && navState.gender === "damas") return false;
+                if (t.id === "s8_250" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
                 if (t.id === "s8_250" && navState.category === "C") return false;
                 return true;
