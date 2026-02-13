@@ -469,10 +469,24 @@ export const BracketView = ({
               
               // Buscamos array de final
               let finalRound = [];
-              if (getSize === 64) finalRound = bracketData.r6;
-              else if (getSize === 32) finalRound = bracketData.r5;
-              else if (getSize === 16) finalRound = bracketData.r4;
-              else finalRound = bracketData.r3;
+              let finalScores = []; // <-- ARRAY DE PUNTOS
+              
+              if (getSize === 64) {
+                  finalRound = bracketData.r6;
+                  finalScores = bracketData.s6 || [];
+              }
+              else if (getSize === 32) {
+                  finalRound = bracketData.r5;
+                  finalScores = bracketData.s5 || [];
+              }
+              else if (getSize === 16) {
+                  finalRound = bracketData.r4;
+                  finalScores = bracketData.s4 || [];
+              }
+              else {
+                  finalRound = bracketData.r3;
+                  finalScores = bracketData.s3 || [];
+              }
 
               if (finalRound && finalRound.length >= 2) {
                 topFinalistName = finalRound[0];
@@ -487,6 +501,7 @@ export const BracketView = ({
                 topFinalistName && topFinalistName === bracketData.winner;
               const isBotWinner =
                 botFinalistName && botFinalistName === bracketData.winner;
+
               return (
                 <div className="relative flex flex-col space-y-2">
                   <div
@@ -505,6 +520,10 @@ export const BracketView = ({
                     >
                       {topFinalistName || ""}
                     </span>
+                    {/* AÑADIDO: SCORE SI ES GANADOR */}
+                    <span className="text-black font-black text-xs ml-1">
+                      {isTopWinner ? (finalScores[0] || "") : ""}
+                    </span>
                   </div>
                   <div
                     className={`h-8 border-b-2 ${
@@ -521,6 +540,10 @@ export const BracketView = ({
                       } text-xs md:text-sm uppercase truncate`}
                     >
                       {botFinalistName || ""}
+                    </span>
+                     {/* AÑADIDO: SCORE SI ES GANADOR */}
+                    <span className="text-black font-black text-xs ml-1">
+                      {isBotWinner ? (finalScores[1] || "") : ""}
                     </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
