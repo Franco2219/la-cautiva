@@ -274,7 +274,9 @@ export default function Home() {
                       sendGAEvent('event', 'button_click', { event_label: `Caballeros ${cat}` });
                   }
                   
-                  if (navState.type === "damas") { setNavState({ ...navState, level: "damas-empty", selectedCategory: cat }); }
+                  if (navState.type === "damas") { 
+                    setNavState({ ...navState, level: "tournament-selection", category: "Damas " + catShort, selectedCategory: cat, gender: navState.type }); 
+                }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
                 }} className={buttonStyle}>{cat}</Button>
