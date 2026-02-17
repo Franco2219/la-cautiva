@@ -66,14 +66,14 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                     </th>
                   )
                 })}
-                {isComplete && (
+                
                     <>
                         <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">PTS</th>
                         <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">SETS</th>
                         {showGames && <th className="p-2 text-center font-black text-slate-600 bg-slate-100 whitespace-nowrap">GAMES</th>}
                         <th className="p-3 text-center font-black text-black bg-slate-100 w-12 whitespace-nowrap">POS</th>
                     </>
-                )}
+              
               </tr>
             </thead>
             <tbody>
