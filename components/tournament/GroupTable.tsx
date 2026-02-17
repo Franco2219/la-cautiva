@@ -94,7 +94,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                       {i === j ? "/" : (group.results[i] && group.results[i][j] ? group.results[i][j] : <span className="print:text-transparent">-</span>)}
                     </td>
                   ))}
-                  {isComplete && (
+                  
                       <>
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.points ? group.points[i] : "-"}</td>
                           <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">{group.diff ? group.diff[i] : "-"}</td>
@@ -103,7 +103,7 @@ export const GroupTable = ({ group, tournamentShort }: GroupTableProps) => {
                               {displayRanks[i] || "-"}°
                           </td>
                       </>
-                  )}
+                  
                 </tr>
               )})}
             </tbody>
