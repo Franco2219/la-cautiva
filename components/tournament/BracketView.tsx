@@ -11,9 +11,10 @@ interface BracketViewProps {
   fetchQualifiersAndDraw: (category: string, tournament: string) => void;
 }
 
-// Modificado a absolute para que no interfiera matemáticamente con el espaciado flex de las cajas
 const MiddleSpacer = () => (
-  <div className="absolute top-1/2 left-0 right-0 border-t-2 border-dotted border-slate-200/50 pointer-events-none -translate-y-1/2 z-0"></div>
+  <div className="h-4 md:h-8 w-full relative">
+    <div className="absolute left-0 top-1/2 w-full border-t-2 border-dotted border-slate-200/50"></div>
+  </div>
 );
 
 export const BracketView = ({
@@ -26,13 +27,21 @@ export const BracketView = ({
   const tournamentName = getTournamentName(navState.tournamentShort);
   
   // --- LÓGICA DE TAMAÑO MODIFICADA ---
+  // 1. Intentamos leer el tamaño explícito
   let getSize = Number(bracketData.bracketSize);
+
+  // 2. LA VERDAD ABSOLUTA: Si existe la Ronda 1, su longitud MANDA.
+  // Esto elimina suposiciones por nombre de torneo.
+  // Si hay 32 items en r1, es cuadro de 32. Si hay 64, es de 64.
   if (bracketData.r1 && bracketData.r1.length > 0) {
       getSize = bracketData.r1.length;
   }
+
+  // 3. Fallback de seguridad
   if (!getSize) getSize = 32;
   // --- FIN DE LÓGICA ---
 
+  // Helper para mapear las rondas dinámicamente según el tamaño del cuadro
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
       if (roundName === 'r64') {
           if (getSize === 64) return [bracketData.r1, bracketData.s1, bracketData.r2];
@@ -66,6 +75,7 @@ export const BracketView = ({
       return [null, null, null];
   };
 
+  // Helper para renderizar el seed sin punto extra si es texto (zona)
   const renderSeed = (name: string) => {
       if (!name || !bracketData.seeds) return null;
       const seed = bracketData.seeds[name];
@@ -81,6 +91,7 @@ export const BracketView = ({
 
   return (
     <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
+      {/* Header del Bracket */}
       <div
         className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}
       >
@@ -112,12 +123,12 @@ export const BracketView = ({
       </div>
 
       {bracketData.hasData ? (
-        <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left z-10">
+        <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
           
           {/* NUEVA COLUMNA: 64 JUGADORES (32 PARTIDOS) */}
           {getSize === 64 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-              {Array.from({ length: 32 }, (_, i) => i * 2).map((idx, i) => {
+              {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r64');
                 const p1 = r ? r[idx] : null;
                 const p2 = r ? r[idx + 1] : null;
@@ -126,7 +137,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className="relative flex flex-col space-y-1 z-10">
+                    <div className="relative flex flex-col space-y-1 mb-1">
                       <div
                         className={`h-5 border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -170,11 +181,8 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
+                      <div className="absolute right-0 top-[18px] h-[22px] w-[2px] bg-slate-300" />
                     </div>
-                    {/* LINEA VERTICAL MATEMÁTICA */}
-                    {i % 2 === 0 && (
-                      <div className="absolute right-0 w-[2px] bg-slate-300 z-0" style={{ top: `${(2 * i + 1) / 64 * 100}%`, height: `${1 / 32 * 100}%` }} />
-                    )}
                     {idx === 30 && <MiddleSpacer />}
                   </React.Fragment>
                 );
@@ -185,9 +193,9 @@ export const BracketView = ({
           {/* COLUMNA: 32 JUGADORES */}
           {getSize >= 32 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-              {Array.from({ length: 16 }, (_, i) => i * 2).map((idx, i) => {
+              {Array.from({ length: 16 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r32');
-                if (!r) return null; 
+                if (!r) return null; // Safety check
                 const p1 = r[idx];
                 const p2 = r[idx + 1];
                 const w1 = p1 && nextR && nextR.includes(p1);
@@ -195,7 +203,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className="relative flex flex-col space-y-2 z-10">
+                    <div className="relative flex flex-col space-y-2 mb-2">
                       <div
                         className={`h-6 border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -239,11 +247,8 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                      <div className="absolute right-0 top-[22px] h-[34px] w-[2px] bg-slate-300" />
                     </div>
-                    {/* LINEA VERTICAL MATEMÁTICA */}
-                    {i % 2 === 0 && (
-                      <div className="absolute right-0 w-[2px] bg-slate-300 z-0" style={{ top: `${(2 * i + 1) / 32 * 100}%`, height: `${1 / 16 * 100}%` }} />
-                    )}
                     {idx === 14 && <MiddleSpacer />}
                   </React.Fragment>
                 );
@@ -264,7 +269,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className="relative flex flex-col space-y-4 z-10">
+                    <div className="relative flex flex-col space-y-4">
                       <div
                         className={`h-8 border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -308,11 +313,8 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                      <div className="absolute right-0 top-[30px] h-[50px] w-[2px] bg-slate-300" />
                     </div>
-                    {/* LINEA VERTICAL MATEMÁTICA */}
-                    {i % 2 === 0 && (
-                      <div className="absolute right-0 w-[2px] bg-slate-300 z-0" style={{ top: `${(2 * i + 1) / 16 * 100}%`, height: `${1 / 8 * 100}%` }} />
-                    )}
                     {i === 3 && <MiddleSpacer />}
                   </React.Fragment>
                 );
@@ -331,7 +333,7 @@ export const BracketView = ({
 
               return (
                 <React.Fragment key={idx}>
-                  <div className="relative flex flex-col space-y-8 z-10">
+                  <div className="relative flex flex-col space-y-8">
                     <div
                       className={`h-8 border-b-2 ${
                         w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -375,11 +377,8 @@ export const BracketView = ({
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                    <div className="absolute right-0 top-[30px] h-[66px] w-[2px] bg-slate-300" />
                   </div>
-                  {/* LINEA VERTICAL MATEMÁTICA */}
-                  {i % 2 === 0 && (
-                    <div className="absolute right-0 w-[2px] bg-slate-300 z-0" style={{ top: `${(2 * i + 1) / 8 * 100}%`, height: `${1 / 4 * 100}%` }} />
-                  )}
                   {i === 1 && <MiddleSpacer />}
                 </React.Fragment>
               );
@@ -393,6 +392,7 @@ export const BracketView = ({
               const p1 = r ? r[idx] : null;
               const p2 = r ? r[idx + 1] : null;
 
+              // Determinamos ganadores de Semis mirando si están en la final o si son el winner/runnerUp
               let finals = [];
               if (getSize === 64) finals = bracketData.r6 || [];
               else if (getSize === 32) finals = bracketData.r5 || [];
@@ -410,7 +410,7 @@ export const BracketView = ({
 
               return (
                 <React.Fragment key={idx}>
-                  <div className="relative flex flex-col space-y-12 z-10">
+                  <div className="relative flex flex-col space-y-12">
                     <div
                       className={`h-8 border-b-2 ${
                         w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -454,11 +454,8 @@ export const BracketView = ({
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                    <div className="absolute right-0 top-[30px] h-[82px] w-[2px] bg-slate-300" />
                   </div>
-                  {/* LINEA VERTICAL MATEMÁTICA */}
-                  {i % 2 === 0 && (
-                    <div className="absolute right-0 w-[2px] bg-slate-300 z-0" style={{ top: `${(2 * i + 1) / 4 * 100}%`, height: `${1 / 2 * 100}%` }} />
-                  )}
                   {i === 0 && <MiddleSpacer />}
                 </React.Fragment>
               );
@@ -466,13 +463,14 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA: FINAL */}
-          <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
             {(() => {
               let topFinalistName = "";
               let botFinalistName = "";
               
+              // Buscamos array de final
               let finalRound = [];
-              let finalScores = []; 
+              let finalScores = []; // <-- ARRAY DE PUNTOS
               
               if (getSize === 64) {
                   finalRound = bracketData.r6;
@@ -506,7 +504,7 @@ export const BracketView = ({
                 botFinalistName && botFinalistName === bracketData.winner;
 
               return (
-                <div className="relative flex flex-col space-y-2 z-10">
+                <div className="relative flex flex-col space-y-2">
                   <div
                     className={`h-8 border-b-2 ${
                       isTopWinner ? bracketStyle.borderColor : "border-slate-300"
@@ -523,6 +521,7 @@ export const BracketView = ({
                     >
                       {topFinalistName || ""}
                     </span>
+                    {/* AÑADIDO: SCORE SI ES GANADOR */}
                     <span className="text-black font-black text-xs ml-1">
                       {isTopWinner ? (finalScores[0] || "") : ""}
                     </span>
@@ -543,11 +542,13 @@ export const BracketView = ({
                     >
                       {botFinalistName || ""}
                     </span>
+                     {/* AÑADIDO: SCORE SI ES GANADOR */}
                     <span className="text-black font-black text-xs ml-1">
                       {isBotWinner ? (finalScores[1] || "") : ""}
                     </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                  <div className="absolute right-0 top-[30px] h-[42px] w-[2px] bg-slate-300" />
                 </div>
               );
             })()}
@@ -572,7 +573,7 @@ export const BracketView = ({
           </div>
         </div>
       ) : (
-        /* ESTADO VACÍO */
+        /* ESTADO VACÍO / GENERAR SORTEO */
         <div className="py-20 flex flex-col items-center justify-center text-slate-400">
           <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
           <h3 className="text-2xl font-black uppercase tracking-wider mb-2">
