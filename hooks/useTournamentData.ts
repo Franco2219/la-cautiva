@@ -133,7 +133,7 @@ export const useTournamentData = () => {
 
       let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
       
-      // 1. SEEDS FIJOS
+      // 1. SEEDS FIJOS 1-4
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
@@ -156,9 +156,37 @@ export const useTournamentData = () => {
           matches[idxMidBottom].p1 = mids[1];
           if(playersWithBye.has(mids[1].name)) matches[idxMidBottom].p2 = { name: "BYE", rank: 0 };
       }
+
+      // 2. SEEDS FIJOS 5-8
+      let startIndexForOtherWinners = 3;
+      if (bracketSize >= 16) {
+          startIndexForOtherWinners = 7;
+          const wZ5 = winners.find(w => w.groupIndex === 4);
+          const wZ6 = winners.find(w => w.groupIndex === 5);
+          const wZ7 = winners.find(w => w.groupIndex === 6);
+          const wZ8 = winners.find(w => w.groupIndex === 7);
+
+          const w58 = [wZ5, wZ6, wZ7, wZ8].filter(Boolean).sort(() => Math.random() - 0.5);
+          const qs = numMatches / 4; // Tamaño en partidos de cada cuadrante
+          
+          const posToAssign = [
+              { idx: qs - 1, field: 'p2', opp: 'p1' },     // Último partido del 1er cuadrante (para enfrentar a S1)
+              { idx: qs, field: 'p1', opp: 'p2' },         // Primer partido del 2do cuadrante (para enfrentar a S3/4)
+              { idx: 3 * qs - 1, field: 'p2', opp: 'p1' }, // Último partido del 3er cuadrante (para enfrentar a S3/4)
+              { idx: 3 * qs, field: 'p1', opp: 'p2' }      // Primer partido del 4to cuadrante (para enfrentar a S2)
+          ].sort(() => Math.random() - 0.5);
+
+          w58.forEach((w, i) => {
+              if (w) {
+                  const pos = posToAssign[i];
+                  matches[pos.idx][pos.field] = w;
+                  if(playersWithBye.has(w.name)) matches[pos.idx][pos.opp] = { name: "BYE", rank: 0 };
+              }
+          });
+      }
       
-      // Llenar el resto de ganadores
-      const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+      // 3. Llenar el resto de ganadores (Zonas 9 en adelante)
+      const otherWinners = winners.filter(w => w.groupIndex > startIndexForOtherWinners).sort(() => Math.random() - 0.5);
       
       if (bracketSize === 64) {
           otherWinners.forEach(w => {
