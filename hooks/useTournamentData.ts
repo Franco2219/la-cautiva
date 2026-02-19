@@ -681,19 +681,7 @@ export const useTournamentData = () => {
       const sheetName = `Grupos ${tournamentShort} ${category}`; const url = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
       try {
           const response = await fetch(url); const csvText = await response.text(); const rows = parseCSV(csvText); let qualifiers = [];
-          for(let i = 0; i < 50; i++) { 
-            if (rows[i]) { 
-                const winnerName = rows[i][12]; 
-                const runnerName = rows[i][13]; 
-                // CORREGIDO: SE QUITÓ EL FILTRO DE "ZONA" PARA PERMITIR SORTEOS PRELIMINARES
-                if (winnerName && winnerName !== "-" && winnerName.trim() !== "") { 
-                    qualifiers.push({ name: winnerName, rank: 1, groupIndex: i }); 
-                } 
-                if (runnerName && runnerName !== "-" && runnerName.trim() !== "") { 
-                    qualifiers.push({ name: runnerName, rank: 2, groupIndex: i }); 
-                } 
-            } 
-          }
+          for(let i = 0; i < 50; i++) { if (rows[i]) { const winnerName = rows[i][12]; const runnerName = rows[i][13]; if (winnerName && winnerName !== "-" && winnerName !== "" && !winnerName.toLowerCase().includes("1ro")) { qualifiers.push({ name: winnerName, rank: 1, groupIndex: i }); } if (runnerName && runnerName !== "-" && runnerName !== "" && !runnerName.toLowerCase().includes("2do")) { qualifiers.push({ name: runnerName, rank: 2, groupIndex: i }); } } }
           if (qualifiers.length >= 3) { const result = generatePlayoffBracket(qualifiers); if (result) { setGeneratedBracket(result.matches); setNavState({ ...navState, level: "generate-bracket", category, tournamentShort, bracketSize: result.bracketSize }); } } else { alert("No se encontraron clasificados para sortear"); }
       } catch (e) { console.error(e); alert("Error leyendo los clasificados."); } finally { setIsLoading(false); }
   }
