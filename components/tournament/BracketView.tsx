@@ -181,7 +181,7 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
-                      <div className="absolute right-0 top-[18px] bottom-0 w-[2px] bg-slate-300" />
+                      <div className="absolute right-0 top-[18px] h-[22px] w-[2px] bg-slate-300" />
                     </div>
                     {idx === 30 && <MiddleSpacer />}
                   </React.Fragment>
@@ -247,7 +247,7 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      <div className="absolute right-0 top-[22px] bottom-0 w-[2px] bg-slate-300" />
+                      <div className="absolute right-0 top-[22px] h-[34px] w-[2px] bg-slate-300" />
                     </div>
                     {idx === 14 && <MiddleSpacer />}
                   </React.Fragment>
@@ -313,7 +313,7 @@ export const BracketView = ({
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      <div className="absolute right-0 top-[30px] bottom-0 w-[2px] bg-slate-300" />
+                      <div className="absolute right-0 top-[30px] h-[50px] w-[2px] bg-slate-300" />
                     </div>
                     {i === 3 && <MiddleSpacer />}
                   </React.Fragment>
@@ -377,7 +377,7 @@ export const BracketView = ({
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                    <div className="absolute right-0 top-[30px] bottom-0 w-[2px] bg-slate-300" />
+                    <div className="absolute right-0 top-[30px] h-[66px] w-[2px] bg-slate-300" />
                   </div>
                   {i === 1 && <MiddleSpacer />}
                 </React.Fragment>
@@ -454,7 +454,7 @@ export const BracketView = ({
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                    <div className="absolute right-0 top-[30px] bottom-0 w-[2px] bg-slate-300" />
+                    <div className="absolute right-0 top-[30px] h-[82px] w-[2px] bg-slate-300" />
                   </div>
                   {i === 0 && <MiddleSpacer />}
                 </React.Fragment>
@@ -548,7 +548,7 @@ export const BracketView = ({
                     </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                  <div className="absolute right-0 top-[30px] bottom-0 w-[2px] bg-slate-300" />
+                  <div className="absolute right-0 top-[30px] h-[42px] w-[2px] bg-slate-300" />
                 </div>
               );
             })()}
