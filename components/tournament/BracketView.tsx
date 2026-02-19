@@ -27,21 +27,13 @@ export const BracketView = ({
   const tournamentName = getTournamentName(navState.tournamentShort);
   
   // --- LÓGICA DE TAMAÑO MODIFICADA ---
-  // 1. Intentamos leer el tamaño explícito
   let getSize = Number(bracketData.bracketSize);
-
-  // 2. LA VERDAD ABSOLUTA: Si existe la Ronda 1, su longitud MANDA.
-  // Esto elimina suposiciones por nombre de torneo.
-  // Si hay 32 items en r1, es cuadro de 32. Si hay 64, es de 64.
   if (bracketData.r1 && bracketData.r1.length > 0) {
       getSize = bracketData.r1.length;
   }
-
-  // 3. Fallback de seguridad
   if (!getSize) getSize = 32;
   // --- FIN DE LÓGICA ---
 
-  // Helper para mapear las rondas dinámicamente según el tamaño del cuadro
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
       if (roundName === 'r64') {
           if (getSize === 64) return [bracketData.r1, bracketData.s1, bracketData.r2];
@@ -75,7 +67,6 @@ export const BracketView = ({
       return [null, null, null];
   };
 
-  // Helper para renderizar el seed sin punto extra si es texto (zona)
   const renderSeed = (name: string) => {
       if (!name || !bracketData.seeds) return null;
       const seed = bracketData.seeds[name];
@@ -91,7 +82,6 @@ export const BracketView = ({
 
   return (
     <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
-      {/* Header del Bracket */}
       <div
         className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}
       >
@@ -127,7 +117,8 @@ export const BracketView = ({
           
           {/* NUEVA COLUMNA: 64 JUGADORES (32 PARTIDOS) */}
           {getSize === 64 && (
-            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+            // CAMBIO AQUI: justify-around -> justify-center
+            <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r64');
                 const p1 = r ? r[idx] : null;
@@ -192,7 +183,8 @@ export const BracketView = ({
 
           {/* COLUMNA: 32 JUGADORES */}
           {getSize >= 32 && (
-            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+            // CAMBIO AQUI: justify-around -> justify-center
+            <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 16 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r32');
                 if (!r) return null; // Safety check
@@ -258,7 +250,8 @@ export const BracketView = ({
 
           {/* COLUMNA: 16 JUGADORES (OCTAVOS) */}
           {getSize >= 16 && (
-            <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+            // CAMBIO AQUI: justify-around -> justify-center
+            <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
               {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                 const [r, s, nextR] = getRoundData('r16');
                 if (!r) return null;
@@ -323,7 +316,8 @@ export const BracketView = ({
           )}
 
           {/* COLUMNA: CUARTOS DE FINAL */}
-          <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
+            {/* CAMBIO AQUI: justify-around -> justify-center */}
             {[0, 2, 4, 6].map((idx, i) => {
               const [r, s, nextR] = getRoundData('qf');
               const p1 = r ? r[idx] : null;
@@ -386,13 +380,13 @@ export const BracketView = ({
           </div>
 
           {/* COLUMNA: SEMIFINALES */}
-          <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
+          <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
+             {/* CAMBIO AQUI: justify-around -> justify-center */}
             {[0, 2].map((idx, i) => {
               const [r, s] = getRoundData('sf');
               const p1 = r ? r[idx] : null;
               const p2 = r ? r[idx + 1] : null;
 
-              // Determinamos ganadores de Semis mirando si están en la final o si son el winner/runnerUp
               let finals = [];
               if (getSize === 64) finals = bracketData.r6 || [];
               else if (getSize === 32) finals = bracketData.r5 || [];
@@ -468,9 +462,8 @@ export const BracketView = ({
               let topFinalistName = "";
               let botFinalistName = "";
               
-              // Buscamos array de final
               let finalRound = [];
-              let finalScores = []; // <-- ARRAY DE PUNTOS
+              let finalScores = []; 
               
               if (getSize === 64) {
                   finalRound = bracketData.r6;
@@ -521,7 +514,6 @@ export const BracketView = ({
                     >
                       {topFinalistName || ""}
                     </span>
-                    {/* AÑADIDO: SCORE SI ES GANADOR */}
                     <span className="text-black font-black text-xs ml-1">
                       {isTopWinner ? (finalScores[0] || "") : ""}
                     </span>
@@ -542,7 +534,6 @@ export const BracketView = ({
                     >
                       {botFinalistName || ""}
                     </span>
-                     {/* AÑADIDO: SCORE SI ES GANADOR */}
                     <span className="text-black font-black text-xs ml-1">
                       {isBotWinner ? (finalScores[1] || "") : ""}
                     </span>
@@ -573,7 +564,7 @@ export const BracketView = ({
           </div>
         </div>
       ) : (
-        /* ESTADO VACÍO / GENERAR SORTEO */
+        /* ESTADO VACÍO */
         <div className="py-20 flex flex-col items-center justify-center text-slate-400">
           <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
           <h3 className="text-2xl font-black uppercase tracking-wider mb-2">
