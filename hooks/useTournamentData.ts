@@ -103,7 +103,7 @@ export const useTournamentData = () => {
       }
   };
 
-  // --- LÓGICA DEL CUADRO DE ELIMINACIÓN (CORREGIDA) ---
+  // --- LÓGICA DEL CUADRO DE ELIMINACIÓN ---
   const generatePlayoffBracket = (qualifiers: any[]) => {
       const totalPlayers = qualifiers.length;
       let bracketSize = 4;
@@ -113,22 +113,27 @@ export const useTournamentData = () => {
       else if (totalPlayers > 4) bracketSize = 8; 
 
       const numMatches = bracketSize / 2;
-      // Inicializamos partidos vacíos
-      let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+      const halfMatches = numMatches / 2;
+      const byeCount = bracketSize - totalPlayers;
 
-      // Separamos Ganadores (Seeds) y Segundos
       const winners = qualifiers.filter(q => q.rank === 1).sort((a, b) => a.groupIndex - b.groupIndex); 
-      const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); // Randomizamos runners
+      const runners = qualifiers.filter(q => q.rank === 2).sort(() => Math.random() - 0.5); 
 
-      // Función auxiliar para colocar un jugador
-      const placePlayer = (player: any, matchIdx: number, slot: 'p1' | 'p2') => {
-          if (matches[matchIdx]) {
-            matches[matchIdx][slot] = player;
+      // Prioridad Byes
+      const playersWithBye = new Set();
+      const priorityByes = Math.min(winners.length, byeCount);
+      for(let i=0; i < priorityByes; i++) {
+          if(winners[i]) playersWithBye.add(winners[i].name);
+      }
+      if (byeCount > priorityByes) {
+          for(let i=0; i < (byeCount - priorityByes); i++) {
+              if(runners[i]) playersWithBye.add(runners[i].name);
           }
-      };
+      }
 
-      // 1. UBICACIÓN DE CABEZAS DE SERIE (Ganadores)
-      // Usamos posiciones estándar para separar a los mejores: Arriba, Abajo, Medio-Arriba, Medio-Abajo
+      let matches: any[] = Array(numMatches).fill(null).map(() => ({ p1: null, p2: null }));
+      
+      // 1. SEEDS FIJOS
       const wZ1 = winners.find(w => w.groupIndex === 0);
       const wZ2 = winners.find(w => w.groupIndex === 1);
       const wZ3 = winners.find(w => w.groupIndex === 2);
@@ -136,73 +141,117 @@ export const useTournamentData = () => {
       
       const idxTop = 0; 
       const idxBottom = numMatches - 1;
-      const idxMidTop = Math.floor(numMatches / 2) - 1; 
-      const idxMidBottom = Math.floor(numMatches / 2); 
+      const idxMidTop = halfMatches - 1; 
+      const idxMidBottom = halfMatches; 
 
-      // Colocamos los top 4 fijos
-      if (wZ1) placePlayer(wZ1, idxTop, 'p1');
-      if (wZ2) placePlayer(wZ2, idxBottom, 'p1');
-      if (wZ3) placePlayer(wZ3, idxMidBottom, 'p1');
-      if (wZ4) placePlayer(wZ4, idxMidTop, 'p1');
-
-      // Colocamos el resto de ganadores en los partidos restantes (espaciados)
-      const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
-      const usedIndices = [idxTop, idxBottom, idxMidTop, idxMidBottom];
-      // Buscamos índices disponibles para P1
-      let availableForWinners = Array.from({length: numMatches}, (_, i) => i).filter(i => !usedIndices.includes(i));
-      // Mezclamos índices para variedad
-      availableForWinners.sort(() => Math.random() - 0.5);
-
-      otherWinners.forEach(w => {
-          if (availableForWinners.length > 0) {
-              placePlayer(w, availableForWinners.pop()!, 'p1');
-          }
-      });
-
-      // 2. UBICACIÓN DE SEGUNDOS (Runners)
-      // Estrategia: Llenar partidos vacíos PRIMERO para evitar Bye vs Bye, luego llenar rivales.
+      if (wZ1) { matches[idxTop].p1 = wZ1; if(playersWithBye.has(wZ1.name)) matches[idxTop].p2 = { name: "BYE", rank: 0 }; }
+      if (wZ2) { matches[idxBottom].p2 = wZ2; if(playersWithBye.has(wZ2.name)) matches[idxBottom].p1 = { name: "BYE", rank: 0 }; }
       
-      while (runners.length > 0) {
-          const runner = runners.pop();
-          
-          // Buscamos partidos que estén totalmente vacíos (P1 es null)
-          const emptyMatchesIndices = matches.map((m, i) => m.p1 === null ? i : -1).filter(i => i !== -1);
-          
-          if (emptyMatchesIndices.length > 0) {
-               // Prioridad 1: Llenar un partido vacío (así garantizamos al menos 1 jugador por línea)
-               // Elegimos uno al azar de los vacíos
-               const targetIdx = emptyMatchesIndices[Math.floor(Math.random() * emptyMatchesIndices.length)];
-               placePlayer(runner, targetIdx, 'p1');
-          } else {
-               // Prioridad 2: Si no hay partidos vacíos, buscamos un rival
-               // Intentamos evitar que juegue contra el ganador de su misma zona
-               const occupiedMatchesIndices = matches.map((m, i) => (m.p1 !== null && m.p2 === null) ? i : -1).filter(i => i !== -1);
-               
-               // Filtramos los que NO son de su zona
-               const validOpponents = occupiedMatchesIndices.filter(i => matches[i].p1.groupIndex !== runner.groupIndex);
-               
-               let targetIdx = -1;
-               if (validOpponents.length > 0) {
-                   targetIdx = validOpponents[Math.floor(Math.random() * validOpponents.length)];
-               } else if (occupiedMatchesIndices.length > 0) {
-                   // Si no queda otra, jugamos contra el que sea
-                   targetIdx = occupiedMatchesIndices[Math.floor(Math.random() * occupiedMatchesIndices.length)];
-               }
-
-               if (targetIdx !== -1) {
-                   placePlayer(runner, targetIdx, 'p2');
-               }
-          }
+      const mids = [wZ3, wZ4].filter(Boolean).sort(() => Math.random() - 0.5);
+      if (mids.length > 0) {
+          matches[idxMidTop].p2 = mids[0];
+          if(playersWithBye.has(mids[0].name)) matches[idxMidTop].p1 = { name: "BYE", rank: 0 };
+      }
+      if (mids.length > 1) {
+          matches[idxMidBottom].p1 = mids[1];
+          if(playersWithBye.has(mids[1].name)) matches[idxMidBottom].p2 = { name: "BYE", rank: 0 };
+      }
+      
+      // Llenar el resto de ganadores
+      const otherWinners = winners.filter(w => w.groupIndex > 3).sort(() => Math.random() - 0.5);
+      
+      if (bracketSize === 64) {
+          otherWinners.forEach(w => {
+             const blockCounts = Array(16).fill(0); 
+             matches.forEach((m, i) => {
+                 if ((m.p1 && m.p1.rank === 1) || (m.p2 && m.p2.rank === 1)) {
+                     blockCounts[Math.floor(i / 2)]++;
+                 }
+             });
+             const candidates = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1);
+             candidates.sort((a, b) => {
+                 const countA = blockCounts[Math.floor(a / 2)];
+                 const countB = blockCounts[Math.floor(b / 2)];
+                 if (countA !== countB) return countA - countB;
+                 return Math.random() - 0.5;
+             });
+             if (candidates.length > 0) {
+                 const idx = candidates[0];
+                 matches[idx].p1 = w;
+                 if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
+             }
+          });
+      } else {
+          const availableMatches = matches.map((m, i) => (!m.p1 && !m.p2) ? i : -1).filter(i => i !== -1).sort(() => Math.random() - 0.5);
+          otherWinners.forEach(w => {
+              if (availableMatches.length > 0) {
+                  const idx = availableMatches.pop()!;
+                  matches[idx].p1 = w;
+                  if(playersWithBye.has(w.name)) matches[idx].p2 = { name: "BYE", rank: 0 };
+              }
+          });
       }
 
-      // 3. LIMPIEZA Y BYES
-      // Ahora sí, cualquier hueco null se convierte en BYE
+      const topMatches = matches.slice(0, halfMatches);
+      const bottomMatches = matches.slice(halfMatches);
+      
+      const getZones = (matchList: any[]) => {
+          const zones = new Set();
+          matchList.forEach(m => {
+              if (m.p1 && m.p1.groupIndex !== undefined) zones.add(m.p1.groupIndex);
+              if (m.p2 && m.p2.groupIndex !== undefined) zones.add(m.p2.groupIndex);
+          });
+          return zones;
+      };
+
+      const zonesInTop = getZones(topMatches);
+      const zonesInBottom = getZones(bottomMatches);
+      
+      const mustGoBottom = runners.filter(r => zonesInTop.has(r.groupIndex));
+      const mustGoTop = runners.filter(r => zonesInBottom.has(r.groupIndex));
+      const freeAgents = runners.filter(r => !zonesInTop.has(r.groupIndex) && !zonesInBottom.has(r.groupIndex));
+      
+      let poolTop = [...mustGoTop];
+      let poolBottom = [...mustGoBottom];
+      let poolFree = [...freeAgents];
+
+      const countReal = (matchList: any[]) => matchList.reduce((acc, m) => acc + (m.p1?.name !== "BYE" && m.p1 ? 1 : 0) + (m.p2?.name !== "BYE" && m.p2 ? 1 : 0), 0);
+      let loadTop = countReal(topMatches) + poolTop.length;
+      let loadBot = countReal(bottomMatches) + poolBottom.length;
+
+      while (poolFree.length > 0) {
+         if (loadTop <= loadBot) { poolTop.push(poolFree.pop()); loadTop++; }
+         else { poolBottom.push(poolFree.pop()); loadBot++; }
+      }
+      
+      const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5);
+      poolTop = shuffle(poolTop); poolBottom = shuffle(poolBottom);
+
+      const fillHalfRandomly = (matchList: any[], pool: any[]) => {
+          let indices = Array.from({length: matchList.length}, (_, i) => i).sort(() => Math.random() - 0.5);
+          for(let i of indices) {
+              if(!matchList[i].p1 && !matchList[i].p2 && pool.length > 0) matchList[i].p1 = pool.pop();
+          }
+          for(let i of indices) {
+              if(matchList[i].p1 && !matchList[i].p2 && matchList[i].p1.name !== "BYE" && pool.length > 0) matchList[i].p2 = pool.pop();
+              else if(!matchList[i].p1 && matchList[i].p2 && matchList[i].p2.name !== "BYE" && pool.length > 0) matchList[i].p1 = pool.pop();
+          }
+          for(let i of indices) {
+              if(pool.length === 0) return;
+              if(!matchList[i].p1) matchList[i].p1 = pool.pop();
+              else if(!matchList[i].p2) matchList[i].p2 = pool.pop();
+          }
+      };
+
+      fillHalfRandomly(topMatches, poolTop);
+      fillHalfRandomly(bottomMatches, poolBottom);
+
       matches.forEach(m => {
           if (!m.p1) m.p1 = { name: "BYE", rank: 0, groupIndex: -1 };
           if (!m.p2) m.p2 = { name: "BYE", rank: 0, groupIndex: -1 };
           
-          // Estética: Si es Jugador vs BYE, ponemos al BYE siempre en P2 (abajo)
-          if (m.p1.name === "BYE" && m.p2.name !== "BYE") {
+          const isFixedP2 = (m.p2.rank === 1 || m.p2.rank === 2 || m.p2.rank === 3 || m.p2.rank === 4);
+          if (!isFixedP2 && m.p1.name === "BYE" && m.p2.name !== "BYE") {
               const temp = m.p1; m.p1 = m.p2; m.p2 = temp;
           }
       });
