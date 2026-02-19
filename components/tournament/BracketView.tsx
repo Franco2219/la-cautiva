@@ -26,23 +26,20 @@ export const BracketView = ({
   const bracketStyle = getTournamentStyle(navState.tournamentShort);
   const tournamentName = getTournamentName(navState.tournamentShort);
   
-  // --- CORRECCIÓN DEFINITIVA DE TAMAÑO ---
-  // Por defecto confiamos en el dato bracketSize, pero si es dudoso, usamos 32.
-  let getSize = Number(bracketData.bracketSize) || 32;
+  // --- LÓGICA DE TAMAÑO MODIFICADA ---
+  // 1. Intentamos leer el tamaño explícito
+  let getSize = Number(bracketData.bracketSize);
 
-  // Lógica de "Fuerza Bruta": Si la lista de la Ronda 1 tiene más de 32 elementos 
-  // (independientemente de bracketSize), TIENE que ser un cuadro de 64.
-  if (bracketData.r1 && bracketData.r1.length > 32) {
-      getSize = 64;
+  // 2. LA VERDAD ABSOLUTA: Si existe la Ronda 1, su longitud MANDA.
+  // Esto elimina suposiciones por nombre de torneo.
+  // Si hay 32 items en r1, es cuadro de 32. Si hay 64, es de 64.
+  if (bracketData.r1 && bracketData.r1.length > 0) {
+      getSize = bracketData.r1.length;
   }
-  
-  // Doble chequeo: Si el nombre del torneo sugiere Grand Slam (AO, US Open, etc) y no es qualy,
-  // y tenemos datos en r1, forzamos 64 para evitar errores visuales.
-  const isGrandSlam = ["AO", "US", "WB", "RG"].includes(navState.tournamentShort);
-  if (isGrandSlam && bracketData.r1 && bracketData.r1.length >= 32 && getSize < 64) {
-      // Si es Grand Slam y hay bastantes datos, ante la duda mostramos 64 para no ocultar la primera ronda
-      getSize = 64;
-  }
+
+  // 3. Fallback de seguridad
+  if (!getSize) getSize = 32;
+  // --- FIN DE LÓGICA ---
 
   // Helper para mapear las rondas dinámicamente según el tamaño del cuadro
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
