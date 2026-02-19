@@ -26,16 +26,18 @@ export const BracketView = ({
   const tournamentName = getTournamentName(navState.tournamentShort);
   
   // --- LÓGICA DE TAMAÑO MODIFICADA ---
-  // 1. Intentamos leer el tamaño explícito
   let getSize = Number(bracketData.bracketSize);
-
-  // 2. LA VERDAD ABSOLUTA: Si existe la Ronda 1, su longitud MANDA.
   if (bracketData.r1 && bracketData.r1.length > 0) {
       getSize = bracketData.r1.length;
   }
-
-  // 3. Fallback de seguridad
   if (!getSize) getSize = 32;
+
+  // Corrección matemática para alinear el "centro de la caja" con el "borde del texto"
+  let baseOffset = 14;
+  if (getSize === 64) baseOffset = 8;
+  else if (getSize === 32) baseOffset = 10;
+  else if (getSize === 16) baseOffset = 14;
+  else if (getSize === 8) baseOffset = 14;
   // --- FIN DE LÓGICA ---
 
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
@@ -118,7 +120,7 @@ export const BracketView = ({
       </div>
 
       {bracketData.hasData ? (
-        <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left">
+        <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left z-10">
           
           {/* COLUMNA: 64 JUGADORES (32 PARTIDOS) - SIEMPRE ES PRIMERA */}
           {getSize === 64 && (
@@ -132,7 +134,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className="relative flex flex-col space-y-1 mb-1">
+                    <div className="relative flex flex-col space-y-1 mb-1 z-10">
                       <div
                         className={`h-5 border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -150,7 +152,7 @@ export const BracketView = ({
                           {renderSeed(p1)}
                           {p1 || ""}
                         </span>
-                        <span className="text-black font-black text-[9px] ml-1">
+                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">
                           {s ? s[idx] : ""}
                         </span>
                       </div>
@@ -171,12 +173,12 @@ export const BracketView = ({
                           {renderSeed(p2)}
                           {p2 || ""}
                         </span>
-                        <span className="text-black font-black text-[9px] ml-1">
+                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">
                           {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
-                      <div className="absolute right-0 top-[18px] bottom-0 w-[2px] bg-slate-300" />
+                      <div className="absolute right-0 top-[18px] h-[22px] w-[2px] bg-slate-300 z-0" />
                     </div>
                     {idx === 30 && <MiddleSpacer />}
                   </React.Fragment>
@@ -200,7 +202,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className={isFirstCol ? "relative flex flex-col space-y-2 mb-2" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `${(2*i + 0.5) / 32 * 100}%`, height: `${1 / 32 * 100}%` }}>
+                    <div className={isFirstCol ? "relative flex flex-col space-y-2 mb-2 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 32 * 100}% + ${baseOffset}px)`, height: `${1 / 32 * 100}%` }}>
                       <div
                         className={`${isFirstCol ? 'h-6 relative' : 'absolute top-0 w-full h-6 -translate-y-[100%]'} border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -218,7 +220,7 @@ export const BracketView = ({
                           {renderSeed(p1)}
                           {p1 || ""}
                         </span>
-                        <span className="text-black font-black text-[10px] ml-1">
+                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">
                           {s ? s[idx] : ""}
                         </span>
                       </div>
@@ -239,12 +241,12 @@ export const BracketView = ({
                           {renderSeed(p2)}
                           {p2 || ""}
                         </span>
-                        <span className="text-black font-black text-[10px] ml-1">
+                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">
                           {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      <div className={`absolute right-0 ${isFirstCol ? 'top-[22px] bottom-0' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
+                      <div className={`absolute right-0 ${isFirstCol ? 'top-[22px] h-[34px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
                     </div>
                     {idx === 14 && <MiddleSpacer />}
                   </React.Fragment>
@@ -268,7 +270,7 @@ export const BracketView = ({
 
                 return (
                   <React.Fragment key={idx}>
-                    <div className={isFirstCol ? "relative flex flex-col space-y-4" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `${(2*i + 0.5) / 16 * 100}%`, height: `${1 / 16 * 100}%` }}>
+                    <div className={isFirstCol ? "relative flex flex-col space-y-4 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 16 * 100}% + ${baseOffset}px)`, height: `${1 / 16 * 100}%` }}>
                       <div
                         className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${
                           w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -286,7 +288,7 @@ export const BracketView = ({
                           {renderSeed(p1)}
                           {p1 || ""}
                         </span>
-                        <span className="text-black font-black text-xs ml-1">
+                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                           {s ? s[idx] : ""}
                         </span>
                       </div>
@@ -307,12 +309,12 @@ export const BracketView = ({
                           {renderSeed(p2)}
                           {p2 || ""}
                         </span>
-                        <span className="text-black font-black text-xs ml-1">
+                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                           {s ? s[idx + 1] : ""}
                         </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                      <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] bottom-0' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
+                      <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] h-[50px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
                     </div>
                     {i === 3 && <MiddleSpacer />}
                   </React.Fragment>
@@ -334,7 +336,7 @@ export const BracketView = ({
 
               return (
                 <React.Fragment key={idx}>
-                  <div className={isFirstCol ? "relative flex flex-col space-y-8" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `${(2*i + 0.5) / 8 * 100}%`, height: `${1 / 8 * 100}%` }}>
+                  <div className={isFirstCol ? "relative flex flex-col space-y-8 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 8 * 100}% + ${baseOffset}px)`, height: `${1 / 8 * 100}%` }}>
                     <div
                       className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${
                         w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -352,7 +354,7 @@ export const BracketView = ({
                         {renderSeed(p1)}
                         {p1 || ""}
                       </span>
-                      <span className="text-black font-black text-xs ml-1">
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                         {s ? s[idx] : ""}
                       </span>
                     </div>
@@ -373,12 +375,12 @@ export const BracketView = ({
                         {renderSeed(p2)}
                         {p2 || ""}
                       </span>
-                      <span className="text-black font-black text-xs ml-1">
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                         {s ? s[idx + 1] : ""}
                       </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
-                    <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] bottom-0' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
+                    <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] h-[66px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
                   </div>
                   {i === 1 && <MiddleSpacer />}
                 </React.Fragment>
@@ -411,7 +413,7 @@ export const BracketView = ({
               return (
                 <React.Fragment key={idx}>
                   {/* Semifinal NUNCA es la primera columna, así que siempre es absoluta */}
-                  <div className="absolute w-full z-10" style={{ top: `${(2*i + 0.5) / 4 * 100}%`, height: `${1 / 4 * 100}%` }}>
+                  <div className="absolute w-full z-10" style={{ top: `calc(${(2*i + 0.5) / 4 * 100}% + ${baseOffset}px)`, height: `${1 / 4 * 100}%` }}>
                     <div
                       className={`absolute top-0 w-full h-8 -translate-y-[100%] border-b-2 ${
                         w1 ? bracketStyle.borderColor : "border-slate-300"
@@ -429,7 +431,7 @@ export const BracketView = ({
                         {renderSeed(p1)}
                         {p1 || ""}
                       </span>
-                      <span className="text-black font-black text-xs ml-1">
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                         {s ? s[idx] : ""}
                       </span>
                     </div>
@@ -450,7 +452,7 @@ export const BracketView = ({
                         {renderSeed(p2)}
                         {p2 || ""}
                       </span>
-                      <span className="text-black font-black text-xs ml-1">
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                         {s ? s[idx + 1] : ""}
                       </span>
                     </div>
@@ -521,7 +523,7 @@ export const BracketView = ({
                     >
                       {topFinalistName || ""}
                     </span>
-                    <span className="text-black font-black text-xs ml-1">
+                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                       {isTopWinner ? (finalScores[0] || "") : ""}
                     </span>
                   </div>
@@ -541,11 +543,12 @@ export const BracketView = ({
                     >
                       {botFinalistName || ""}
                     </span>
-                    <span className="text-black font-black text-xs ml-1">
+                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
                       {isBotWinner ? (finalScores[1] || "") : ""}
                     </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
+                  <div className="absolute right-0 top-[30px] h-[42px] w-[2px] bg-slate-300" />
                 </div>
               );
             })()}
