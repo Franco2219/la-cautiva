@@ -4,7 +4,7 @@ import { useState } from "react";
 import { 
   ID_2025, ID_DATOS_GENERALES, ID_TORNEOS, MI_TELEFONO, TELEFONO_BASTI, tournaments 
 } from "../lib/constants";
-import { parseCSV, getTournamentName } from "../lib/utils";
+import { parseCSV, getTournamentName, getEffectiveTourType } from "../lib/utils";
 
 export const useTournamentData = () => {
   const [navState, setNavState] = useState<any>({ level: "home" });
@@ -387,7 +387,7 @@ export const useTournamentData = () => {
         };
         const headerRow = rows[0]; 
         const currentTourShort = navState.tournamentShort ? navState.tournamentShort.trim().toLowerCase() : "";
-        const tourType = tournaments.find(t => t.short === navState.tournamentShort)?.type || "direct";
+        const tourType = getEffectiveTourType(navState.tournamentShort, navState.gender);
         let colIndex = -1;
         for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase() === currentTourShort) { colIndex = i; break; } }
         if (colIndex === -1) { for(let i=0; i<headerRow.length; i++) { if (headerRow[i] && headerRow[i].trim().toLowerCase().includes(currentTourShort)) { colIndex = i; break; } } }
@@ -716,7 +716,7 @@ export const useTournamentData = () => {
 
   const confirmarSorteoCuadro = () => {
     if (generatedBracket.length === 0) return;
-    const isDirect = tournaments.find(t => t.short === navState.tournamentShort)?.type === "direct";
+    const isDirect = getEffectiveTourType(navState.tournamentShort, navState.gender) === "direct";
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => { 
         const p1 = match.p1; const p2 = match.p2;
@@ -732,7 +732,7 @@ export const useTournamentData = () => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${category} ${tournamentShort}`)}`;
     const checkCanGenerate = async () => {
-        const isDirect = tournaments.find(t => t.short === tournamentShort)?.type === "direct";
+        const isDirect = getEffectiveTourType(tournamentShort, navState.gender) === "direct";
         if (isDirect) {
             const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
             try { const res = await fetch(urlInscriptos); const txt = await res.text(); const rows = parseCSV(txt); const count = rows.filter(r => r[0] === tournamentShort && r[1] === category).length; setBracketData({ hasData: false, canGenerate: count >= 4 }); } catch (e) { setBracketData({ hasData: false, canGenerate: false }); }
@@ -792,7 +792,7 @@ export const useTournamentData = () => {
           else if (playersInCol1 > 16) bracketSize = 32; 
           else if (playersInCol1 <= 8) bracketSize = 8; 
           let seeds: any = { ...hardcodedSeeds };
-          const tourType = tournaments.find(t => t.short === tournamentShort)?.type;
+          const tourType = getEffectiveTourType(tournamentShort, navState.gender);
           
           if (tourType !== "direct") {
              try {

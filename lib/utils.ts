@@ -42,4 +42,17 @@ export const getTournamentStyle = (shortName: string) => {
     };
     const styleKey = map[key] || "default";
     return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
+// Función para obtener el tipo de torneo dependiendo del género
+export const getEffectiveTourType = (shortName: string | undefined, gender: string | undefined) => {
+  if (!shortName) return "direct";
+  const tour = tournaments.find(t => t.short === shortName);
+  if (!tour) return "direct";
+  
+  // Si el género es damas y el torneo tiene un formato específico para ellas, lo usamos
+  if (gender === "damas" && 'typeDamas' in tour && tour.typeDamas) {
+      return tour.typeDamas as string;
+  }
+  
+  // Si no, devolvemos el formato por defecto
+  return tour.type;
 };

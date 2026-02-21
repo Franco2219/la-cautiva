@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History, Construction } from "lucide-react";
 import { tournaments, PRINT_STYLES } from "@/lib/constants"; 
 import { useTournamentData } from "@/hooks/useTournamentData"; 
-import { getTournamentName, getTournamentStyle } from "@/lib/utils";
+import { getTournamentName, getTournamentStyle, getEffectiveTourType } from "@/lib/utils";
 import { sendGAEvent } from '@next/third-parties/google';
 
 import { GroupTable } from "@/components/tournament/GroupTable";
@@ -297,7 +297,8 @@ export default function Home() {
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
                       sendGAEvent('event', 'button_click', { event_label: `Torneo ${t.name} - Cat ${navState.category}` });
-                      if (t.type === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
+                      const effectiveType = getEffectiveTourType(t.short, navState.gender);
+                      if (effectiveType === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
                       else { fetchGroupPhase(navState.category, t.short); }
                     }} className={buttonStyle}> {t.name}
                   </Button>
@@ -478,7 +479,7 @@ export default function Home() {
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
-                                {tournaments.find(t => t.short === navState.tournamentShort)?.type === 'direct' ? (
+                                {getEffectiveTourType(navState.tournamentShort, navState.gender) === 'direct' ? (
                                 <Button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
                                 ) : (
                                 <Button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className="bg-orange-500 text-white font-bold h-12 px-8 shadow-lg"><Shuffle className="mr-2 w-4 h-4" /> Sortear</Button>
