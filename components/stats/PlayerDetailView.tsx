@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ArrowLeft, Search, User, Crown } from "lucide-react"; // Borré ArrowLeft del import aunque no molesta si queda
-import Image from "next/image"; 
+import { ArrowLeft, Search, User, Crown } from "lucide-react"; 
 
 interface MatchRecord {
   Torneo: string;
@@ -28,7 +27,7 @@ interface ProfileData {
 
 interface PlayerDetailViewProps {
   playerName: string;
-  onBack: () => void; // Esta prop se sigue recibiendo pero ya no la usamos acá
+  onBack: () => void; 
   matchesData: MatchRecord[];
   profileData?: ProfileData | null;
 }
@@ -109,6 +108,8 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
 
         if (roundKey === "final") {
             const p1 = getP1(m);
+            // Acá también usamos el cálculo de ganador por score si quisieramos más precisión
+            // pero mantenemos tu lógica intacta para el resumen
             if (p1 === playerName) {
                 points = 12;
                 resultLabel = `Campeón ${tourName}`;
@@ -170,8 +171,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
   return (
     <div className="w-full max-w-4xl mx-auto animate-in slide-in-from-right duration-500 px-2 md:px-0 pb-20">
       
-      {/* --- BOTÓN INTERNO ELIMINADO AQUÍ --- */}
-
       {/* HEADER PERFIL */}
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 flex flex-col items-center text-center mb-8 relative overflow-hidden mt-8">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#b35a38]/10 to-transparent pointer-events-none" />
@@ -223,11 +222,58 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
       <div className="space-y-3">
         {displayedMatches.length > 0 ? (
             displayedMatches.map((match, idx) => {
-                const p1 = getP1(match); 
-                const p2 = getP2(match); 
+                const originalP1 = getP1(match); 
+                const originalP2 = getP2(match); 
+                const originalScore = getScore(match);
                 
-                const didProfileWin = (p1 === playerName);
-                const isP1Profile = (p1 === playerName);
+                // --- 1. Calcular Ganador Analizando el Score ---
+                let winnerNum = 1; 
+                let p1Sets = 0;
+                let p2Sets = 0;
+                
+                const sets = originalScore.trim().split(/\s+/);
+                sets.forEach(s => {
+                    let p1Games, p2Games;
+                    if (s.includes('/')) {
+                        const parts = s.split('/');
+                        p1Games = parseInt(parts[0], 10);
+                        p2Games = parseInt(parts[1], 10);
+                    } else if (s.includes('-')) {
+                        const parts = s.split('-');
+                        p1Games = parseInt(parts[0], 10);
+                        p2Games = parseInt(parts[1], 10);
+                    }
+                    
+                    if (p1Games !== undefined && p2Games !== undefined && !isNaN(p1Games) && !isNaN(p2Games)) {
+                        if (p1Games > p2Games) p1Sets++;
+                        else if (p2Games > p1Games) p2Sets++;
+                    }
+                });
+                
+                if (p2Sets > p1Sets) winnerNum = 2;
+                
+                const actualWinnerName = winnerNum === 1 ? originalP1 : originalP2;
+                const didProfileWin = actualWinnerName === playerName;
+                
+                // --- 2. Anclar jugador del perfil a la izquierda siempre ---
+                const isProfileP1 = originalP1 === playerName;
+                const displayLeftName = playerName;
+                const displayRightName = isProfileP1 ? originalP2 : originalP1;
+                
+                // --- 3. Invertir el resultado visualmente si se cambiaron de lado ---
+                let displayScore = originalScore;
+                if (!isProfileP1) {
+                    displayScore = sets.map(s => {
+                        if (s.includes('/')) {
+                            const [g1, g2] = s.split('/');
+                            return `${g2}/${g1}`;
+                        } else if (s.includes('-')) {
+                            const [g1, g2] = s.split('-');
+                            return `${g2}-${g1}`;
+                        }
+                        return s;
+                    }).join(' ');
+                }
 
                 return (
                     <div key={idx} className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4 border-l-4 ${didProfileWin ? 'border-green-500' : 'border-red-400'}`}>
@@ -237,20 +283,26 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
                         </div>
                         
                         <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4 text-center">
-                            <div className={`flex items-center justify-end gap-1 font-bold text-sm md:text-base ${isP1Profile ? 'text-slate-900' : 'text-slate-500'}`}>
-                                {p1} <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            
+                            {/* LADO IZQUIERDO: PERFIL ACTUAL */}
+                            <div className={`flex items-center justify-end gap-1 font-bold text-sm md:text-base text-slate-900`}>
+                                {displayLeftName} 
+                                {didProfileWin && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />}
                             </div>
 
+                            {/* SCORE (SE ADAPTA DINAMICAMENTE) */}
                             <div className={`px-3 py-1 rounded-lg font-black tracking-widest text-sm whitespace-nowrap border-2 ${
                                 didProfileWin 
                                 ? 'bg-green-100 text-green-700 border-green-200' 
                                 : 'bg-red-50 text-red-700 border-red-100'
                             }`}>
-                                {getScore(match)}
+                                {displayScore}
                             </div>
 
-                            <div className={`text-left font-bold text-sm md:text-base ${!isP1Profile ? 'text-slate-900' : 'text-slate-500'}`}>
-                                {p2}
+                            {/* LADO DERECHO: RIVAL */}
+                            <div className={`flex items-center justify-start gap-1 font-bold text-sm md:text-base text-slate-500`}>
+                                {!didProfileWin && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />} 
+                                {displayRightName}
                             </div>
                         </div>
 
