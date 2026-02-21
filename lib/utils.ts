@@ -42,6 +42,8 @@ export const getTournamentStyle = (shortName: string) => {
     };
     const styleKey = map[key] || "default";
     return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
+}; // <--- AQUÍ FALTABA ESTA LLAVE DE CIERRE
+
 // Función para obtener el tipo de torneo dependiendo del género
 export const getEffectiveTourType = (shortName: string | undefined, gender: string | undefined) => {
   if (!shortName) return "direct";
