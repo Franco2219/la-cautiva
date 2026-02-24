@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState } from "react"; 
 import { 
   ID_2025, ID_DATOS_GENERALES, ID_TORNEOS, MI_TELEFONO, TELEFONO_BASTI, tournaments 
 } from "../lib/constants";
@@ -395,7 +395,32 @@ export const useTournamentData = () => {
         const getPoints = (rowIndex: number) => { if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0; const val = parseInt(rows[rowIndex][colIndex]); return isNaN(val) ? 0 : val; };
         const pts = { champion: getPoints(1), finalist: getPoints(2), semi: getPoints(3), quarters: getPoints(4), octavos: getPoints(5), dieciseis: getPoints(6), groupWin1: getPoints(7), groupWin2: getPoints(8), groupWin3: getPoints(9) };
         const playerScores: any = {};
-        const addRoundScore = (name: string, score: number) => { if (!name || name === "BYE" || name === "") return; const cleanName = name.trim(); if (!playerScores[cleanName] || score > playerScores[cleanName]) { playerScores[cleanName] = score; } };
+
+        // --- FUNCIONES DE LIMPIEZA INTELIGENTES ---
+        const normalizeName = (name: string) => {
+            if (!name) return "";
+            // Quita el patrón (1), (2), etc. al inicio del nombre para unificar el string.
+            return name.replace(/^\(\d+\)\s*/, "").trim().toUpperCase();
+        };
+
+        const isValidPlayer = (name: string) => {
+            if (!name) return false;
+            const upper = name.toUpperCase();
+            if (upper === "BYE" || upper === "-" || upper === "") return false;
+            // Ignorar los placeholders de zonas o ganadores pendientes
+            if (upper.includes("ZONA") || upper.includes("ZN") || upper.includes("1°") || upper.includes("2°") || upper.includes("1RO") || upper.includes("2DO")) return false;
+            return true;
+        };
+        // ------------------------------------------
+
+        const addRoundScore = (name: string, score: number) => {
+            if (!isValidPlayer(name)) return;
+            const cleanName = normalizeName(name);
+            if (!playerScores[cleanName] || score > playerScores[cleanName]) { 
+                playerScores[cleanName] = score; 
+            }
+        };
+
         if (bracketData.hasData) {
             const { r1, r2, r3, r4, r5, winner, bracketSize } = bracketData;
             let semis: string[] = [], cuartos: string[] = [], octavos: string[] = [], dieciseis: string[] = [];
@@ -403,13 +428,22 @@ export const useTournamentData = () => {
             if (bracketSize === 32) { semis = r4; cuartos = r3; octavos = r2; dieciseis = r1; finalists = r5 || []; } 
             else if (bracketSize === 16) { semis = r3; cuartos = r2; octavos = r1; finalists = r4 || []; } 
             else { semis = r2; cuartos = r1; finalists = r3 || []; }
+            
             if (bracketSize === 32) dieciseis.forEach((p: string) => addRoundScore(p, pts.dieciseis));
             if (bracketSize >= 16) octavos.forEach((p: string) => addRoundScore(p, pts.octavos));
             cuartos.forEach((p: string) => addRoundScore(p, pts.quarters));
             semis.forEach((p: string) => addRoundScore(p, pts.semi));
-            const winnerName = winner ? winner.trim().toLowerCase() : "";
-            finalists.forEach((p: string) => { if (p && p !== "BYE" && p !== "") { const pClean = p.trim(); if (winnerName && pClean.toLowerCase() === winnerName) addRoundScore(pClean, pts.champion); else addRoundScore(pClean, pts.finalist); } });
+            
+            const winnerName = normalizeName(winner);
+            finalists.forEach((p: string) => { 
+                if (isValidPlayer(p)) { 
+                    const pClean = normalizeName(p); 
+                    if (winnerName && pClean === winnerName) addRoundScore(pClean, pts.champion); 
+                    else addRoundScore(pClean, pts.finalist); 
+                } 
+            });
         }
+
         if (tourType === "full") {
             const groupUrl = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`Grupos ${navState.tournamentShort} ${navState.category}`)}`;
             try {
@@ -421,12 +455,42 @@ export const useTournamentData = () => {
                     if (groupRows[i] && groupRows[i][0] && (groupRows[i][0].includes("Zona") || groupRows[i][0].includes("Grupo"))) {
                         const players = [groupRows[i+1]?.[0], groupRows[i+2]?.[0], groupRows[i+3]?.[0], groupRows[i+4]?.[0]].filter(p => p && p !== "-" && p !== "");
                         for(let x=0; x<players.length; x++) {
-                            const pName = players[x].trim(); if (!playerWins[pName]) playerWins[pName] = 0; const rowIndex = i + 1 + x;
-                            if (groupRows[rowIndex]) { for(let y=1; y<=players.length; y++) { const res = groupRows[rowIndex][y]; if(res && res.length > 2) { const sets = res.trim().split(" "); let sW = 0, sL = 0; sets.forEach(s => { if(s.includes("/")) { const parts = s.split("/").map(Number); if(parts[0] > parts[1]) sW++; else sL++; } }); if(sW > sL) playerWins[pName]++; } } }
+                            const rawName = players[x];
+                            if (!isValidPlayer(rawName)) continue;
+                            const pName = normalizeName(rawName); 
+                            
+                            if (!playerWins[pName]) playerWins[pName] = 0; 
+                            
+                            const rowIndex = i + 1 + x;
+                            if (groupRows[rowIndex]) { 
+                                for(let y=1; y<=players.length; y++) { 
+                                    const res = groupRows[rowIndex][y]; 
+                                    if(res && res.length > 2) { 
+                                        const sets = res.trim().split(" "); 
+                                        let sW = 0, sL = 0; 
+                                        sets.forEach(s => { 
+                                            if(s.includes("/")) { 
+                                                const parts = s.split("/").map(Number); 
+                                                if(parts[0] > parts[1]) sW++; else sL++; 
+                                            } 
+                                        }); 
+                                        if(sW > sL) playerWins[pName]++; 
+                                    } 
+                                } 
+                            }
                         }
                     }
                 }
-                Object.keys(playerWins).forEach(pName => { const wins = playerWins[pName]; let extraPoints = 0; if (wins === 1) extraPoints = pts.groupWin1; else if (wins === 2) extraPoints = pts.groupWin2; else if (wins >= 3) extraPoints = pts.groupWin3; if (playerScores[pName]) playerScores[pName] += extraPoints; else playerScores[pName] = extraPoints; });
+                Object.keys(playerWins).forEach(pName => { 
+                    const wins = playerWins[pName]; 
+                    let extraPoints = 0; 
+                    if (wins === 1) extraPoints = pts.groupWin1; 
+                    else if (wins === 2) extraPoints = pts.groupWin2; 
+                    else if (wins >= 3) extraPoints = pts.groupWin3; 
+                    
+                    if (playerScores[pName]) playerScores[pName] += extraPoints; 
+                    else playerScores[pName] = extraPoints; 
+                });
             } catch (err) { console.log("Error ranking full", err); }
         }
 
@@ -442,26 +506,26 @@ export const useTournamentData = () => {
                 
                 if (!p1 || !p2) continue;
 
-                const p1Name = p1.trim();
-                const p2Name = p2.trim();
-                const p1IsBye = p1Name.toUpperCase() === "BYE";
-                const p2IsBye = p2Name.toUpperCase() === "BYE";
+                const p1Clean = normalizeName(p1);
+                const p2Clean = normalizeName(p2);
+                const p1IsBye = p1Clean === "BYE";
+                const p2IsBye = p2Clean === "BYE";
                 const r2Index = Math.floor(i / 2);
 
                 if (!p1IsBye && !p2IsBye) {
                     const winnerR1 = r2[r2Index]; 
                     if (winnerR1 && winnerR1.trim() !== "") {
-                        const wName = winnerR1.trim().toLowerCase();
-                        if (p1Name.toLowerCase() !== wName) delete playerScores[p1Name];
-                        if (p2Name.toLowerCase() !== wName) delete playerScores[p2Name];
+                        const wName = normalizeName(winnerR1);
+                        if (p1Clean !== wName) delete playerScores[p1Clean];
+                        if (p2Clean !== wName) delete playerScores[p2Clean];
                     }
                 }
                 else if (p2IsBye && !p1IsBye) {
                     if (r3) {
                         const winnerR2 = r3[Math.floor(r2Index / 2)];
                         if (winnerR2 && winnerR2.trim() !== "") {
-                            const wNameR2 = winnerR2.trim().toLowerCase();
-                            if (p1Name.toLowerCase() !== wNameR2) delete playerScores[p1Name];
+                            const wNameR2 = normalizeName(winnerR2);
+                            if (p1Clean !== wNameR2) delete playerScores[p1Clean];
                         }
                     }
                 }
@@ -469,8 +533,8 @@ export const useTournamentData = () => {
                     if (r3) {
                         const winnerR2 = r3[Math.floor(r2Index / 2)];
                         if (winnerR2 && winnerR2.trim() !== "") {
-                            const wNameR2 = winnerR2.trim().toLowerCase();
-                            if (p2Name.toLowerCase() !== wNameR2) delete playerScores[p2Name];
+                            const wNameR2 = normalizeName(winnerR2);
+                            if (p2Clean !== wNameR2) delete playerScores[p2Clean];
                         }
                     }
                 }
