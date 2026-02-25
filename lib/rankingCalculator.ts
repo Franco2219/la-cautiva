@@ -10,7 +10,9 @@ export const isValidPlayer = (name: string) => {
     if (!name) return false;
     const upper = name.toUpperCase();
     if (upper === "BYE" || upper === "-" || upper === "") return false;
-    if (upper.includes("ZONA") || upper.includes("ZN") || upper.includes("1°") || upper.includes("2°") || upper.includes("1RO") || upper.includes("2DO")) return false;
+    
+    // Filtro preciso: ignora si dice exactamente "ZONA ", "ZN " o arranca con "1° Z" / "2° Z"
+    if (upper.includes("ZONA ") || upper.includes("ZN ") || upper.match(/^[12]°\s*Z/)) return false;
     return true;
 };
 
@@ -50,7 +52,6 @@ export const calculateRankingData = async (
 
     const getPoints = (rowIndex: number) => { if (!rows[rowIndex] || !rows[rowIndex][colIndex]) return 0; const val = parseInt(rows[rowIndex][colIndex]); return isNaN(val) ? 0 : val; };
     
-    // Nueva asignación de índices basada en tu captura de pantalla
     const pts = { 
         champion: getPoints(1),     // Ganador
         finalist: getPoints(2),     // Finalista
@@ -58,7 +59,7 @@ export const calculateRankingData = async (
         quarters: getPoints(4),     // Cuartos
         octavos: getPoints(5),      // Octavos
         dieciseis: getPoints(6),    // Dieciseisavos
-        treintaidos: getPoints(7),  // 32avos (¡NUEVO!)
+        treintaidos: getPoints(7),  // 32avos
         groupWin1: getPoints(8),    // 1 partido en el grupo
         groupWin2: getPoints(9)     // 2 partidos en el grupo
     };
@@ -68,7 +69,6 @@ export const calculateRankingData = async (
     const addRoundScore = (name: string, score: number) => {
         if (!isValidPlayer(name)) return;
         const cleanName = normalizeName(name);
-        // Sólo guarda el puntaje si es mayor al que ya tenía (así garantizamos que se quede con la ronda más alta que alcanzó)
         if (!playerScores[cleanName] || score > playerScores[cleanName]) { 
             playerScores[cleanName] = score; 
         }
@@ -142,10 +142,10 @@ export const calculateRankingData = async (
                 }
             }
             
-            // Asigna los puntos extra por victorias
             Object.keys(playerWins).forEach(pName => { 
                 const wins = playerWins[pName]; 
                 let extraPoints = 0; 
+                // Sumamos si ganó, no si jugó
                 if (wins === 1) extraPoints = pts.groupWin1; 
                 else if (wins >= 2) extraPoints = pts.groupWin2; 
                 
@@ -155,9 +155,10 @@ export const calculateRankingData = async (
         } catch (err) { console.log("Error ranking full groups", err); }
     }
 
-    // 3. REGLA DIRECTA INTACTA (RESTAMOS PUNTOS A PERDEDORES EN 1RA RONDA CON BYE)
+    // 3. REGLA DIRECTA INTACTA
     const targetTournaments = ["adelaide", "iw", "mc", "us"];
-    const isTargetTournament = targetTournaments.includes(currentTourShort);
+    const currentTourLower = currentTourShort.toLowerCase();
+    const isTargetTournament = targetTournaments.includes(currentTourLower);
 
     if (tourType === "direct" && bracketData.hasData && isTargetTournament) {
         const { r1, r2, r3 } = bracketData;
@@ -203,7 +204,6 @@ export const calculateRankingData = async (
         }
     }
 
-    // ORDENAMIENTO FINAL
     const rankingArray = Object.keys(playerScores).map(key => ({ name: key, points: playerScores[key] })).sort((a, b) => { 
         const rankA = getRankIndex(a.name); 
         const rankB = getRankIndex(b.name); 
