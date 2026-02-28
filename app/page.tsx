@@ -56,8 +56,8 @@ export default function Home() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
-    if (e.targetTouches[0].clientX < window.innerWidth * 0.20) {
-        setTouchStart(e.targetTouches[0].clientX);
+    if (e.targetTouches.clientX < window.innerWidth * 0.20) {
+        setTouchStart(e.targetTouches.clientX);
     } else {
         setTouchStart(null);
     }
@@ -65,7 +65,7 @@ export default function Home() {
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (touchStart !== null) {
-        setTouchEnd(e.targetTouches[0].clientX);
+        setTouchEnd(e.targetTouches.clientX);
     }
   }
 
@@ -150,27 +150,27 @@ export default function Home() {
           flex-direction: row;
           align-items: center;
           justify-content: space-between;
-          background-color: #eae0ff; 
+          background-color: #f4eaff; 
           border-radius: 12px;
-          padding: 20px 30px;
+          padding: 12px 20px;
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           font-family: Arial, sans-serif;
-          max-width: 900px;
-          margin: 0 auto 30px auto;
+          max-width: 650px;
+          margin: 0 auto 20px auto;
           position: relative;
           overflow: hidden;
-          border: 1px solid black; 
+          border: 1px solid rgba(0,0,0,0.1); 
         }
         .logo-column {
           display: flex;
           align-items: center;
           justify-content: center;
           position: absolute;
-          left: 20px;
+          left: 15px;
         }
         .sponsor-logo {
-          width: 140px; 
-          height: 140px;
+          width: 90px; 
+          height: 90px;
           border-radius: 50%;
           object-fit: cover;
           background-color: transparent; 
@@ -182,19 +182,20 @@ export default function Home() {
           align-items: flex-end; 
           justify-content: center;
           position: absolute;
-          right: 25px; 
+          right: 15px; 
         }
         .sponsor-actions {
           display: flex;
           flex-direction: column; 
-          gap: 18px; 
+          gap: 12px; 
+          align-items: flex-start;
         }
         .btn-sponsor-icon {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 35px; 
-          height: 35px;
+          width: 26px; 
+          height: 26px;
           text-decoration: none;
           background-color: transparent; 
           transition: transform 0.2s;
@@ -203,53 +204,53 @@ export default function Home() {
           transform: scale(1.15); 
         }
         .icon-svg {
-          width: 35px; 
-          height: 35px;
+          width: 26px; 
+          height: 26px;
         }
         .text-column {
           text-align: center;
           display: flex;
           flex-direction: column;
-          gap: 8px; 
+          gap: 4px; 
           margin: 0 auto; 
           width: 100%;
-          max-width: 550px; 
+          max-width: 400px; 
         }
         .sponsor-title {
           margin: 0;
           color: #3e3e3e;
-          font-size: 3rem; 
+          font-size: 2.2rem; 
           font-family: 'Playfair Display', serif; 
           font-weight: 900; 
           text-align: center; 
         }
         .sponsor-subtitle {
-          margin: 0;
-          color: #6a6a6a;
-          font-size: 1.1rem; 
+          margin-top: 6px;
+          color: #555555;
+          font-size: 0.9rem; 
           font-family: 'Montserrat', sans-serif; 
-          font-weight: 700; 
+          font-weight: 500; 
           text-align: center; 
         }
         .sponsor-location {
           margin: 0;
-          color: #555555;
-          font-size: 0.85rem; 
+          color: #777777;
+          font-size: 0.75rem; 
           font-family: 'Montserrat', sans-serif;
-          font-weight: 500;
+          font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 2px;
+          letter-spacing: 1px;
           text-align: center;
         }
         @media (max-width: 650px) {
           .sponsor-banner {
             flex-direction: column;
             text-align: center;
-            padding: 30px 15px;
+            padding: 20px 15px;
           }
           .logo-column, .social-column {
             position: static;
-            margin: 15px 0;
+            margin: 10px 0;
             align-items: center;
           }
           .sponsor-actions {
@@ -260,15 +261,15 @@ export default function Home() {
             max-width: 100%;
           }
           .sponsor-title {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
           }
           .sponsor-subtitle {
-            font-size: 1rem;
+            font-size: 0.85rem;
           }
         }
       `}</style>
 
-      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
+      <div className={`w-full ${['direct-bracket', 'group-phase', 'ranking-view', 'damas-empty', 'generate-bracket', 'contact', 'stats-player', 'stats-tournaments', 'modality-selection'].includes(navState.level) ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto z-10 text-center`}>
         
         <div className="text-center mb-8 print:hidden">
             <div className="flex justify-center mb-5 text-center">
@@ -301,7 +302,7 @@ export default function Home() {
         )}
 
         {/* --- BANNER SPONSOR LÓGICA DE APARICIÓN --- */}
-        {navState.gender === "caballeros" && ["tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket"].includes(navState.level) && (
+        {navState.gender === "caballeros" && ["tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
           <div className="sponsor-banner print:hidden">
             <div className="logo-column">
               <img src="/logofer.jpg" alt="Cocinando con Fer Logo" className="sponsor-logo" />
@@ -463,12 +464,38 @@ export default function Home() {
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
                       sendGAEvent('event', 'button_click', { event_label: `Torneo ${t.name} - Cat ${navState.category}` });
+                      
+                      // --- LÓGICA DE SELECCIÓN PARA SINGLES/DOBLES EN AO DAMAS ---
+                      if (t.short === "AO" && navState.gender === "damas") {
+                          setNavState({ ...navState, level: "modality-selection", tournament: t.name, tournamentShort: t.short });
+                          return;
+                      }
+
                       const effectiveType = getEffectiveTourType(t.short, navState.gender);
-                      if (effectiveType === "direct") { fetchBracketData(navState.category, t.short); setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); }
-                      else { fetchGroupPhase(navState.category, t.short); }
+                      if (effectiveType === "direct") { 
+                          fetchBracketData(navState.category, t.short); 
+                          setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); 
+                      } else { 
+                          fetchGroupPhase(navState.category, t.short); 
+                      }
                     }} className={buttonStyle}> {t.name}
                   </Button>
                 ))}
+            </div>
+          )}
+
+          {/* --- MENÚ SELECCIÓN DE MODALIDAD (SINGLES / DOBLES) --- */}
+          {navState.level === "modality-selection" && (
+            <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-2xl font-black text-[#b35a38] uppercase italic mb-6">{navState.tournament}</h2>
+                <Button onClick={() => {
+                    fetchBracketData(navState.category, navState.tournamentShort, "S");
+                    setNavState({ ...navState, level: "direct-bracket", modality: "S" });
+                }} className={buttonStyle}>Singles</Button>
+                <Button onClick={() => {
+                    fetchBracketData(navState.category, navState.tournamentShort, "D");
+                    setNavState({ ...navState, level: "direct-bracket", modality: "D" });
+                }} className={buttonStyle}>Dobles</Button>
             </div>
           )}
 
