@@ -180,8 +180,8 @@ export const useTournamentData = () => {
           w58.forEach((w, i) => {
               if (w) {
                   const pos = posToAssign[i];
-                  matches[pos.idx][pos.field] = w;
-                  if(playersWithBye.has(w.name)) matches[pos.idx][pos.opp] = { name: "BYE", rank: 0 };
+                  matches[pos.idx][pos.field as 'p1'|'p2'] = w;
+                  if(playersWithBye.has(w.name)) matches[pos.idx][pos.opp as 'p1'|'p2'] = { name: "BYE", rank: 0 };
               }
           });
       }
@@ -294,7 +294,7 @@ export const useTournamentData = () => {
     if (generatedBracket.length > 0) {
          generatedBracket.forEach(m => {
              if (m.p1 && m.p2 && m.p1.name !== "BYE" && m.p2.name !== "BYE") {
-                 mensaje += `${m.p1.name.replace(/\s+,/g, ",")} vs ${m.p2.name.replace(/\s+,/g, ",")}\n`;
+                 mensaje += `${m.p1.name} vs ${m.p2.name}\n`;
              }
          });
     } else if (navState.level === "group-phase") {
@@ -304,7 +304,7 @@ export const useTournamentData = () => {
                 for (let j = i + 1; j < players.length; j++) {
                     const res = group.results[i] && group.results[i][j] ? group.results[i][j] : "-";
                     if (!res || res === "-" || res === "") {
-                        mensaje += `${players[i].replace(/\s+,/g, ",")} vs ${players[j].replace(/\s+,/g, ",")}\n`;
+                        mensaje += `${players[i]} vs ${players[j]}\n`;
                     }
                 }
             }
@@ -340,19 +340,23 @@ export const useTournamentData = () => {
     groupData.forEach(g => { 
         mensaje += `${g.groupName}\n`;
         g.players.forEach((p: string) => {
-            if (p.trim().match(/^\(\d+\)/)) {
-                 mensaje += `${p.replace(/\s+,/g, ",")}\n`;
+            // 1. Limpiamos espacios extras y normalizamos la coma
+            // \s* significa "cualquier cantidad de espacios"
+            let cleanP = p.replace(/\s*,\s*/g, ", ").trim(); 
+    
+            if (cleanP.match(/^\(\d+\)/)) {
+                 mensaje += `${cleanP}\n`;
             } else {
-                const cleanP = p.replace(/\(\d+\)\s+/, "").trim().replace(/\s+,/g, ","); 
-                const rank = rankMap[cleanP.toLowerCase()];
+                const nameWithoutSeed = cleanP.replace(/\(\d+\)\s+/, "").trim();
+                const rank = rankMap[nameWithoutSeed.toLowerCase()];
+                
                 if (rank) {
-                    mensaje += `(${rank}) ${cleanP}\n`;
+                    mensaje += `(${rank}) ${nameWithoutSeed}\n`;
                 } else {
-                    mensaje += `${cleanP}\n`;
+                    mensaje += `${nameWithoutSeed}\n`;
                 }
             }
         });
-
         if (g.players.length === 2) {
             mensaje += "-\n";
         }
@@ -387,11 +391,25 @@ export const useTournamentData = () => {
       }
   };
 
-  const runDirectDraw = async (categoryShort: string, tournamentShort: string) => {
+  const runDirectDraw = async (categoryShort: string, tournamentShort: string, modalityParam?: string) => {
     setIsLoading(true);
     setGeneratedBracket([]);
     setIsFixedData(false);
     setIsSorteoConfirmado(false);
+
+    // --- NUEVA LÓGICA MODALIDAD ---
+    const modality = modalityParam || navState.modality;
+    const cleanCategory = categoryShort.replace("Damas ", "").trim();
+    
+    let searchTournament = tournamentShort;
+    let searchCategory = categoryShort;
+
+    if (navState.gender === "damas" && tournamentShort === "AO") {
+        searchTournament = modality === "S" ? "SWAO" : (modality === "D" ? "DWAO" : tournamentShort);
+        searchCategory = cleanCategory; 
+    }
+    // ------------------------------
+
     try {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
         const rankRes = await fetch(rankUrl);
@@ -411,7 +429,7 @@ export const useTournamentData = () => {
         
         // --- LIMPIEZA DE NOMBRES EN SORTEO DIRECTO ---
         const filteredInscriptos = parseCSV(inscCsv).slice(1)
-            .filter(cols => cols === tournamentShort && cols === categoryShort)
+            .filter(cols => cols === searchTournament && cols === searchCategory) // Filtrado actualizado
             .map(cols => {
                 let name = cols || "";
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
@@ -616,26 +634,47 @@ export const useTournamentData = () => {
     let mensaje = `*SORTEO CUADRO FINAL - ${navState.tournamentShort}*\n*Categoría:* ${navState.category}\n\n`;
     generatedBracket.forEach((match) => { 
         const p1 = match.p1; const p2 = match.p2;
-        let p1Name = "TBD"; if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name.replace(/\s+,/g, ",")}` : p1.name.replace(/\s+,/g, ","); }
-        let p2Name = "TBD"; if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name.replace(/\s+,/g, ",")}` : p2.name.replace(/\s+,/g, ","); }
+        let p1Name = "TBD"; if (p1) { p1Name = (isDirect && p1.rank) ? `(${p1.rank}) ${p1.name}` : p1.name; }
+        let p2Name = "TBD"; if (p2) { p2Name = (isDirect && p2.rank) ? `(${p2.rank}) ${p2.name}` : p2.name; }
         mensaje += `${p1Name}\n${p2Name}\n`; 
     });
     window.open(`https://wa.me/${MI_TELEFONO}?text=${encodeURIComponent(mensaje)}`, '_blank');
     setIsSorteoConfirmado(true);
   }
 
-  const fetchBracketData = async (category: string, tournamentShort: string, modality?: string) => {
+  const fetchBracketData = async (category: string, tournamentShort: string, modalityParam?: string) => {
     setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     
-    // --- LÓGICA AGREGADA PARA LA MODALIDAD S/D ---
-    const sheetTarget = modality ? `${category} ${tournamentShort} ${modality}` : `${category} ${tournamentShort}`;
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTarget)}`;
+    // --- NUEVA LÓGICA MODALIDAD ---
+    const modality = modalityParam || navState.modality;
+    const cleanCategory = category.replace("Damas ", "").trim();
     
+    let sheetTarget = `${category} ${tournamentShort}`;
+    
+    if (navState.gender === "damas" && tournamentShort === "AO" && modality) {
+        sheetTarget = `${cleanCategory} ${tournamentShort} W ${modality}`; 
+    } else if (modality) {
+        sheetTarget = `${category} ${tournamentShort} ${modality}`;
+    }
+    // ------------------------------
+
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTarget)}`; // Modificado
     const checkCanGenerate = async () => {
         const isDirect = getEffectiveTourType(tournamentShort, navState.gender) === "direct";
         if (isDirect) {
             const urlInscriptos = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
-            try { const res = await fetch(urlInscriptos); const txt = await res.text(); const rows = parseCSV(txt); const count = rows.filter(r => r === tournamentShort && r === category).length; setBracketData({ hasData: false, canGenerate: count >= 4 }); } catch (e) { setBracketData({ hasData: false, canGenerate: false }); }
+            
+            // --- LÓGICA BÚSQUEDA INSCRIPTOS ---
+            let searchTournament = tournamentShort;
+            let searchCategory = category;
+
+            if (navState.gender === "damas" && tournamentShort === "AO") {
+                searchTournament = modality === "S" ? "SWAO" : (modality === "D" ? "DWAO" : tournamentShort);
+                searchCategory = cleanCategory; 
+            }
+            // ----------------------------------
+
+            try { const res = await fetch(urlInscriptos); const txt = await res.text(); const rows = parseCSV(txt); const count = rows.filter(r => r === searchTournament && r === searchCategory).length; setBracketData({ hasData: false, canGenerate: count >= 4 }); } catch (e) { setBracketData({ hasData: false, canGenerate: false }); }
         } else {
             const sheetNameGroups = `Grupos ${tournamentShort} ${category}`; const urlGroups = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameGroups)}`;
             try { const resGroups = await fetch(urlGroups); const txtGroups = await resGroups.text(); const rowsGroups = parseCSV(txtGroups); let foundQualifiers = false; for(let i=0; i<Math.min(rowsGroups.length, 50); i++) { const hasGroupData = rowsGroups[i] && rowsGroups[i].length > 5 && rowsGroups[i] && rowsGroups[i] !== "" && rowsGroups[i] !== "-"; const hasQualifiersList = rowsGroups[i] && rowsGroups[i] && rowsGroups[i] !== "" && rowsGroups[i] !== "-"; if (hasGroupData || hasQualifiersList) { foundQualifiers = true; break; } } setBracketData({ hasData: false, canGenerate: foundQualifiers }); } catch(err2) { setBracketData({ hasData: false, canGenerate: false }); }
@@ -658,7 +697,7 @@ export const useTournamentData = () => {
         for (let i = 0; i < roundPrev.length; i += 2) { 
             const p1 = roundPrev[i]; const p2 = roundPrev[i+1]; const targetIdx = Math.floor(i / 2); 
             if (!roundNext[targetIdx] || roundNext[targetIdx] === "") { 
-                if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p2; 
+                if (p2 === "BYE" && p1 && p1 !== "BYE") roundNext[targetIdx] = p1; 
                 else if (p1 === "BYE" && p2 && p2 !== "BYE") roundNext[targetIdx] = p2; 
             } 
         }
@@ -711,12 +750,16 @@ export const useTournamentData = () => {
           const winner = (winnerIdx !== -1 && rows && rows[winnerIdx]) ? rows[winnerIdx] : ""; const runnerUp = (winner && winnerIdx !== -1 && rows.length > 1 && rows[winnerIdx]) ? rows[winnerIdx] : "";
           const getColData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => (r[colIdx] && r[colIdx].trim() !== "" && r[colIdx].trim() !== "-") ? r[colIdx] : ""); const getScoreData = (colIdx: number, limit: number) => rows.slice(0, limit).map(r => r[colIdx] || "");
           
+          // --- PATCH: Función especial para asegurar el score de la final ---
           const getFinalScoreData = (colIdx: number) => {
+              // Busca en las dos filas de la final (la primera y la segunda).
               const s1 = rows && rows[colIdx] ? rows[colIdx] : "";
               const s2 = rows && rows[colIdx] ? rows[colIdx] : "";
+              // Si encuentra el score en cualquiera de las dos, lo usa.
               const finalScore = s1.trim() !== "" ? s1 : s2;
               return [finalScore, finalScore]; 
           };
+          // ----------------------------------------------------------------
 
           if (bracketSize === 64) {
               rawData = { 
@@ -725,7 +768,7 @@ export const useTournamentData = () => {
                   r3: getColData(4, 16), s3: getScoreData(5, 16), 
                   r4: getColData(6, 8),  s4: getScoreData(7, 8), 
                   r5: getColData(8, 4),  s5: getScoreData(9, 4), 
-                  r6: getColData(10, 2), s6: getFinalScoreData(11), 
+                  r6: getColData(10, 2), s6: getFinalScoreData(11), // <--- USO DEL PATCH
                   winner: winner, runnerUp: runnerUp, 
                   bracketSize: 64, hasData: true, canGenerate: false, seeds: seeds 
               };
@@ -760,12 +803,9 @@ export const useTournamentData = () => {
         "stats-tournaments": "statistics-menu",
         "modality-selection": "tournament-selection"
     };
-
     let nextLevel = levels[navState.level] || "home";
 
-    if (navState.level === "direct-bracket" && navState.modality) {
-         nextLevel = "modality-selection";
-    }
+    if (navState.level === "direct-bracket" && navState.modality) nextLevel = "modality-selection";
 
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false, modality: undefined });

@@ -44,11 +44,8 @@ export default function Home() {
     sendContactForm
   } = useTournamentData();
 
-  // Estado para historial de torneos
   const [historyTourSelected, setHistoryTourSelected] = useState<string | null>(null);
-  // NUEVO ESTADO: Para historial de jugadores
   const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<string | null>(null);
-
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -69,17 +66,13 @@ export default function Home() {
     }
   }
 
-  // --- LOGICA DEL BOTON VOLVER MODIFICADA ---
   const handleBackAction = () => {
-    // Si estamos en stats de torneos y hay uno seleccionado, volvemos a la lista
     if (navState.level === "stats-tournaments" && historyTourSelected) {
         setHistoryTourSelected(null); 
     } 
-    // NUEVO: Si estamos en stats de jugador y hay uno seleccionado, volvemos a la lista
     else if (navState.level === "stats-player" && selectedPlayerForStats) {
         setSelectedPlayerForStats(null);
     }
-    // Si no, comportamiento normal (volver al menú anterior)
     else {
         goBack(); 
     }
@@ -144,7 +137,6 @@ export default function Home() {
             }
         }
 
-        /* STYLES SPONSOR BANNER */
         .sponsor-banner {
           display: flex;
           flex-direction: row;
@@ -152,10 +144,10 @@ export default function Home() {
           justify-content: space-between;
           background-color: #f4eaff; 
           border-radius: 12px;
-          padding: 12px 20px;
+          padding: 8px 16px;
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           font-family: Arial, sans-serif;
-          max-width: 650px;
+          max-width: 550px;
           margin: 0 auto 20px auto;
           position: relative;
           overflow: hidden;
@@ -166,11 +158,11 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           position: absolute;
-          left: 15px;
+          left: 12px;
         }
         .sponsor-logo {
-          width: 90px; 
-          height: 90px;
+          width: 70px;
+          height: 70px;
           border-radius: 50%;
           object-fit: cover;
           background-color: transparent; 
@@ -182,20 +174,20 @@ export default function Home() {
           align-items: flex-end; 
           justify-content: center;
           position: absolute;
-          right: 15px; 
+          right: 12px; 
         }
         .sponsor-actions {
           display: flex;
           flex-direction: column; 
-          gap: 12px; 
+          gap: 8px;
           align-items: flex-start;
         }
         .btn-sponsor-icon {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 26px; 
-          height: 26px;
+          width: 22px;
+          height: 22px; 
           text-decoration: none;
           background-color: transparent; 
           transition: transform 0.2s;
@@ -204,38 +196,39 @@ export default function Home() {
           transform: scale(1.15); 
         }
         .icon-svg {
-          width: 26px; 
-          height: 26px;
+          width: 22px; 
+          height: 22px;
         }
         .text-column {
           text-align: center;
           display: flex;
           flex-direction: column;
-          gap: 4px; 
+          gap: 2px; 
           margin: 0 auto; 
           width: 100%;
-          max-width: 400px; 
+          max-width: 350px; 
         }
         .sponsor-title {
           margin: 0;
           color: #3e3e3e;
-          font-size: 2.2rem; 
+          font-size: 1.8rem;
           font-family: 'Playfair Display', serif; 
           font-weight: 900; 
           text-align: center; 
         }
         .sponsor-subtitle {
-          margin-top: 6px;
+          margin-top: 4px;
           color: #555555;
-          font-size: 0.9rem; 
+          font-size: 0.8rem;
           font-family: 'Montserrat', sans-serif; 
           font-weight: 500; 
           text-align: center; 
+          line-height: 1.2;
         }
         .sponsor-location {
           margin: 0;
           color: #777777;
-          font-size: 0.75rem; 
+          font-size: 0.7rem;
           font-family: 'Montserrat', sans-serif;
           font-weight: 600;
           text-transform: uppercase;
@@ -246,11 +239,11 @@ export default function Home() {
           .sponsor-banner {
             flex-direction: column;
             text-align: center;
-            padding: 20px 15px;
+            padding: 15px 12px;
           }
           .logo-column, .social-column {
             position: static;
-            margin: 10px 0;
+            margin: 8px 0;
             align-items: center;
           }
           .sponsor-actions {
@@ -261,10 +254,7 @@ export default function Home() {
             max-width: 100%;
           }
           .sponsor-title {
-            font-size: 1.8rem;
-          }
-          .sponsor-subtitle {
-            font-size: 0.85rem;
+            font-size: 1.6rem;
           }
         }
       `}</style>
@@ -282,7 +272,6 @@ export default function Home() {
           <p className="text-xl text-slate-400 font-bold uppercase tracking-widest italic text-center">Club de Tenis</p>
         </div>
 
-        {/* --- BOTÓN VOLVER GLOBAL MODIFICADO --- */}
         {navState.level !== "home" && (
             <div className="flex justify-center mb-8 w-full print:hidden">
                 <Button 
@@ -290,18 +279,16 @@ export default function Home() {
                     className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
                 >
                     <ArrowLeft className="w-6 h-6 shrink-0" />
-                    {/* ETIQUETA DINÁMICA DEL BOTÓN */}
                     <span>
                         {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
                          (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : 
-                         (navState.level === "stats-player" && selectedPlayerForStats) ? "VOLVER AL LISTADO" : // NUEVA ETIQUETA
+                         (navState.level === "stats-player" && selectedPlayerForStats) ? "VOLVER AL LISTADO" : 
                          "VOLVER"}
                     </span>
                 </Button>
             </div>
         )}
 
-        {/* --- BANNER SPONSOR LÓGICA DE APARICIÓN --- */}
         {navState.gender === "caballeros" && ["tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
           <div className="sponsor-banner print:hidden">
             <div className="logo-column">
@@ -316,13 +303,11 @@ export default function Home() {
 
             <div className="social-column">
               <div className="sponsor-actions">
-                
                 <a href="https://wa.me/1562776599" target="_blank" rel="noopener noreferrer" className="btn-sponsor-icon" title="WhatsApp">
                   <svg className="icon-svg" viewBox="0 0 24 24">
                     <path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
                   </svg>
                 </a>
-
                 <a href="https://www.instagram.com/cocinandoconfer/" target="_blank" rel="noopener noreferrer" className="btn-sponsor-icon" title="Instagram">
                   <svg className="icon-svg" viewBox="0 0 24 24">
                     <defs>
@@ -337,7 +322,6 @@ export default function Home() {
                     <path fill="url(#ig-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.203 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm3.98-10.98a1.44 1.44 0 11-2.88 0 1.44 1.44 0 012.88 0z"/>
                   </svg>
                 </a>
-                
               </div>
             </div>
           </div>
@@ -392,7 +376,6 @@ export default function Home() {
                 }} className={buttonStyle}>
                     <TrendingUp className="mr-2 opacity-50" /> Estadísticas por Jugador
                 </Button>
-                
                 <Button onClick={() => {
                     sendGAEvent('event', 'button_click', { event_label: 'Estadisticas: Por Torneo' });
                     setNavState({ level: "stats-tournaments" });
@@ -422,7 +405,6 @@ export default function Home() {
                     sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2025' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2025" });
                 }} className={buttonStyle}>Ranking 2025</Button>
-                
                 <Button onClick={() => {
                     sendGAEvent('event', 'button_click', { event_label: 'Ver Ranking 2026' });
                     setNavState({ level: "category-selection", type: "ranking", year: "2026" });
@@ -443,7 +425,7 @@ export default function Home() {
                   
                   if (navState.type === "damas") { 
                     setNavState({ ...navState, level: "tournament-selection", category: "Damas " + catShort, selectedCategory: cat, gender: navState.type }); 
-                }
+                  }
                   else if (navState.type === "ranking") { fetchRankingData(catShort, navState.year); setNavState({ ...navState, level: "ranking-view", selectedCategory: cat, year: navState.year }); }
                   else { setNavState({ ...navState, level: "tournament-selection", category: catShort, selectedCategory: cat, gender: navState.type }); }
                 }} className={buttonStyle}>{cat}</Button>
@@ -465,7 +447,7 @@ export default function Home() {
                   <Button key={t.id} onClick={() => {
                       sendGAEvent('event', 'button_click', { event_label: `Torneo ${t.name} - Cat ${navState.category}` });
                       
-                      // --- LÓGICA DE SELECCIÓN PARA SINGLES/DOBLES EN AO DAMAS ---
+                      // LOGICA AUSTRALIAN OPEN DAMAS: MOSTRAR SELECCION MODALIDAD
                       if (t.short === "AO" && navState.gender === "damas") {
                           setNavState({ ...navState, level: "modality-selection", tournament: t.name, tournamentShort: t.short });
                           return;
@@ -484,7 +466,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* --- MENÚ SELECCIÓN DE MODALIDAD (SINGLES / DOBLES) --- */}
+          {/* NUEVO: SELECCIÓN DE MODALIDAD (SINGLES / DOBLES) PARA DAMAS AO */}
           {navState.level === "modality-selection" && (
             <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h2 className="text-2xl font-black text-[#b35a38] uppercase italic mb-6">{navState.tournament}</h2>
@@ -500,7 +482,7 @@ export default function Home() {
           )}
 
           {navState.level === "tournament-phases" && (
-            <div className="space-y-4 text-center text-center">
+            <div className="space-y-4 text-center">
               <h2 className="text-lg font-black mb-4 text-slate-800 uppercase">Fases del Torneo</h2>
               {navState.hasGroups ? (
                 <>
@@ -702,7 +684,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-8 print:hidden">
               <Button onClick={goBack} variant="outline" size="sm" className="border-[#b35a38] text-[#b35a38] font-bold"><ArrowLeft className="mr-2" /> ATRÁS</Button>
               {!isSorteoConfirmado && !isFixedData && (
-                <div className="flex space-x-2 text-center text-center">
+                <div className="flex space-x-2 text-center">
                   <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className="bg-green-600 text-white font-bold h-12"><Shuffle className="mr-2" /> SORTEAR</Button>
                   <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12"><List className="mr-2" /> LISTA BASTI</Button>
                   <Button onClick={confirmarYEnviar} className="bg-green-600 text-white font-bold h-12 px-8"><Send className="mr-2" /> CONFIRMAR Y ENVIAR</Button>
@@ -735,12 +717,10 @@ export default function Home() {
 
       </div>
       
-      {/* Footer con el botón de Contacto - OCULTO EN IMPRESIÓN */}
       <div className="mt-12 flex justify-center items-center gap-3 text-center select-none text-slate-500/80 text-sm font-bold uppercase tracking-widest animate-pulse print:hidden">
          <p onClick={handleFooterClick} className="cursor-pointer hover:text-[#b35a38] transition-colors">Sistema de seguimiento de torneos</p>
          <span className="text-slate-300">|</span>
          <p onClick={() => {
-             // AVISO A GOOGLE: CONTACTO
              sendGAEvent('event', 'button_click', { event_label: 'Footer: Contacto' });
              setNavState({ level: "contact" });
          }} className="cursor-pointer hover:text-[#b35a38] transition-colors">Contacto</p>
