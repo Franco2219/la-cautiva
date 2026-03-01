@@ -475,8 +475,15 @@ export default function Home() {
                     setNavState({ ...navState, level: "direct-bracket", modality: "S" });
                 }} className={buttonStyle}>Singles</Button>
                 <Button onClick={() => {
-                    fetchBracketData(navState.category, navState.tournamentShort, "D");
-                    setNavState({ ...navState, level: "direct-bracket", modality: "D" });
+                    if (navState.category === "Damas B1") {
+                        // Excepción: B1 Dobles Damas va directo a una zona de 4
+                        fetchGroupPhase("Damas B1 Dobles", navState.tournamentShort).then(() => {
+                          setNavState({ ...navState, level: "group-phase", modality: "D" });
+                        });
+                    } else {
+                        fetchBracketData(navState.category, navState.tournamentShort, "D");
+                        setNavState({ ...navState, level: "direct-bracket", modality: "D" });
+                    }
                 }} className={buttonStyle}>Dobles</Button>
             </div>
           )}
