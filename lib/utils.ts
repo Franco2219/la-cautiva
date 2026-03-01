@@ -48,8 +48,8 @@ export const getTournamentStyle = (shortName: string) => {
 export const getEffectiveTourType = (shortName: string | undefined, gender: string | undefined) => {
   if (!shortName) return "direct";
   
-  // Si el género es damas, forzamos a que siempre sea eliminación directa (llave)
-  if (gender === "damas") {
+  // Hacemos el chequeo a prueba de balas (no importa si llega "Damas", "damas" o "DAMAS")
+  if (gender && gender.toLowerCase() === "damas") {
       return "direct";
   }
 
