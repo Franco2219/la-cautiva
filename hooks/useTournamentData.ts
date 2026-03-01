@@ -778,6 +778,7 @@ export const useTournamentData = () => {
     let nextLevel = levels[navState.level] || "home";
 
     if (navState.level === "direct-bracket" && navState.modality) nextLevel = "modality-selection";
+    if (navState.level === "group-phase" && navState.modality) nextLevel = "modality-selection";
 
     if (nextLevel === "tournament-selection" || nextLevel === "category-selection") {
         setNavState({ ...navState, level: nextLevel, tournamentShort: undefined, currentTour: undefined, tournament: undefined, hasGroups: false, modality: undefined });
