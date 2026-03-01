@@ -47,14 +47,15 @@ export const getTournamentStyle = (shortName: string) => {
 // Función para obtener el tipo de torneo dependiendo del género
 export const getEffectiveTourType = (shortName: string | undefined, gender: string | undefined) => {
   if (!shortName) return "direct";
+  
+  // Si el género es damas, forzamos a que siempre sea eliminación directa (llave)
+  if (gender === "damas") {
+      return "direct";
+  }
+
   const tour = tournaments.find(t => t.short === shortName);
   if (!tour) return "direct";
   
-  // Si el género es damas y el torneo tiene un formato específico para ellas, lo usamos
-  if (gender === "damas" && 'typeDamas' in tour && tour.typeDamas) {
-      return tour.typeDamas as string;
-  }
-  
-  // Si no, devolvemos el formato por defecto
+  // Si no es damas, devolvemos el formato por defecto (caballeros)
   return tour.type;
 };
