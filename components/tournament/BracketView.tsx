@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Trophy, AlertCircle, Shuffle } from "lucide-react";
-import { getTournamentName, getTournamentStyle } from "../../lib/utils";
+import { getTournamentName, getTournamentStyle, getEffectiveTourType } from "../../lib/utils";
 import { tournaments } from "../../lib/constants";
 
 interface BracketViewProps {
@@ -585,9 +585,7 @@ export const BracketView = ({
                 Se encontraron clasificados en el sistema.
               </p>
               <div className="flex gap-2 justify-center">
-                {tournaments.find(
-                  (t) => t.short === navState.tournamentShort
-                )?.type === "direct" ? (
+              {getEffectiveTourType(navState.tournamentShort, navState.gender) === "direct" ? (
                   <button
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
