@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Trophy, AlertCircle, Shuffle } from "lucide-react";
-import { getTournamentName, getTournamentStyle } from "../../lib/utils";
+import { getTournamentName, getTournamentStyle, getEffectiveTourType } from "../../lib/utils";
 import { tournaments } from "../../lib/constants";
 
 interface BracketViewProps {
@@ -258,7 +258,7 @@ export const BracketView = ({
           {/* COLUMNA: 16 JUGADORES (OCTAVOS) */}
           {getSize >= 16 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-              {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
+              {.map((idx, i) => {
                 const [r, s, nextR] = getRoundData('r16');
                 if (!r) return null;
                 const p1 = r[idx];
@@ -325,7 +325,7 @@ export const BracketView = ({
 
           {/* COLUMNA: CUARTOS DE FINAL */}
           <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-            {[0, 2, 4, 6].map((idx, i) => {
+            {.map((idx, i) => {
               const [r, s, nextR] = getRoundData('qf');
               const p1 = r ? r[idx] : null;
               const p2 = r ? r[idx + 1] : null;
@@ -390,7 +390,7 @@ export const BracketView = ({
 
           {/* COLUMNA: SEMIFINALES */}
           <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-            {[0, 2].map((idx, i) => {
+            {.map((idx, i) => {
               const [r, s] = getRoundData('sf');
               const p1 = r ? r[idx] : null;
               const p2 = r ? r[idx + 1] : null;
@@ -492,8 +492,8 @@ export const BracketView = ({
               }
 
               if (finalRound && finalRound.length >= 2) {
-                topFinalistName = finalRound[0];
-                botFinalistName = finalRound[1];
+                topFinalistName = finalRound;
+                botFinalistName = finalRound;
               } else {
                 if (bracketData.winner) {
                   topFinalistName = bracketData.winner;
@@ -524,7 +524,7 @@ export const BracketView = ({
                       {topFinalistName || ""}
                     </span>
                     <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
-                      {isTopWinner ? (finalScores[0] || "") : ""}
+                      {isTopWinner ? (finalScores || "") : ""}
                     </span>
                   </div>
                   <div
@@ -544,7 +544,7 @@ export const BracketView = ({
                       {botFinalistName || ""}
                     </span>
                     <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
-                      {isBotWinner ? (finalScores[1] || "") : ""}
+                      {isBotWinner ? (finalScores || "") : ""}
                     </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
@@ -585,9 +585,7 @@ export const BracketView = ({
                 Se encontraron clasificados en el sistema.
               </p>
               <div className="flex gap-2 justify-center">
-                {tournaments.find(
-                  (t) => t.short === navState.tournamentShort
-                )?.type === "direct" ? (
+                {getEffectiveTourType(navState.tournamentShort, navState.gender) === "direct" ? (
                   <button
                     onClick={() =>
                       runDirectDraw(navState.category, navState.tournamentShort)
