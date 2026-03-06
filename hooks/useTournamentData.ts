@@ -579,7 +579,22 @@ export const useTournamentData = () => {
         const rows = parseCSV(csvText); const parsedGroups = [];
         for (let i = 0; i < rows.length; i++) {
           if (rows[ i ] && rows[ i ][ 0 ] && (rows[ i ][ 0 ].includes("Zona") || rows[ i ][ 0 ].includes("Grupo"))) {
-            const potentialP4 = rows[ i+4 ] && rows[ i+4 ][ 0 ]; const isNextHeader = potentialP4 && typeof potentialP4 === 'string' && (potentialP4.toLowerCase().includes("zona") || potentialP4.toLowerCase().includes("grupo") || potentialP4.includes("*")); const p4 = !isNextHeader && potentialP4 && potentialP4 !== "-" ? rows[ i+4 ] : null; const playersRaw = [rows[ i+1 ], rows[ i+2 ], rows[ i+3 ]]; if (p4) playersRaw.push(p4);
+            const playersRaw: any[] = [];
+            let offset = 1;
+            
+            while (i + offset < rows.length) {
+                const cell0 = rows[ i + offset ] ? rows[ i + offset ][ 0 ] : undefined;
+                
+                // Si la celda está vacía o tiene un guion, terminaron las jugadoras de esta zona
+                if (!cell0 || cell0 === "-") break;
+                
+                // Si la celda detecta que es el encabezado de la siguiente Zona, frenamos
+                const isNextHeader = typeof cell0 === 'string' && (cell0.toLowerCase().includes("zona") || cell0.toLowerCase().includes("grupo") || cell0.includes("*"));
+                if (isNextHeader) break;
+                
+                playersRaw.push(rows[ i + offset ]);
+                offset++;
+            }
             const validPlayersIndices: number[] = []; const players: string[] = []; const positions: string[] = []; const points: string[] = []; const diff: string[] = []; const gamesDiff: string[] = []; 
             playersRaw.forEach((row, index) => { 
                 const pName = row && row[ 0 ] ? row[ 0 ] : ""; 

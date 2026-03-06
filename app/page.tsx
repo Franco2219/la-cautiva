@@ -471,8 +471,16 @@ export default function Home() {
             <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h2 className="text-2xl font-black text-[#b35a38] uppercase italic mb-6">{navState.tournament}</h2>
                 <Button onClick={() => {
-                    fetchBracketData(navState.category, navState.tournamentShort, "S");
-                    setNavState({ ...navState, level: "direct-bracket", modality: "S" });
+                    // Guardamos la modalidad "S" en el estado
+                    setNavState({ ...navState, modality: "S" });
+                    
+                    if (navState.category === "Damas A" || navState.category === "Damas B1") {
+                        // Esto va a hacer que fetchGroupPhase busque "Grupos AO Damas A Singles"
+                        fetchGroupPhase(`${navState.category} Singles`, navState.tournamentShort);
+                    } else {
+                        fetchBracketData(navState.category, navState.tournamentShort, "S");
+                        setNavState({ ...navState, level: "direct-bracket", modality: "S" });
+                    }
                 }} className={buttonStyle}>Singles</Button>
                 <Button onClick={() => {
                     if (navState.category === "Damas B1") {
@@ -496,7 +504,9 @@ export default function Home() {
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
                   <Button onClick={() => { 
                       const tourName = getTournamentName(navState.currentTour);
-                      fetchBracketData(navState.currentCat, navState.currentTour); 
+                      // Limpiamos " Singles" de la categoría actual para que fetchBracketData lea la pestaña correcta
+                      const catForBracket = navState.currentCat.replace(" Singles", "");
+                      fetchBracketData(catForBracket, navState.currentTour); 
                       setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
                   }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
                 </>
