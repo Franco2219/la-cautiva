@@ -596,9 +596,43 @@ export const useTournamentData = () => {
                 offset++;
             }
             const validPlayersIndices: number[] = []; const players: string[] = []; const positions: string[] = []; const points: string[] = []; const diff: string[] = []; const gamesDiff: string[] = []; 
+            
+            // --- NUEVA LÓGICA DAMAS: BÚSQUEDA DINÁMICA DE COLUMNAS ---
+            let posIdx = 4; let ptsIdx = 5; let setsIdx = 6; let gamesIdx = 7;
+            const isDamas = categoryShort.toLowerCase().includes("damas") || (navState && navState.gender === "damas");
+            
+            if (isDamas) {
+                // Buscamos primero en la fila del grupo (rows[i]), si no está, vamos a la primera fila de la hoja (rows[0])
+                const searchRow = rows[i].some((h: any) => h && ["posici", "puntos", "sets", "games"].some(k => h.toString().toLowerCase().includes(k))) ? rows[i] : rows[0];
+                
+                if (searchRow) {
+                    const headerLower = searchRow.map((h: any) => h ? h.toString().toLowerCase().trim() : "");
+                    
+                    // Busca las palabras exactas
+                    const fPos = headerLower.findIndex((h: string) => h === "posicion" || h === "posición");
+                    const fPts = headerLower.findIndex((h: string) => h === "puntos");
+                    const fSets = headerLower.findIndex((h: string) => h === "sets");
+                    const fGames = headerLower.findIndex((h: string) => h === "games");
+                    
+                    if (fPos !== -1) posIdx = fPos;
+                    if (fPts !== -1) ptsIdx = fPts;
+                    if (fSets !== -1) setsIdx = fSets;
+                    if (fGames !== -1) gamesIdx = fGames;
+                }
+            }
+            // ---------------------------------------------------------
+
             playersRaw.forEach((row, index) => { 
                 const pName = row && row[ 0 ] ? row[ 0 ] : ""; 
-                if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { players.push(pName); let rawPos = row[ 4 ] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); let rawPts = row[ 5 ] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); let rawDif = row[ 6 ] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); let rawGames = row[ 7 ] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); validPlayersIndices.push(index); } 
+                if (pName && pName !== "-" && pName !== "" && !pName.toLowerCase().includes("zona") && !pName.toLowerCase().includes("grupo") && !pName.includes("*")) { 
+                    players.push(pName); 
+                    // Usa los índices dinámicos en lugar de los fijos
+                    let rawPos = row[ posIdx ] || ""; if (rawPos.startsWith("#")) rawPos = "-"; positions.push(rawPos); 
+                    let rawPts = row[ ptsIdx ] || ""; if (rawPts.startsWith("#")) rawPts = ""; points.push(rawPts); 
+                    let rawDif = row[ setsIdx ] || ""; if (rawDif.startsWith("#")) rawDif = ""; diff.push(rawDif); 
+                    let rawGames = row[ gamesIdx ] || ""; if (rawGames.startsWith("#")) rawGames = ""; gamesDiff.push(rawGames); 
+                    validPlayersIndices.push(index); 
+                } 
             });
             const results: string[][] = []; for (let x = 0; x < validPlayersIndices.length; x++) { const rowResults: string[] = []; const rowIndex = validPlayersIndices[ x ]; for (let y = 0; y < validPlayersIndices.length; y++) { const colIndex = validPlayersIndices[ y ]; const res = rows[ i + 1 + rowIndex ][ 1 + colIndex ]; rowResults.push(res); } results.push(rowResults); }
             parsedGroups.push({ groupName: rows[ i ][ 0 ], players: players, results: results, positions: positions, points: points, diff: diff, gamesDiff: gamesDiff });
