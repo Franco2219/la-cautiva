@@ -11,7 +11,7 @@ export const tournaments = [
   { id: "s8_500", name: "Super 8 / 500", short: "S8 500", type: "direct" },
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", short: "AO", type: "full", typeDamas: "direct" },
-  { id: "iw", name: "Indian Wells", short: "IW", type: "full" },
+  { id: "iw", name: "Indian Wells", short: "IW", type: "direct" },
   { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
