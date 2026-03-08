@@ -455,8 +455,7 @@ export default function Home() {
 
                       const effectiveType = getEffectiveTourType(t.short, navState.gender);
                       if (effectiveType === "direct") { 
-                          fetchBracketData(navState.category, t.short); 
-                          setNavState({ ...navState, level: "direct-bracket", tournament: t.name, tournamentShort: t.short }); 
+                          setNavState({ ...navState, level: "tournament-phases", tournament: t.name, tournamentShort: t.short, currentTour: t.short, currentCat: navState.category, hasGroups: false }); 
                       } else { 
                           fetchGroupPhase(navState.category, t.short); 
                       }
@@ -478,8 +477,7 @@ export default function Home() {
                         // Esto va a hacer que fetchGroupPhase busque "Grupos AO Damas A Singles"
                         fetchGroupPhase(`${navState.category} Singles`, navState.tournamentShort);
                     } else {
-                        fetchBracketData(navState.category, navState.tournamentShort, "S");
-                        setNavState({ ...navState, level: "direct-bracket", modality: "S" });
+                        setNavState({ ...navState, level: "tournament-phases", tournament: navState.tournament, tournamentShort: navState.tournamentShort, currentTour: navState.tournamentShort, currentCat: navState.category, hasGroups: false, modality: "S" });
                     }
                 }} className={buttonStyle}>Singles</Button>
                 <Button onClick={() => {
@@ -490,8 +488,7 @@ export default function Home() {
                         // Ambas categorías van a buscar la fase de grupos
                         fetchGroupPhase(`${navState.category} Dobles`, navState.tournamentShort);
                     } else {
-                        fetchBracketData(navState.category, navState.tournamentShort, "D");
-                        setNavState({ ...navState, level: "direct-bracket", modality: "D" });
+                        setNavState({ ...navState, level: "tournament-phases", tournament: navState.tournament, tournamentShort: navState.tournamentShort, currentTour: navState.tournamentShort, currentCat: navState.category, hasGroups: false, modality: "D" });
                     }
                 }} className={buttonStyle}>Dobles</Button>
             </div>
@@ -513,7 +510,9 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
+                  {getEffectiveTourType(navState.currentTour, navState.gender) !== "direct" && (
+                      <Button onClick={() => runATPDraw(navState.currentCat, navState.currentTour)} className={buttonStyle}><RefreshCw className="mr-2" /> Realizar Sorteo ATP</Button>
+                  )}
                   <Button onClick={() => { 
                       const tourName = getTournamentName(navState.currentTour);
                       fetchBracketData(navState.currentCat, navState.currentTour); 
