@@ -141,17 +141,27 @@ export const calculateRankingData = async (
                     }
                 }
             }
+
+            // --- NUEVA LÓGICA DE PUNTOS PARA ELIMINADOS EN GRUPOS ---
+            let groupEliminationPoints = 0;
+            // Evaluamos el tamaño del cuadro (bracketSize) para ir "una ronda para atrás"
+            if (bracketData.bracketSize === 64) groupEliminationPoints = pts.groupWin1; // Fallback si el cuadro es inmenso
+            else if (bracketData.bracketSize === 32) groupEliminationPoints = pts.treintaidos;
+            else if (bracketData.bracketSize === 16) groupEliminationPoints = pts.dieciseis;
+            else if (bracketData.bracketSize === 8) groupEliminationPoints = pts.octavos;
+            else if (bracketData.bracketSize === 4) groupEliminationPoints = pts.quarters;
+            else groupEliminationPoints = pts.groupWin1; 
             
             Object.keys(playerWins).forEach(pName => { 
                 const wins = playerWins[pName]; 
-                let extraPoints = 0; 
-                // Sumamos si ganó, no si jugó
-                if (wins === 1) extraPoints = pts.groupWin1; 
-                else if (wins >= 2) extraPoints = pts.groupWin2; 
                 
-                if (playerScores[pName] !== undefined) playerScores[pName] += extraPoints; 
-                else playerScores[pName] = extraPoints; 
+                // REGLA: Sólo suma si NO avanzó al cuadro final (no está en playerScores) Y si ganó al menos 1 partido
+                if (playerScores[pName] === undefined && wins >= 1) { 
+                    playerScores[pName] = groupEliminationPoints; 
+                } 
             });
+            // --------------------------------------------------------
+
         } catch (err) { console.log("Error ranking full groups", err); }
     }
 
