@@ -228,29 +228,37 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
                 
                 // --- 1. Calcular Ganador Analizando el Score ---
                 let winnerNum = 1; 
-                let p1Sets = 0;
-                let p2Sets = 0;
                 
-                const sets = originalScore.trim().split(/\s+/);
-                sets.forEach(s => {
-                    let p1Games, p2Games;
-                    if (s.includes('/')) {
-                        const parts = s.split('/');
-                        p1Games = parseInt(parts[0], 10);
-                        p2Games = parseInt(parts[1], 10);
-                    } else if (s.includes('-')) {
-                        const parts = s.split('-');
-                        p1Games = parseInt(parts[0], 10);
-                        p2Games = parseInt(parts[1], 10);
-                    }
+                const lowerScore = originalScore.toLowerCase();
+                const hasAbandono = lowerScore.includes('a') && lowerScore.includes('b');
+
+                if (hasAbandono) {
+                    winnerNum = 1;
+                } else {
+                    let p1Sets = 0;
+                    let p2Sets = 0;
                     
-                    if (p1Games !== undefined && p2Games !== undefined && !isNaN(p1Games) && !isNaN(p2Games)) {
-                        if (p1Games > p2Games) p1Sets++;
-                        else if (p2Games > p1Games) p2Sets++;
-                    }
-                });
-                
-                if (p2Sets > p1Sets) winnerNum = 2;
+                    const sets = originalScore.trim().split(/\s+/);
+                    sets.forEach(s => {
+                        let p1Games, p2Games;
+                        if (s.includes('/')) {
+                            const parts = s.split('/');
+                            p1Games = parseInt(parts[0], 10);
+                            p2Games = parseInt(parts[1], 10);
+                        } else if (s.includes('-')) {
+                            const parts = s.split('-');
+                            p1Games = parseInt(parts[0], 10);
+                            p2Games = parseInt(parts[1], 10);
+                        }
+                        
+                        if (p1Games !== undefined && p2Games !== undefined && !isNaN(p1Games) && !isNaN(p2Games)) {
+                            if (p1Games > p2Games) p1Sets++;
+                            else if (p2Games > p1Games) p2Sets++;
+                        }
+                    });
+                    
+                    if (p2Sets > p1Sets) winnerNum = 2;
+                }
                 
                 const actualWinnerName = winnerNum === 1 ? originalP1 : originalP2;
                 const didProfileWin = actualWinnerName === playerName;
@@ -263,6 +271,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
                 // --- 3. Invertir el resultado visualmente si se cambiaron de lado ---
                 let displayScore = originalScore;
                 if (!isProfileP1) {
+                    const sets = originalScore.trim().split(/\s+/);
                     displayScore = sets.map(s => {
                         if (s.includes('/')) {
                             const [g1, g2] = s.split('/');
