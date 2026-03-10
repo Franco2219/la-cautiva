@@ -32,7 +32,7 @@ export const getTournamentStyle = (shortName: string) => {
         "adelaide_250": "adelaide_250", 
         "ao": "ao", 
         "us open": "us", "us": "us", 
-        "indian wells": "iw", "iw": "iw", 
+        "miami Open": "mi", "mi": "mi", 
         "masters": "masters", 
         "wimbledon": "wimbledon", "w": "wimbledon",
         "roland garros": "rg", "rg": "rg",
