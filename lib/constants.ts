@@ -12,12 +12,12 @@ export const tournaments = [
   { id: "s8_250", name: "Super 8 / 250", short: "S8 250", type: "direct" },
   { id: "ao", name: "Australian Open", short: "AO", type: "full", typeDamas: "direct" },
   { id: "mi", name: "Miami Open", short: "MI", type: "direct" },
+  { id: "mi_500", name: "Miami Open 500", short: "MI_500", type: "direct" },
   { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
-  { id: "mi_500", name: "Miami Open 500", short: "MI_500", type: "direct" },
 ];
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
