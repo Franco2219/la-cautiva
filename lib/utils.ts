@@ -38,7 +38,8 @@ export const getTournamentStyle = (shortName: string) => {
         "roland garros": "rg", "rg": "rg",
         "monte carlo": "mc", "mc": "mc",
         "s8 500": "s8_500", "super 8 / 500": "s8_500",
-        "s8 250": "s8_250", "super 8 / 250": "s8_250"
+        "s8 250": "s8_250", "super 8 / 250": "s8_250",
+        "miami Open 500": "mi_500",
     };
     const styleKey = map[key] || "default";
     return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
