@@ -72,6 +72,14 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logos/indianwells.png", 
         pointsLogo: "/logos/pts_indianwells.png" 
     },
+    "mi_500": { 
+        color: "bg-blue-900", 
+        borderColor: "border-blue-900", 
+        textColor: "text-blue-900", 
+        trophyColor: "text-blue-900", 
+        logo: "/logos/indianwells.png", 
+        pointsLogo: "/logos/pts_s8_500.png" 
+    },
     "masters": { 
         color: "bg-blue-950", 
         borderColor: "border-blue-950", 
