@@ -338,7 +338,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan disponibles las Estadisticas!
+                  Ya hay mas de 140 Inscriptos para el torneo de Montecarlo! No te quedes afuera!
                 </p>
               </div>
             </div>
