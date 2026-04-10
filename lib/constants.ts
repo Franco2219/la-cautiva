@@ -13,7 +13,7 @@ export const tournaments = [
   { id: "ao", name: "Australian Open", short: "AO", type: "full", typeDamas: "direct" },
   { id: "mi", name: "Miami Open", short: "MI", type: "direct" },
   { id: "mi_500", name: "Miami Open 500", short: "mi_500", type: "direct" },
-  { id: "mc", name: "Monte Carlo", short: "MC", type: "full" },
+  { id: "mc", name: "MonteCarlo", short: "MC", type: "full" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
