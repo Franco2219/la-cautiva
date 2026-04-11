@@ -35,26 +35,45 @@ export const useTournamentData = () => {
     setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
+    
     try {
       const response = await fetch(url);
       const csvText = await response.text();
       const rows = parseCSV(csvText);
+      
       if (rows.length > 0) {
         const headerRow = rows[ 0 ];
-        // Buscamos dinámicamente la columna "TOTAL" y evitamos errores de tipado
-        let totalIdx = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().trim() === "TOTAL");
+        
+        // BUSCADOR ROBUSTO: Limpia comillas y espacios para encontrar "TOTAL"
+        let totalIdx = headerRow.findIndex((h: any) => {
+            if (!h) return false;
+            const cleanHeader = h.toString().replace(/['"]+/g, '').toUpperCase().trim();
+            return cleanHeader === "TOTAL";
+        });
+
+        // Si no la encuentra, mantenemos tus backups por defecto
         if (totalIdx === -1) totalIdx = year === "2025" ? 9 : 11;
 
+        // Definimos los encabezados dinámicamente hasta la columna TOTAL
         setHeaders(year === "2025" ? headerRow.slice(2, 9) : headerRow.slice(2, totalIdx));
         
-        setRankingData(rows.slice(1).map((row: any) => ({
-          name: row[ 1 ],
-          points: year === "2025" ? row.slice(2, 9) : row.slice(2, totalIdx),
-          total: row[ totalIdx ] ? parseInt(row[ totalIdx ].toString()) : 0
-        })).filter((p: any) => p.name && p.total > 0).sort((a: any, b: any) => b.total - a.total));
+        const parsedData = rows.slice(1).map((row: any) => {
+          // Limpiamos comillas también en los valores numéricos
+          const cleanTotal = row[ totalIdx ] ? row[ totalIdx ].toString().replace(/['"]+/g, '').trim() : "0";
+          
+          return {
+            name: row[ 1 ] ? row[ 1 ].toString().replace(/['"]+/g, '').trim() : "",
+            points: year === "2025" ? row.slice(2, 9) : row.slice(2, totalIdx),
+            total: parseInt(cleanTotal) || 0
+          };
+        })
+        .filter((p: any) => p.name && p.total > 0)
+        .sort((a: any, b: any) => b.total - a.total);
+
+        setRankingData(parsedData);
       }
     } catch (error) { 
-        console.error(error); 
+        console.error("Error en fetchRankingData:", error); 
     } finally { 
         setIsLoading(false); 
     }
@@ -418,6 +437,7 @@ export const useTournamentData = () => {
         searchCategory = cleanCategory; 
     }
 
+    // ... dentro de runDirectDraw, buscá el bloque del try inicial:
     try {
         const rankUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} 2026`)}`;
         const rankRes = await fetch(rankUrl);
@@ -426,15 +446,25 @@ export const useTournamentData = () => {
         const rawRows = parseCSV(rankCsv);
         const headerRow = rawRows || [];
         
-        // Buscamos dinámicamente la columna "TOTAL"
-        let totalIndex = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().trim() === "TOTAL");
+        // Buscamos dinámicamente la columna "TOTAL" con limpieza de comillas
+        let totalIndex = headerRow.findIndex((h: any) => {
+            if (!h) return false;
+            const clean = h.toString().replace(/['"]+/g, '').toUpperCase().trim();
+            return clean === "TOTAL";
+        });
+        
         if (totalIndex === -1) totalIndex = 11;
 
-        const playersRanking = rawRows.slice(1).map((row: any, i: number) => ({ 
-            name: row[ 1 ] || "", 
-            total: row[ totalIndex ] ? parseInt(row[ totalIndex ].toString()) : 0,
-            originalIndex: i 
-        })).filter((p: any) => p.name !== "");
+        const playersRanking = rawRows.slice(1).map((row: any, i: number) => {
+            const cleanVal = row[ totalIndex ] ? row[ totalIndex ].toString().replace(/['"]+/g, '').trim() : "0";
+            return { 
+                name: row[ 1 ] ? row[ 1 ].toString().replace(/['"]+/g, '').trim() : "", 
+                total: parseInt(cleanVal) || 0,
+                originalIndex: i 
+            };
+        }).filter((p: any) => p.name !== "");
+        
+        // ... el resto de la función runDirectDraw sigue igual
 
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
         const inscRes = await fetch(inscUrl);
