@@ -30,7 +30,9 @@ export const useTournamentData = () => {
 
   // --- LÓGICA DE RANKING ---
   const fetchRankingData = async (categoryShort: string, year: string) => {
-    setIsLoading(true); setRankingData([]); setHeaders([]);
+    setIsLoading(true); 
+    setRankingData([]); 
+    setHeaders([]);
     const sheetId = year === "2025" ? ID_2025 : ID_DATOS_GENERALES;
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(`${categoryShort} ${year}`)}`;
     try {
@@ -38,14 +40,24 @@ export const useTournamentData = () => {
       const csvText = await response.text();
       const rows = parseCSV(csvText);
       if (rows.length > 0) {
-        setHeaders(year === "2025" ? rows[ 0 ].slice(2, 9) : rows[ 0 ].slice(2, 11));
-        setRankingData(rows.slice(1).map(row => ({
+        const headerRow = rows[ 0 ];
+        // Buscamos dinámicamente la columna "TOTAL" y evitamos errores de tipado
+        let totalIdx = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().trim() === "TOTAL");
+        if (totalIdx === -1) totalIdx = year === "2025" ? 9 : 11;
+
+        setHeaders(year === "2025" ? headerRow.slice(2, 9) : headerRow.slice(2, totalIdx));
+        
+        setRankingData(rows.slice(1).map((row: any) => ({
           name: row[ 1 ],
-          points: year === "2025" ? row.slice(2, 9) : row.slice(2, 11),
-          total: year === "2025" ? (parseInt(row[ 9 ]) || 0) : (parseInt(row[ 11 ]) || 0)
-        })).filter(p => p.name && p.total > 0).sort((a, b) => b.total - a.total));
+          points: year === "2025" ? row.slice(2, 9) : row.slice(2, totalIdx),
+          total: row[ totalIdx ] ? parseInt(row[ totalIdx ].toString()) : 0
+        })).filter((p: any) => p.name && p.total > 0).sort((a: any, b: any) => b.total - a.total));
       }
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { 
+        console.error(error); 
+    } finally { 
+        setIsLoading(false); 
+    }
   }
 
   // --- FUNCIÓN FETCH INSCRIPTOS ---
@@ -411,43 +423,50 @@ export const useTournamentData = () => {
         const rankRes = await fetch(rankUrl);
         const rankCsv = await rankRes.text();
         
-        const playersRanking = parseCSV(rankCsv).slice(1).map((row, i) => ({ 
+        const rawRows = parseCSV(rankCsv);
+        const headerRow = rawRows || [];
+        
+        // Buscamos dinámicamente la columna "TOTAL"
+        let totalIndex = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().trim() === "TOTAL");
+        if (totalIndex === -1) totalIndex = 11;
+
+        const playersRanking = rawRows.slice(1).map((row: any, i: number) => ({ 
             name: row[ 1 ] || "", 
-            total: row[ 11 ] ? parseInt(row[ 11 ]) : 0,
+            total: row[ totalIndex ] ? parseInt(row[ totalIndex ].toString()) : 0,
             originalIndex: i 
-        })).filter(p => p.name !== "");
+        })).filter((p: any) => p.name !== "");
 
         const inscUrl = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=Inscriptos`;
         const inscRes = await fetch(inscUrl);
         const inscCsv = await inscRes.text();
         
         const filteredInscriptos = parseCSV(inscCsv).slice(1)
-            .filter(cols => cols[ 0 ] === searchTournament && cols[ 1 ] === searchCategory)
-            .map(cols => {
+            .filter((cols: any) => cols[ 0 ] === searchTournament && cols[ 1 ] === searchCategory)
+            .map((cols: any) => {
                 let name = cols[ 2 ] || "";
                 name = name.replace(/[0-9().]/g, "").replace(/\s+/g, " ").trim();
-                return name.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                return name.toLowerCase().split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             });
 
         if (filteredInscriptos.length < 4) { alert("Mínimo 4 jugadores."); setIsLoading(false); return; }
         
-        const entryList = filteredInscriptos.map(n => { 
+        const entryList = filteredInscriptos.map((n: string) => { 
             const inscClean = n.toLowerCase().replace(/[,.]/g, "").trim();
             const iTokens = inscClean.split(/\s+/);
             const iSurname = iTokens[ 0 ];
             const iInitial = iTokens.length > 1 ? iTokens[ 1 ][ 0 ] : null;
 
-            const surnameDuplicates = playersRanking.filter(pr => {
+            const surnameDuplicates = playersRanking.filter((pr: any) => {
                  const prName = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                  return prName.split(/\s+/)[ 0 ] === iSurname;
             }).length;
 
-            const inscriptoDuplicates = filteredInscriptos.filter(insc => {
+            const inscriptoDuplicates = filteredInscriptos.filter((insc: string) => {
                  const clean = insc.toLowerCase().replace(/[,.]/g, "").trim();
                  return clean.split(/\s+/)[ 0 ] === iSurname;
             }).length;
 
-            const p = playersRanking.find(pr => {
+            const p = playersRanking.find((pr: any) => {
                 const rankClean = pr.name.toLowerCase().replace(/[,.]/g, "").trim();
                 const rTokens = rankClean.split(/\s+/);
                 const rSurname = rTokens[ 0 ];
@@ -463,7 +482,7 @@ export const useTournamentData = () => {
                 return true;
             });
             return { name: n, points: p ? p.total : 0, originalIndex: p ? p.originalIndex : 99999 }; 
-        }).sort((a, b) => {
+        }).sort((a: any, b: any) => {
             if (b.points !== a.points) return b.points - a.points; 
             return a.originalIndex - b.originalIndex; 
         });
@@ -474,7 +493,7 @@ export const useTournamentData = () => {
         let slots: any[] = Array(bracketSize).fill(null);
         let pos1 = 0; let pos2 = bracketSize - 1; let pos34 = [ (bracketSize / 2) - 1, bracketSize / 2 ]; let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [ 2, 5, 10, 13 ]; else if (bracketSize === 32) pos58 = [ 7, 8, 23, 24 ]; else if (bracketSize === 64) pos58 = [ 15, 16, 47, 48 ];
-        const seeds = entryList.slice(0, 16).map((p, i) => ({ ...p, rank: i + 1 }));
+        const seeds = entryList.slice(0, 16).map((p: any, i: number) => ({ ...p, rank: i + 1 }));
         if (seeds[ 0 ]) slots[pos1] = seeds[ 0 ]; if (seeds[ 1 ]) slots[pos2] = seeds[ 1 ];
         if (seeds[ 2 ] && seeds[ 3 ]) { const group34 = [ seeds[ 2 ], seeds[ 3 ] ].sort(() => Math.random() - 0.5); slots[pos34[ 0 ]] = group34[ 0 ]; slots[pos34[ 1 ]] = group34[ 1 ]; } else if (seeds[ 2 ]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[ 2 ]; }
         if (seeds.length >= 8 && pos58.length === 4) { const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5); const seedsTop = group58.slice(0, 2); const seedsBot = group58.slice(2, 4); const posTop = [ pos58[ 0 ], pos58[ 1 ] ].sort(() => Math.random() - 0.5); slots[posTop[ 0 ]] = seedsTop[ 0 ]; slots[posTop[ 1 ]] = seedsTop[ 1 ]; const posBot = [ pos58[ 2 ], pos58[ 3 ] ].sort(() => Math.random() - 0.5); slots[posBot[ 0 ]] = seedsBot[ 0 ]; slots[posBot[ 1 ]] = seedsBot[ 1 ]; }
@@ -486,7 +505,7 @@ export const useTournamentData = () => {
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2); let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
         const popBalancedPair = () => { if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) { const randIdx = Math.floor(Math.random() * topPairs.length); return topPairs.splice(randIdx, 1)[ 0 ]; } else if (botPairs.length > 0) { const randIdx = Math.floor(Math.random() * botPairs.length); return botPairs.splice(randIdx, 1)[ 0 ]; } return -1; };
         while (byesRemaining > 0) { const pairIdx = popBalancedPair(); if (pairIdx !== -1) { const slotOffset = Math.random() > 0.5 ? 0 : 1; slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 }; byesRemaining--; } else { break; } }
-        const nonSeedsStartIndex = bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)); const nonSeeds = entryList.slice(nonSeedsStartIndex).map(p => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
+        const nonSeedsStartIndex = bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)); const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
         let countRealTop = slots.slice(0, bracketSize/2).filter(x => x && x.name !== "BYE").length; let countRealBot = slots.slice(bracketSize/2).filter(x => x && x.name !== "BYE").length; let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         for (const player of nonSeeds) { const emptyTop = emptySlots.filter(i => i < bracketSize/2); const emptyBot = emptySlots.filter(i => i >= bracketSize/2); let targetIdx = -1; if (countRealTop < countRealBot && emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (countRealBot < countRealTop && emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else { if (emptyTop.length > 0 && emptyBot.length > 0) { targetIdx = Math.random() > 0.5 ? emptyTop[Math.floor(Math.random() * emptyTop.length)] : emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else if (emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } } if (targetIdx !== -1) { slots[targetIdx] = player; if (targetIdx < bracketSize/2) countRealTop++; else countRealBot++; emptySlots = emptySlots.filter(i => i !== targetIdx); } }
         for (let i = 0; i < slots.length; i++) { if (slots[ i ] === null) slots[ i ] = { name: "BYE", rank: 0 }; }
