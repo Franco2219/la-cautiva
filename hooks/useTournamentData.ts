@@ -799,7 +799,7 @@ export const useTournamentData = () => {
       }
 
       if (hasContent) {
-          const playersInCol1 = rows.filter(r => r[ 0 ] && r[ 0 ].trim() !== "" && r[ 0 ] !== "-").length; 
+        const playersInCol1 = rows.filter(r => r[ 0 ] && r[ 0 ].trim() !== "" && r[ 0 ] !== "-" && r[ 0 ].toUpperCase().trim() !== "PERDEDORES").length;
           let bracketSize = 16; 
           if (playersInCol1 > 32) bracketSize = 64; 
           else if (playersInCol1 > 16) bracketSize = 32; 
