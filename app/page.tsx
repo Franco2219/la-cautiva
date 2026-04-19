@@ -16,8 +16,7 @@ import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankin
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
-const PreclasificadosList = ({ seeds, gender, isDirect }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean }) => {
-    // Validamos que sea caballeros, que existan preclasificados y que sea torneo directo
+const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any }) => {
     if (gender !== "caballeros" || !seeds || !isDirect) return null;
 
     const preclasificados = Object.entries(seeds)
@@ -35,16 +34,20 @@ const PreclasificadosList = ({ seeds, gender, isDirect }: { seeds: Record<string
 
     if (preclasificados.length === 0) return null;
 
+    const isMultiColumn = preclasificados.length > 8;
+
     return (
-        <div className="absolute top-20 right-8 bg-white/95 backdrop-blur-sm border-2 border-[#b35a38]/20 rounded-2xl p-4 shadow-2xl z-20 print:hidden w-56 hidden md:block">
-            <h3 className="text-xs font-black text-[#b35a38] uppercase italic mb-3 text-center border-b-2 border-[#b35a38]/10 pb-2">Preclasificados</h3>
-            <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="absolute top-[110px] right-8 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col max-h-[calc(100%-240px)] w-auto max-w-md hidden md:flex">
+            <div className={`${currentStyle?.color || 'bg-slate-800'} text-white text-center py-2 px-4 shadow-sm`}>
+                <h3 className="text-xs font-black uppercase tracking-wider italic">Preclasificados</h3>
+            </div>
+            <div className={`p-3 overflow-y-auto custom-scrollbar ${isMultiColumn ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'flex flex-col gap-2'}`}>
                 {preclasificados.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-[#fffaf5] px-3 py-2 rounded-xl border border-[#b35a38]/10 shadow-sm hover:border-[#b35a38]/30 transition-colors">
-                        <span className="flex items-center justify-center bg-[#b35a38] text-white font-black rounded-full h-7 w-7 text-xs shrink-0 shadow-inner">
+                    <div key={idx} className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border border-slate-100 shadow-sm hover:border-slate-300 transition-colors">
+                        <span className={`flex items-center justify-center ${currentStyle?.color || 'bg-slate-800'} text-white font-bold rounded-md h-6 w-6 text-[10px] shrink-0`}>
                             {p.label}
                         </span>
-                        <span className="text-slate-700 font-bold text-xs truncate" title={p.name}>{p.name}</span>
+                        <span className="text-slate-700 font-bold text-[11px] truncate max-w-[120px]" title={p.name}>{p.name}</span>
                     </div>
                 ))}
             </div>
@@ -703,7 +706,7 @@ export default function Home() {
 
                 return (
                     <div className="w-full relative">
-                        <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} />
+                        <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} />
                         <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
@@ -759,7 +762,7 @@ export default function Home() {
 
         {navState.level === "direct-bracket" && (
            <div className="w-full relative">
-               <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} />
+               <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} />
                <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
            </div>
         )}
