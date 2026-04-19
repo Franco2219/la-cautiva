@@ -16,6 +16,43 @@ import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankin
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 
+const PreclasificadosList = ({ seeds, gender }: { seeds: Record<string, string> | undefined, gender: string }) => {
+    if (gender !== "caballeros" || !seeds) return null;
+
+    const preclasificados = Object.entries(seeds)
+        .filter(([name, seedLabel]) => {
+            if (!name || name === "BYE") return false;
+            // Filtramos solo los que empiezan con un numero
+            const num = parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10);
+            return !isNaN(num);
+        })
+        .map(([name, seedLabel]) => ({
+            name,
+            label: String(seedLabel),
+            num: parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10)
+        }))
+        // Ordenamos por número de preclasificación de menor a mayor
+        .sort((a, b) => a.num - b.num);
+
+    if (preclasificados.length === 0) return null;
+
+    return (
+        <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2rem] p-6 shadow-xl w-full max-w-6xl mx-auto mb-6 print:hidden">
+            <h3 className="text-2xl font-black text-[#b35a38] uppercase italic mb-4 text-center">Jugadores Preclasificados</h3>
+            <div className="flex flex-wrap justify-center gap-4">
+                {preclasificados.map((p, idx) => (
+                    <div key={idx} className="flex items-center gap-3 bg-[#fffaf5] px-4 py-2 rounded-xl border border-[#b35a38]/20 shadow-sm">
+                        <span className="flex items-center justify-center bg-[#b35a38] text-white font-black rounded-full h-8 w-8 text-sm shrink-0 shadow-inner">
+                            {p.label}
+                        </span>
+                        <span className="text-slate-700 font-bold whitespace-nowrap">{p.name}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export default function Home() {
   const {
     navState, setNavState,
@@ -667,6 +704,7 @@ export default function Home() {
 
                 return (
                     <div className="w-full">
+                        <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} />
                         <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
@@ -721,7 +759,10 @@ export default function Home() {
         )}
 
         {navState.level === "direct-bracket" && (
-           <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+           <div className="w-full">
+               <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} />
+               <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+           </div>
         )}
 
         {navState.level === "ranking-view" && (
