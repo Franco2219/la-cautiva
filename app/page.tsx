@@ -37,7 +37,7 @@ const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle }: { seeds:
     const isMultiColumn = preclasificados.length >= 4;
 
     return (
-        <div className="absolute top-[150px] right-8 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col max-h-[calc(100%-240px)] w-auto max-w-md hidden md:flex">
+      <div className="relative md:absolute md:top-[150px] md:right-8 mt-8 md:mt-0 mx-auto md:mx-0 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col md:max-h-[calc(100%-240px)] w-full md:w-auto max-w-md">
             <div className={`${currentStyle?.color || 'bg-slate-800'} text-white text-center py-2 px-4 shadow-sm`}>
                 <h3 className="text-xs font-black uppercase tracking-wider italic">Preclasificados</h3>
             </div>
@@ -706,8 +706,8 @@ export default function Home() {
 
                 return (
                     <div className="w-full relative">
+                      <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} />
-                        <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
                         {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
