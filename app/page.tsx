@@ -37,7 +37,7 @@ const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle }: { seeds:
     const isMultiColumn = preclasificados.length >= 4;
 
     return (
-        <div className="absolute top-[150px] right-8 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col max-h-[calc(100%-240px)] w-auto max-w-md hidden md:flex">
+        <div className="absolute top-[150px] right-8 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col max-h-[calc(100%-240px)] w-auto max-w-md md:flex">
             <div className={`${currentStyle?.color || 'bg-slate-800'} text-white text-center py-2 px-4 shadow-sm`}>
                 <h3 className="text-xs font-black uppercase tracking-wider italic">Preclasificados</h3>
             </div>
