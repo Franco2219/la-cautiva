@@ -1,23 +1,9 @@
 import { useState, useCallback } from "react";
-import { ID_DATOS_GENERALES, tournaments } from "@/lib/constants";
+import { ID_DATOS_GENERALES } from "@/lib/constants";
 
 // CONFIGURACIÓN DEL CACHÉ
 const CACHE_KEY_MATCHES = "db_cache_v10_local_images"; // Versión 10: Fotos Locales
 const CACHE_TIME = 1000 * 60 * 30; 
-
-// --- PUNTO 2: REGLA DE PRIORIDAD DE MEJOR ACTUACIÓN ---
-// Esta escala asegura que 16avos (3) sea mayor que Grupos (0)
-export const performance_map: Record<string, number> = {
-  "Campeon": 8,
-  "Final": 7,
-  "Semifinal": 6,
-  "Cuartos": 5,
-  "Octavos": 4,
-  "16avos": 3,
-  "32avos": 2,
-  "64avos": 1,
-  "Grupos": 0,
-};
 
 export interface ChampionRecord {
   year: string;
@@ -61,6 +47,8 @@ const normalizeName = (name: string) => {
 // --- CALCULADOR DE EDAD AUTOMÁTICO ---
 const calculateAge = (birthdayStr: string): string => {
     if (!birthdayStr || birthdayStr === "-" || birthdayStr.trim() === "") return "-";
+    
+    // Si el valor ya es un número de edad (ej: "28"), lo devolvemos tal cual
     if (!isNaN(Number(birthdayStr)) && birthdayStr.trim().length <= 2) return birthdayStr;
 
     try {
@@ -68,7 +56,8 @@ const calculateAge = (birthdayStr: string): string => {
         if (birthdayStr.includes("/")) {
             const parts = birthdayStr.split("/");
             if (parts.length === 3) {
-                birthDate = new Date(parseInt(parts), parseInt(parts) - 1, parseInt(parts));
+                // Formato DD/MM/YYYY
+                birthDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
             } else {
                 return birthdayStr;
             }
@@ -119,6 +108,7 @@ export const useStatsData = () => {
   const [profiles, setProfiles] = useState<Record<string, PlayerProfile>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
+  // 1. HISTORIAL CAMPEONES
   const fetchChampionHistory = useCallback(async () => {
     setIsLoadingStats(true);
     const url = `https://docs.google.com/spreadsheets/d/${ID_DATOS_GENERALES}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("Historial Campeones")}`;
@@ -127,11 +117,11 @@ export const useStatsData = () => {
       const csvText = await response.text();
       const rows = robustCSVParser(csvText);
       const rawData = rows.slice(1).map(row => ({
-        year: row || "",
-        tournament: row || "",
-        category: row || "",
-        champion: row || "",
-        runnerUp: row || ""
+        year: row[0] || "",
+        tournament: row[1] || "",
+        category: row[2] || "",
+        champion: row[3] || "",
+        runnerUp: row[4] || ""
       })).filter(r => r.year && r.tournament && r.champion);
 
       rawData.sort((a, b) => parseInt(a.year) - parseInt(b.year));
@@ -151,9 +141,11 @@ export const useStatsData = () => {
     }
   }, []);
 
+  // 2. BUSCAR PARTIDOS Y PERFILES
   const fetchMatches = useCallback(async () => {
     setIsLoadingStats(true);
     
+    // A. CARGAR PERFILES (EXCEL TORNEOS 2026)
     const profilesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=597400315&single=true&output=csv";
     
     try {
@@ -164,10 +156,11 @@ export const useStatsData = () => {
             const profilesMap: Record<string, PlayerProfile> = {};
             
             pRows.slice(1).forEach(row => {
-                if (row) {
-                    const nameKey = normalizeName(row); 
+                if (row[0]) {
+                    const nameKey = normalizeName(row[0]); 
+                    
                     let photoPath = "";
-                    const rawPhoto = row ? row.trim() : "";
+                    const rawPhoto = row[3] ? row[3].trim() : "";
                     
                     if (rawPhoto) {
                         if (rawPhoto.startsWith("http")) {
@@ -178,31 +171,39 @@ export const useStatsData = () => {
                     }
 
                     profilesMap[nameKey] = {
-                        name: row,
-                        age: calculateAge(row || "-"), 
-                        hand: row || "Diestro", 
+                        name: row[0],
+                        // SE APLICA EL CÁLCULO AUTOMÁTICO AQUÍ
+                        age: calculateAge(row[1] || "-"), 
+                        hand: row[2] || "Diestro", 
                         photo: photoPath
                     };
                 }
             });
+            console.log("✅ Perfiles cargados:", Object.keys(profilesMap).length);
             setProfiles(profilesMap);
+        } else {
+            console.error("❌ Error descargando perfiles. Status:", pResponse.status);
         }
     } catch (e) {
         console.error("❌ Excepción cargando Perfiles:", e);
     }
 
+    // B. REVISAR CACHÉ DE PARTIDOS
     const cached = localStorage.getItem(CACHE_KEY_MATCHES);
     if (cached) {
         try {
             const { data, timestamp } = JSON.parse(cached);
-            if (Date.now() - timestamp < CACHE_TIME) {
+            const now = Date.now();
+            if (now - timestamp < CACHE_TIME) {
+                console.log("⚡ Usando datos de caché (Partidos)");
                 setMatches(data);
                 setIsLoadingStats(false);
                 return; 
             }
-        } catch (e) { }
+        } catch (e) { console.warn("Cache error"); }
     }
 
+    // C. DESCARGAR PARTIDOS
     const matchesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTh4uKqSzG_egJjJH8uQ53Q2pMLgaidvIkCgR9OcLOilD7IAYq2ubjyXTw-ovOgA8cT6WAtMOKG-QQb/pub?gid=1288809117&single=true&output=csv";
 
     try {
@@ -213,32 +214,27 @@ export const useStatsData = () => {
         const mappedMatches = rows.slice(1).map(row => {
             if (row.length < 4) return null;
             return {
-                Torneo: row || "",
-                Categoria: row || "",
-                Fase: row || "",
-                Jugador: row || "",
-                Rival: row || "",
-                Resultado: row || "",
-                Fecha: row || "",
-                tournament: row || "",
-                category: row || "",
-                round: row || "",
-                winner: row || "",
-                loser: row || "",
-                score: row || "",
-                date: row || ""
+                Torneo: row[0] || "",
+                Categoria: row[1] || "",
+                Fase: row[2] || "",
+                Jugador: row[3] || "",
+                Rival: row[4] || "",
+                Resultado: row[5] || "",
+                Fecha: row[6] || "",
+                tournament: row[0] || "",
+                category: row[1] || "",
+                round: row[2] || "",
+                winner: row[3] || "",
+                loser: row[4] || "",
+                score: row[5] || "",
+                date: row[6] || ""
             };
         }).filter((m): m is MatchRecord => {
-            if (!m || !m.Jugador || !m.Torneo || m.Jugador === "Jugador") return false;
+            if (!m) return false;
+            if (!m.Jugador || !m.Torneo) return false;
+            if (m.Jugador === "Jugador") return false; 
+            if (!isNaN(parseFloat(m.Jugador)) && m.Jugador.length < 4) return false;
             return true; 
-        });
-
-        // --- PUNTO 1: ORDEN INVERSO POR TORNEO SEGÚN CONSTANTES ---
-        const tourOrder = tournaments.map(t => t.short);
-        mappedMatches.sort((a, b) => {
-            const indexA = tourOrder.indexOf(a.Torneo);
-            const indexB = tourOrder.indexOf(b.Torneo);
-            return indexB - indexA;
         });
 
         localStorage.setItem(CACHE_KEY_MATCHES, JSON.stringify({
