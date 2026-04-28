@@ -92,7 +92,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
 
     const roundHierarchy: Record<string, number> = {
         "campeon": 12, 
-        "final": 10, "semifinal": 8, "semi": 8, "cuartos": 6, "octavos": 4, "zona": 1, "grupo": 1
+        "final": 10, "semifinal": 8, "semi": 8, "cuartos": 6, "octavos": 4, "16avos": 3, "32avos": 2, "64avos": 1, "grupo": 0.5
     };
 
     let maxPoints = 0;
