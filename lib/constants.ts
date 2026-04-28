@@ -142,7 +142,14 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logos/mc.png", 
         pointsLogo: "/logos/pts_s8_500.png" 
     },
-    
+    "iw": {
+        color: "bg-[#b35a38]", 
+        borderColor: "border-[#b35a38]", 
+        textColor: "text-[#b35a38]", 
+        trophyColor: "text-[#b35a38]", 
+        logo: "/logos/indianwells.png", 
+        pointsLogo: "/logos/pts_indianwells.png" 
+    },
     // FALLBACK
     "default": { 
         color: "bg-[#b35a38]", 
