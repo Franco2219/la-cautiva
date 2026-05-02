@@ -157,8 +157,16 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
     });
   }, [playerMatches, rivalSearch, playerName]);
 
-  const lastCategory = playerMatches.length > 0 ? safeStr((playerMatches[0] as any).Categoria || (playerMatches[0] as any).category) : "-";
-  
+  const allCategories = useMemo(() => {
+    if (playerMatches.length === 0) return "-";
+    const cats = new Set(
+      playerMatches
+        .map((m: any) => safeStr(m.Categoria || m.category))
+        .filter(c => c && c !== "-")
+    );
+    const catsArray = Array.from(cats);
+    return catsArray.length > 0 ? `Cat ${catsArray.join(" / ")}` : "-";
+  }, [playerMatches]);
   const formatDateDisplay = (dateVal: any) => {
       try {
         const d = parseDate(dateVal);
@@ -194,7 +202,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
             <InfoBox label="Mano Habil" value={profileData?.hand || "-"} />
             <InfoBox label="Edad" value={profileData?.age || "-"} />
             
-            <InfoBox label="Categoría" value={`Cat ${lastCategory}`} highlight />
+            <InfoBox label="Categoría" value={`Cat ${allCategories}`} highlight />
             <div className="bg-[#b35a38] text-white px-6 py-3 rounded-2xl shadow-md flex flex-col min-w-[140px]">
                 <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Mejor 2026</span>
                 {bestResults2026.map((res, i) => (
@@ -287,9 +295,12 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
                 return (
                     <div key={idx} className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4 border-l-4 ${didProfileWin ? 'border-green-500' : 'border-red-400'}`}>
                         <div className="flex flex-col items-center min-w-[60px] border-r border-slate-100 pr-4">
-                            <span className="text-xs font-black text-slate-400 uppercase">{formatDateDisplay(getDate(match))}</span>
-                            <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full mt-1">{getTour(match)}</span>
-                        </div>
+    <span className="text-xs font-black text-slate-400 uppercase">{formatDateDisplay(getDate(match))}</span>
+    <div className="flex items-center gap-1 mt-1">
+        <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full">{getTour(match)}</span>
+        <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full">{safeStr(match.Categoria || match.category)}</span>
+    </div>
+</div>
                         
                         <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4 text-center">
                             
