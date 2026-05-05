@@ -78,7 +78,36 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
         const dateB = parseDate(getDate(b));
         const timeA = dateA ? dateA.getTime() : 0;
         const timeB = dateB ? dateB.getTime() : 0;
-        return timeB - timeA; 
+        
+        // 1. Orden principal: Por Fecha descendente
+        if (timeA !== timeB) {
+            return timeB - timeA; 
+        }
+
+        // 2. Orden secundario: Por Instancia (Mismo torneo/fecha)
+        const roundHierarchy: Record<string, number> = {
+            "final": 10, 
+            "semifinal": 8, 
+            "semi": 8, 
+            "cuartos": 6, 
+            "octavos": 4, 
+            "16avos": 3, 
+            "32avos": 2, 
+            "64avos": 1, 
+            "grupo": 0.5,
+            "zona": 0.5
+        };
+
+        const getRoundScore = (match: any) => {
+            const roundStr = getRound(match).toLowerCase();
+            for (const key in roundHierarchy) {
+                if (roundStr.includes(key)) return roundHierarchy[key];
+            }
+            return 0; // Por defecto si no encuentra la fase
+        };
+
+        // Descendente para que la Final (10) quede arriba de todo
+        return getRoundScore(b) - getRoundScore(a); 
     });
   }, [matchesData, playerName]);
 
