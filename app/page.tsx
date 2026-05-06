@@ -19,41 +19,67 @@ import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any }) => {
     if (gender !== "caballeros" || !seeds || !isDirect) return null;
 
-    const preclasificados = Object.entries(seeds)
-        .filter(([name, seedLabel]) => {
-            if (!name || name === "BYE") return false;
-            const num = parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10);
-            return !isNaN(num);
-        })
-        .map(([name, seedLabel]) => ({
-            name,
-            label: String(seedLabel),
-            num: parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10)
-        }))
-        .sort((a, b) => a.num - b.num);
-
-    if (preclasificados.length === 0) return null;
-
-    const isMultiColumn = preclasificados.length >= 4;
-
-    return (
-      <div className="relative md:absolute md:top-[150px] md:right-8 mt-8 md:mt-0 mx-auto md:mx-0 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col md:max-h-[calc(100%-240px)] w-full md:w-auto max-w-md">
-            <div className={`${currentStyle?.color || 'bg-slate-800'} text-white text-center py-2 px-4 shadow-sm`}>
-                <h3 className="text-xs font-black uppercase tracking-wider italic">Preclasificados</h3>
-            </div>
-            <div className={`p-3 overflow-y-auto custom-scrollbar ${isMultiColumn ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'flex flex-col gap-2'}`}>
-                {preclasificados.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-white px-2 py-1.5 rounded-lg border border-slate-100 shadow-sm hover:border-slate-300 transition-colors">
-                        <span className={`flex items-center justify-center ${currentStyle?.color || 'bg-slate-800'} text-white font-bold rounded-md h-6 w-6 text-[10px] shrink-0`}>
-                            {p.label}
-                        </span>
-                        <span className="text-slate-700 font-bold text-[11px] truncate max-w-[120px]" title={p.name}>{p.name}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+    const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketData }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any, bracketData?: any }) => {
+      if (gender !== "caballeros" || !seeds || !isDirect) return null;
+  
+      // --- NUEVO: Detectar eliminados leyendo las rondas del torneo ---
+      const eliminated = new Set<string>();
+      if (bracketData) {
+          const rounds = [bracketData.r1, bracketData.r2, bracketData.r3, bracketData.r4, bracketData.r5, bracketData.r6].filter(Boolean);
+          for (let i = 0; i < rounds.length - 1; i++) {
+              const currentRound = rounds[i];
+              const nextRound = rounds[i+1];
+              if (!currentRound || !nextRound) continue;
+              
+              for (let j = 0; j < currentRound.length; j += 2) {
+                  const p1 = currentRound[j];
+                  const p2 = currentRound[j+1];
+                  const winner = nextRound[Math.floor(j / 2)];
+                  
+                  if (winner && winner !== "") {
+                      if (p1 && p1 !== "BYE" && winner !== p1) eliminated.add(p1.trim());
+                      if (p2 && p2 !== "BYE" && winner !== p2) eliminated.add(p2.trim());
+                  }
+              }
+          }
+      }
+  
+      const preclasificados = Object.entries(seeds)
+          .filter(([name, seedLabel]) => {
+              if (!name || name === "BYE") return false;
+              const num = parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10);
+              return !isNaN(num);
+          })
+          .map(([name, seedLabel]) => ({
+              name,
+              label: String(seedLabel),
+              num: parseInt(String(seedLabel).replace(/[^\d].*/, ''), 10),
+              isEliminated: eliminated.has(name.trim()) // <-- Verificamos si está eliminado
+          }))
+          .sort((a, b) => a.num - b.num);
+  
+      if (preclasificados.length === 0) return null;
+  
+      const isMultiColumn = preclasificados.length >= 4;
+  
+      return (
+        <div className="relative md:absolute md:top-[150px] md:right-8 mt-8 md:mt-0 mx-auto md:mx-0 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-xl z-20 print:hidden overflow-hidden flex flex-col md:max-h-[calc(100%-240px)] w-full md:w-auto max-w-md">
+              <div className={`${currentStyle?.color || 'bg-slate-800'} text-white text-center py-2 px-4 shadow-sm`}>
+                  <h3 className="text-xs font-black uppercase tracking-wider italic">Preclasificados</h3>
+              </div>
+              <div className={`p-3 overflow-y-auto custom-scrollbar ${isMultiColumn ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'flex flex-col gap-2'}`}>
+                  {preclasificados.map((p, idx) => (
+                      <div key={idx} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border shadow-sm transition-colors ${p.isEliminated ? 'bg-slate-50 border-slate-200 opacity-50 grayscale' : 'bg-white border-slate-100 hover:border-slate-300'}`}>
+                          <span className={`flex items-center justify-center text-white font-bold rounded-md h-6 w-6 text-[10px] shrink-0 ${p.isEliminated ? 'bg-slate-400' : (currentStyle?.color || 'bg-slate-800')}`}>
+                              {p.label}
+                          </span>
+                          <span className={`font-bold text-[11px] truncate max-w-[120px] ${p.isEliminated ? 'text-slate-400 line-through' : 'text-slate-700'}`} title={p.name}>{p.name}</span>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      );
+  };
 
 export default function Home() {
   const {
@@ -707,8 +733,7 @@ export default function Home() {
                 return (
                     <div className="w-full relative">
                       <BracketView bracketData={previewData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
-                        <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} />
-                        {!isSorteoConfirmado && (
+                      <PreclasificadosList seeds={previewData.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} bracketData={previewData} />                        {!isSorteoConfirmado && (
                             <div className="bg-white/90 backdrop-blur-sm border-t-2 border-[#b35a38]/20 p-4 rounded-3xl mt-4 shadow-2xl flex flex-col md:flex-row gap-4 justify-center sticky bottom-4 z-50 print:hidden">
                                 <Button onClick={enviarListaBasti} className="bg-blue-500 text-white font-bold h-12 px-8 shadow-lg"><List className="mr-2 w-4 h-4" /> LISTA BASTI</Button>
                                 {getEffectiveTourType(navState.tournamentShort, navState.gender) === 'direct' ? (
@@ -762,7 +787,7 @@ export default function Home() {
 
         {navState.level === "direct-bracket" && (
            <div className="w-full relative">
-               <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} />
+               <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} bracketData={bracketData} />
                <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
            </div>
         )}
