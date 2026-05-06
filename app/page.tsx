@@ -563,12 +563,18 @@ export default function Home() {
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
                   <Button onClick={() => { 
-                      const tourName = getTournamentName(navState.currentTour);
-                      // Limpiamos " Singles" y " Dobles" de la categoría actual para que fetchBracketData arme bien el string
-                      const catForBracket = navState.currentCat.replace(" Singles", "").replace(" Dobles", "");
-                      fetchBracketData(catForBracket, navState.currentTour); 
-                      setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
-                  }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
+                      <Button onClick={() => { 
+                        const tourName = getTournamentName(navState.currentTour);
+                        const catForBracket = navState.currentCat.replace(" Singles", "").replace(" Dobles", "");
+                        
+                        // Rescatamos si es dobles leyendo directamente el texto en pantalla que no falla
+                        const isDobles = navState.currentCat.includes("Dobles");
+                        
+                        // Le pasamos explícitamente la "D" o la "S" a la función
+                        fetchBracketData(catForBracket, navState.currentTour, isDobles ? "D" : "S"); 
+                        
+                        setNavState({ ...navState, level: "direct-bracket", tournament: tourName, tournamentShort: navState.currentTour }); 
+                    }} className={buttonStyle}><Grid3x3 className="mr-2" /> Cuadro Final</Button>
                 </>
               ) : (
                 <>

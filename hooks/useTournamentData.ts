@@ -717,21 +717,18 @@ export const useTournamentData = () => {
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string, modalityParam?: string) => {
-    // --- NUEVA LÓGICA MODALIDAD ---
-    const modality = modalityParam || navState.modality;
-    const cleanCategory = category.replace("Damas ", "").trim();
     
+    const modality = modalityParam || navState.modality;
+    
+    // Por defecto busca la hoja de singles (ej: "Damas A AO")
     let sheetTarget = `${category} ${tournamentShort}`;
     
-    if (navState.gender === "damas" && tournamentShort === "AO" && modality) {
-        sheetTarget = `${cleanCategory} ${tournamentShort} W ${modality}`; 
-    } else if (modality) {
-        sheetTarget = `${category} ${tournamentShort} ${modality}`;
+    // Si detecta que es dobles, le agrega la palabra DOBLES al final
+    if (modality === "D") {
+        sheetTarget = `${category} ${tournamentShort} DOBLES`; 
     }
-    // ------------------------------
 
-    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTarget)}`; 
-
+    const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTarget)}`;
     // --- NUEVO: LÓGICA DE CACHÉ SWR ---
     const CACHE_KEY = `bracket_${sheetTarget.replace(/\s+/g, '_')}`;
     const cachedData = localStorage.getItem(CACHE_KEY);
