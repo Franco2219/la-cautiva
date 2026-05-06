@@ -563,7 +563,6 @@ export default function Home() {
                 <>
                   <Button onClick={() => setNavState({ ...navState, level: "group-phase" })} className={buttonStyle}><Users className="mr-2" /> Fase de Grupos</Button>
                   <Button onClick={() => { 
-                      <Button onClick={() => { 
                         const tourName = getTournamentName(navState.currentTour);
                         const catForBracket = navState.currentCat.replace(" Singles", "").replace(" Dobles", "");
                         
