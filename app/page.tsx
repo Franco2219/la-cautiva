@@ -115,8 +115,8 @@ export default function Home() {
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
-    if (e.targetTouches.clientX < window.innerWidth * 0.20) {
-        setTouchStart(e.targetTouches.clientX);
+    if (e.targetTouches[0].clientX < window.innerWidth * 0.20) {
+        setTouchStart(e.targetTouches[0].clientX);
     } else {
         setTouchStart(null);
     }
@@ -124,7 +124,7 @@ export default function Home() {
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (touchStart !== null) {
-        setTouchEnd(e.targetTouches.clientX);
+        setTouchEnd(e.targetTouches[0].clientX);
     }
   }
 
