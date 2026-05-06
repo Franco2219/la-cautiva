@@ -717,7 +717,6 @@ export const useTournamentData = () => {
   }
 
   const fetchBracketData = async (category: string, tournamentShort: string, modalityParam?: string) => {
-    setIsLoading(true); setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
     // --- NUEVA LÓGICA MODALIDAD ---
     const modality = modalityParam || navState.modality;
     const cleanCategory = category.replace("Damas ", "").trim();
@@ -732,6 +731,28 @@ export const useTournamentData = () => {
     // ------------------------------
 
     const urlBracket = `https://docs.google.com/spreadsheets/d/${ID_TORNEOS}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTarget)}`; 
+
+    // --- NUEVO: LÓGICA DE CACHÉ SWR ---
+    const CACHE_KEY = `bracket_${sheetTarget.replace(/\s+/g, '_')}`;
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    
+    if (cachedData) {
+        try {
+            const { data } = JSON.parse(cachedData);
+            setBracketData(data); // Mostramos el caché al instante
+            setIsLoading(false);  // Apagamos la ruedita
+            // NO PONEMOS RETURN. Dejamos que siga para actualizar de fondo.
+        } catch (e) {
+            setIsLoading(true);
+            setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+        }
+    } else {
+        // Si nunca había entrado, ponemos ruedita y limpiamos
+        setIsLoading(true); 
+        setBracketData({ r1: [], s1: [], r2: [], s2: [], r3: [], s3: [], r4: [], s4: [], r5: [], s5: [], r6: [], s6: [], winner: "", runnerUp: "", bracketSize: 16, hasData: false, canGenerate: false, seeds: {} });
+    }
+    // ----------------------------------
+
     const checkCanGenerate = async () => {
         const isDirect = getEffectiveTourType(tournamentShort, navState.gender) === "direct";
         if (isDirect) {
@@ -863,6 +884,7 @@ export const useTournamentData = () => {
                 winner: winner, runnerUp: runnerUp, bracketSize: 16, hasData: true, canGenerate: false, seeds: seeds 
             }; 
         } 
+        
         else { 
             rawData = { 
                 r1: getColData(0, 8), s1: getScoreData(1, 8), 
@@ -872,8 +894,16 @@ export const useTournamentData = () => {
                 winner: winner, runnerUp: runnerUp, bracketSize: 8, hasData: true, canGenerate: false, seeds: seeds 
             }; 
         }
-          if (bracketSize !== 8) rawData = processByes(rawData); 
-          setBracketData(rawData);
+        if (bracketSize !== 8) rawData = processByes(rawData); 
+        
+        // --- NUEVO: GUARDAR EN CACHÉ ANTES DE ACTUALIZAR PANTALLA ---
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            data: rawData,
+            timestamp: Date.now()
+        }));
+        // ------------------------------------------------------------
+        
+        setBracketData(rawData);
       } else { await checkCanGenerate(); }
     } catch (error) { await checkCanGenerate(); } finally { setIsLoading(false); }
   }
