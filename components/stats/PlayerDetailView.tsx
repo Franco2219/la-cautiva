@@ -231,7 +231,7 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
             <InfoBox label="Mano Habil" value={profileData?.hand || "-"} />
             <InfoBox label="Edad" value={profileData?.age || "-"} />
             
-            <InfoBox label="Categoría" value={`Cat ${allCategories}`} highlight />
+            <InfoBox label="Categoría" value={lastCategory !== "-" ? `Cat ${String(lastCategory).replace(/cat\.?\s*/i, '').trim()}` : "-"} highlight />
             <div className="bg-[#b35a38] text-white px-6 py-3 rounded-2xl shadow-md flex flex-col min-w-[140px]">
                 <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Mejor 2026</span>
                 {bestResults2026.map((res, i) => (
