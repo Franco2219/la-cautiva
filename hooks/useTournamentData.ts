@@ -941,7 +941,7 @@ export const useTournamentData = () => {
   return {
     navState, setNavState,
     rankingData, headers,
-    bracketData, groupData,
+    bracketData, groupData, setGroupData,
     isSorteoConfirmado, isLoading,
     generatedBracket, isFixedData,
     footerClicks, showRankingCalc, setShowRankingCalc,
