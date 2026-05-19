@@ -13,10 +13,12 @@ const normalizeName = (name: string) => {
 interface PlayerStatsViewProps {
   selectedPlayer: string | null;
   onSelectPlayer: (player: string | null) => void;
+  fromBracket?: boolean;      // <-- Agregar
+  onBackToBracket?: () => void; // <-- Agregar
 }
 
 // AHORA RECIBE PROPS
-export const PlayerStatsView = ({ selectedPlayer, onSelectPlayer }: PlayerStatsViewProps) => {
+export const PlayerStatsView = ({ selectedPlayer, onSelectPlayer, fromBracket, onBackToBracket }: PlayerStatsViewProps) => {
   const { matches, profiles, isLoadingStats, fetchMatches } = useStatsData(); 
   
   useEffect(() => {
@@ -71,6 +73,8 @@ export const PlayerStatsView = ({ selectedPlayer, onSelectPlayer }: PlayerStatsV
               profileData={playerProfile} 
               onBack={() => onSelectPlayer(null)} // Usamos la prop 'onSelectPlayer'
               matchesData={matches} 
+              fromBracket={fromBracket}       // <-- Pasar al detalle
+        onBackToBracket={onBackToBracket} // <-- Pasar al detalle
           />
       );
   }

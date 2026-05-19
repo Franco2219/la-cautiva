@@ -30,9 +30,11 @@ interface PlayerDetailViewProps {
   onBack: () => void; 
   matchesData: MatchRecord[];
   profileData?: ProfileData | null;
+  fromBracket?: boolean;      // <-- Agregar
+  onBackToBracket?: () => void; // <-- Agregar
 }
 
-export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData }: PlayerDetailViewProps) => {
+export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData, fromBracket, onBackToBracket }: PlayerDetailViewProps) => {
   const [rivalSearch, setRivalSearch] = useState("");
 
   const safeStr = (val: any) => {
@@ -170,6 +172,18 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData 
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-in slide-in-from-right duration-500 px-2 md:px-0 pb-20">
+      
+      {/* --- NUEVO: BOTÓN VOLVER AL CUADRO --- */}
+      {fromBracket && onBackToBracket && (
+        <div className="flex justify-start mb-2 mt-4 print:hidden">
+          <button 
+            onClick={onBackToBracket}
+            className="bg-[#b35a38] hover:bg-[#8c3d26] text-white font-black text-xs py-2.5 px-4 rounded-xl shadow-md transition-all uppercase tracking-wider flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Volver al Cuadro
+          </button>
+        </div>
+      )}
       
       {/* HEADER PERFIL */}
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 flex flex-col items-center text-center mb-8 relative overflow-hidden mt-8">

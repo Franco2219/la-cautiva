@@ -447,12 +447,17 @@ export default function Home() {
             </div>
             )}
 
-            {navState.level === "stats-player" && (
-               <PlayerStatsView 
-                 selectedPlayer={selectedPlayerForStats}
-                 onSelectPlayer={setSelectedPlayerForStats}
-               />
-            )}
+{navState.level === "stats-player" && (
+   <PlayerStatsView 
+     selectedPlayer={selectedPlayerForStats}
+     onSelectPlayer={setSelectedPlayerForStats}
+     fromBracket={navState.fromBracket} // <-- Pasamos el flag
+     onBackToBracket={() => { // <-- Nueva función para retornar directo
+        setSelectedPlayerForStats(null);
+        setNavState({ ...navState, level: "direct-bracket", fromBracket: false });
+     }}
+   />
+)}
 
             {navState.level === "stats-tournaments" && (
                <TournamentHistoryView 
@@ -798,7 +803,7 @@ export default function Home() {
     onPlayerClick={(playerName) => {
         if (playerName && playerName !== "BYE" && playerName !== "TBD") {
             setSelectedPlayerForStats(playerName);
-            setNavState({ ...navState, level: "stats-player" });
+            setNavState({ ...navState, level: "stats-player", fromBracket: true });
         }
     }}
 />
