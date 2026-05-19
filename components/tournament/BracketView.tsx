@@ -150,7 +150,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-[10px] md:text-[11px] uppercase truncate max-w-[160px]
-                          cursor-pointer hover:underline`}
+                          cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
                         >
                           {renderSeed(p1)}
@@ -173,7 +173,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-[10px] md:text-[11px] uppercase truncate max-w-[160px]
-                          cursor-pointer hover:underline`}
+                          cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
 
                         >
@@ -223,7 +223,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-[11px] md:text-xs uppercase truncate max-w-[160px]
-                           cursor-pointer hover:underline`}
+                           cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
                         >
                           {renderSeed(p1)}
@@ -246,7 +246,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-[11px] md:text-xs uppercase truncate max-w-[160px]
-                          cursor-pointer hover:underline`}
+                          cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
                         >
                           {renderSeed(p2)}
@@ -295,7 +295,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-xs md:text-sm uppercase truncate
-                           cursor-pointer hover:underline`}
+                           cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
                         >
                           {renderSeed(p1)}
@@ -318,7 +318,7 @@ export const BracketView = ({
                               ? `${bracketStyle.textColor} font-black`
                               : "text-slate-700 font-bold"
                           } text-xs md:text-sm uppercase truncate
-                          cursor-pointer hover:underline`}
+                          cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
                         >
                           {renderSeed(p2)}
@@ -365,7 +365,7 @@ export const BracketView = ({
                             ? `${bracketStyle.textColor} font-black`
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate
-                         cursor-pointer hover:underline`}
+                         cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
                       >
                         {renderSeed(p1)}
@@ -388,7 +388,7 @@ export const BracketView = ({
                             ? `${bracketStyle.textColor} font-black`
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate
-                        cursor-pointer hover:underline`}
+                        cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
                       >
                         {renderSeed(p2)}
@@ -446,7 +446,7 @@ export const BracketView = ({
                             ? `${bracketStyle.textColor} font-black`
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate
-                         cursor-pointer hover:underline`}
+                         cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
                       >
                         {renderSeed(p1)}
@@ -469,7 +469,7 @@ export const BracketView = ({
                             ? `${bracketStyle.textColor} font-black`
                             : "text-slate-700 font-bold"
                         } text-xs md:text-sm uppercase truncate
-                        cursor-pointer hover:underline`}
+                        cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
                          onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
                       >
                         {renderSeed(p2)}
@@ -543,7 +543,7 @@ export const BracketView = ({
                           ? `${bracketStyle.textColor} font-black`
                           : "text-slate-700 font-bold"
                       } text-xs md:text-sm uppercase truncate
-                      cursor-pointer hover:underline`}
+                      cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
   onClick={() => botFinalistName && botFinalistName !== "BYE" && onPlayerClick && onPlayerClick(botFinalistName)}
                     >
                       {topFinalistName || ""}
@@ -565,7 +565,7 @@ export const BracketView = ({
                           ? `${bracketStyle.textColor} font-black`
                           : "text-slate-700 font-bold"
                       } text-xs md:text-sm uppercase truncate
-                      cursor-pointer hover:underline`}
+                      cursor-pointer border-b border-dotted border-slate-300 hover:text-[#b35a38] hover:border-[#b35a38] transition-colors`}
   onClick={() => botFinalistName && botFinalistName !== "BYE" && onPlayerClick && onPlayerClick(botFinalistName)}
                     >
                       {botFinalistName || ""}
