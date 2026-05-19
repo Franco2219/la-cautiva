@@ -2,15 +2,17 @@ import React from "react";
 import Image from "next/image";
 import { Trophy, AlertCircle, Shuffle } from "lucide-react";
 import { getTournamentName, getTournamentStyle, getEffectiveTourType } from "../../lib/utils";
+import { tournaments } from "../../lib/constants";
 
 interface BracketViewProps {
   bracketData: any;
   navState: any;
   runDirectDraw: (category: string, tournament: string) => void;
   fetchQualifiersAndDraw: (category: string, tournament: string) => void;
-  onPlayerClick?: (playerName: string) => void; // <-- NUEVO: Recibe el evento del click
+  onPlayerClick?: (playerName: string) => void;
 }
 
+// Convertido a absoluto para que no ocupe espacio y no rompa la matemática de los centros
 const MiddleSpacer = () => (
   <div className="absolute top-1/2 left-0 right-0 border-t-2 border-dotted border-slate-200/50 pointer-events-none -translate-y-1/2 z-0"></div>
 );
@@ -25,17 +27,20 @@ export const BracketView = ({
   const bracketStyle = getTournamentStyle(navState.tournamentShort);
   const tournamentName = getTournamentName(navState.tournamentShort);
   
+  // --- LÓGICA DE TAMAÑO MODIFICADA ---
   let getSize = Number(bracketData.bracketSize);
   if (bracketData.r1 && bracketData.r1.length > 0) {
       getSize = bracketData.r1.length;
   }
   if (!getSize) getSize = 32;
 
+  // Corrección matemática para alinear el "centro de la caja" con el "borde del texto"
   let baseOffset = 14;
   if (getSize === 64) baseOffset = 8;
   else if (getSize === 32) baseOffset = 10;
   else if (getSize === 16) baseOffset = 14;
   else if (getSize === 8) baseOffset = 14;
+  // --- FIN DE LÓGICA ---
 
   const getRoundData = (roundName: 'r64' | 'r32' | 'r16' | 'qf' | 'sf' | 'f') => {
       if (roundName === 'r64') {
@@ -74,65 +79,110 @@ export const BracketView = ({
       if (!name || !bracketData.seeds) return null;
       const seed = bracketData.seeds[name];
       if (!seed) return null;
+      
       const label = isNaN(seed) ? seed : `${seed}.`;
-      return <span className="text-[10px] text-orange-600 font-black mr-1 whitespace-nowrap">{label}</span>;
-  };
-
-  // --- NUEVO: Sub-componente para hacer clickeables todos los nombres ---
-  const PlayerName = ({ name, isWinner, className }: { name: string | null, isWinner: boolean | null, className: string }) => {
-      const isBye = name === "BYE";
-      const canClick = onPlayerClick && name && !isBye && name !== "TBD";
       return (
-          <span
-            onClick={() => canClick && onPlayerClick(name!)}
-            className={`${
-              isBye
-                ? "text-green-600 font-black"
-                : isWinner
-                ? `${bracketStyle.textColor} font-black`
-                : "text-slate-700 font-bold"
-            } ${className} ${canClick ? "cursor-pointer hover:opacity-60 underline-offset-2 hover:underline transition-all" : ""}`}
-          >
-            {renderSeed(name || "")}
-            {name || ""}
-          </span>
+        <span className="text-[10px] text-orange-600 font-black mr-1 whitespace-nowrap">
+          {label}
+        </span>
       );
   };
 
   return (
     <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 shadow-2xl text-center md:overflow-visible overflow-hidden">
-      <div className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}>
+      {/* Header del Bracket */}
+      <div
+        className={`${bracketStyle.color} p-3 rounded-2xl mb-6 text-center text-white italic w-full mx-auto flex flex-wrap md:flex-nowrap items-center justify-between`}
+      >
         <div className="w-20 h-20 flex items-center justify-center relative order-1">
-          {bracketStyle.logo && <Image src={bracketStyle.logo} alt="Tour Logo" width={80} height={80} className="object-contain" />}
+          {bracketStyle.logo && (
+            <Image
+              src={bracketStyle.logo}
+              alt="Tour Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
+          )}
         </div>
         <h2 className="text-xl md:text-2xl font-black uppercase tracking-wider order-3 md:order-2 w-full md:w-auto mt-2 md:mt-0">
           {tournamentName} - {navState.selectedCategory}
         </h2>
         <div className="w-20 h-20 flex items-center justify-center relative order-2 md:order-3">
-          {bracketStyle.pointsLogo && <Image src={bracketStyle.pointsLogo} alt="Points" width={80} height={80} className="object-contain opacity-80" />}
+          {bracketStyle.pointsLogo && (
+            <Image
+              src={bracketStyle.pointsLogo}
+              alt="Points"
+              width={80}
+              height={80}
+              className="object-contain opacity-80"
+            />
+          )}
         </div>
       </div>
 
       {bracketData.hasData ? (
         <div className="flex flex-row items-stretch justify-between w-full overflow-x-auto gap-0 md:gap-1 py-8 px-1 relative text-left z-10">
           
+          {/* COLUMNA: 64 JUGADORES (32 PARTIDOS) - SIEMPRE ES PRIMERA */}
           {getSize === 64 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 32 }, (_, i) => i * 2).map((idx) => {
                 const [r, s, nextR] = getRoundData('r64');
-                const p1 = r ? r[idx] : null; const p2 = r ? r[idx + 1] : null;
-                const w1 = p1 && nextR && nextR.includes(p1); const w2 = p2 && nextR && nextR.includes(p2);
+                const p1 = r ? r[idx] : null;
+                const p2 = r ? r[idx + 1] : null;
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
 
                 return (
                   <React.Fragment key={idx}>
                     <div className="relative flex flex-col space-y-1 mb-1 z-10">
-                      <div className={`h-5 border-b-2 ${w1 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end relative bg-white`}>
-                        <PlayerName name={p1} isWinner={w1} className="text-[10px] md:text-[11px] uppercase truncate max-w-[160px]" />
-                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">{s ? s[idx] : ""}</span>
+                      <div
+                        className={`h-5 border-b-2 ${
+                          w1 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end relative bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p1 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w1
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[10px] md:text-[11px] uppercase truncate max-w-[160px]
+                          cursor-pointer hover:underline`}
+                         onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
+                        >
+                          {renderSeed(p1)}
+                          {p1 || ""}
+                        </span>
+                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">
+                          {s ? s[idx] : ""}
+                        </span>
                       </div>
-                      <div className={`h-5 border-b-2 ${w2 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end relative bg-white`}>
-                        <PlayerName name={p2} isWinner={w2} className="text-[10px] md:text-[11px] uppercase truncate max-w-[160px]" />
-                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">{s ? s[idx + 1] : ""}</span>
+                      <div
+                        className={`h-5 border-b-2 ${
+                          w2 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end relative bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p2 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w2
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[10px] md:text-[11px] uppercase truncate max-w-[160px]
+                          cursor-pointer hover:underline`}
+                         onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
+
+                        >
+                          {renderSeed(p2)}
+                          {p2 || ""}
+                        </span>
+                        <span className="text-black font-black text-[9px] ml-1 mr-2 md:mr-3">
+                          {s ? s[idx + 1] : ""}
+                        </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[5px] w-[5px] h-[1px] bg-slate-300" />
                       <div className="absolute right-0 top-[18px] h-[22px] w-[2px] bg-slate-300 z-0" />
@@ -144,25 +194,67 @@ export const BracketView = ({
             </div>
           )}
 
+          {/* COLUMNA: 32 JUGADORES */}
           {getSize >= 32 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
               {Array.from({ length: 16 }, (_, i) => i * 2).map((idx, i) => {
                 const [r, s, nextR] = getRoundData('r32');
                 if (!r) return null; 
-                const p1 = r[idx]; const p2 = r[idx + 1];
-                const w1 = p1 && nextR && nextR.includes(p1); const w2 = p2 && nextR && nextR.includes(p2);
+                const p1 = r[idx];
+                const p2 = r[idx + 1];
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
+                
                 const isFirstCol = getSize === 32;
 
                 return (
                   <React.Fragment key={idx}>
                     <div className={isFirstCol ? "relative flex flex-col space-y-2 mb-2 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 32 * 100}% + ${baseOffset}px)`, height: `${1 / 32 * 100}%` }}>
-                      <div className={`${isFirstCol ? 'h-6 relative' : 'absolute top-0 w-full h-6 -translate-y-[100%]'} border-b-2 ${w1 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white`}>
-                        <PlayerName name={p1} isWinner={w1} className="text-[11px] md:text-xs uppercase truncate max-w-[160px]" />
-                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">{s ? s[idx] : ""}</span>
+                      <div
+                        className={`${isFirstCol ? 'h-6 relative' : 'absolute top-0 w-full h-6 -translate-y-[100%]'} border-b-2 ${
+                          w1 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p1 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w1
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[11px] md:text-xs uppercase truncate max-w-[160px]
+                           cursor-pointer hover:underline`}
+                         onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
+                        >
+                          {renderSeed(p1)}
+                          {p1 || ""}
+                        </span>
+                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">
+                          {s ? s[idx] : ""}
+                        </span>
                       </div>
-                      <div className={`${isFirstCol ? 'h-6 relative' : 'absolute bottom-0 w-full h-6'} border-b-2 ${w2 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white`}>
-                        <PlayerName name={p2} isWinner={w2} className="text-[11px] md:text-xs uppercase truncate max-w-[160px]" />
-                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">{s ? s[idx + 1] : ""}</span>
+                      <div
+                        className={`${isFirstCol ? 'h-6 relative' : 'absolute bottom-0 w-full h-6'} border-b-2 ${
+                          w2 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p2 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w2
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-[11px] md:text-xs uppercase truncate max-w-[160px]
+                          cursor-pointer hover:underline`}
+                         onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
+                        >
+                          {renderSeed(p2)}
+                          {p2 || ""}
+                        </span>
+                        <span className="text-black font-black text-[10px] ml-1 mr-2 md:mr-3">
+                          {s ? s[idx + 1] : ""}
+                        </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                       <div className={`absolute right-0 ${isFirstCol ? 'top-[22px] h-[34px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
@@ -174,25 +266,67 @@ export const BracketView = ({
             </div>
           )}
 
+          {/* COLUMNA: 16 JUGADORES (OCTAVOS) */}
           {getSize >= 16 && (
             <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-              {.map((idx, i) => {
+              {[0, 2, 4, 6, 8, 10, 12, 14].map((idx, i) => {
                 const [r, s, nextR] = getRoundData('r16');
                 if (!r) return null;
-                const p1 = r[idx]; const p2 = r[idx + 1];
-                const w1 = p1 && nextR && nextR.includes(p1); const w2 = p2 && nextR && nextR.includes(p2);
+                const p1 = r[idx];
+                const p2 = r[idx + 1];
+                const w1 = p1 && nextR && nextR.includes(p1);
+                const w2 = p2 && nextR && nextR.includes(p2);
+
                 const isFirstCol = getSize === 16;
 
                 return (
                   <React.Fragment key={idx}>
                     <div className={isFirstCol ? "relative flex flex-col space-y-4 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 16 * 100}% + ${baseOffset}px)`, height: `${1 / 16 * 100}%` }}>
-                      <div className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${w1 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white`}>
-                        <PlayerName name={p1} isWinner={w1} className="text-xs md:text-sm uppercase truncate" />
-                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx] : ""}</span>
+                      <div
+                        className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${
+                          w1 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p1 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w1
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-xs md:text-sm uppercase truncate
+                           cursor-pointer hover:underline`}
+                         onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
+                        >
+                          {renderSeed(p1)}
+                          {p1 || ""}
+                        </span>
+                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                          {s ? s[idx] : ""}
+                        </span>
                       </div>
-                      <div className={`${isFirstCol ? 'h-8 relative' : 'absolute bottom-0 w-full h-8'} border-b-2 ${w2 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white`}>
-                        <PlayerName name={p2} isWinner={w2} className="text-xs md:text-sm uppercase truncate" />
-                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx + 1] : ""}</span>
+                      <div
+                        className={`${isFirstCol ? 'h-8 relative' : 'absolute bottom-0 w-full h-8'} border-b-2 ${
+                          w2 ? bracketStyle.borderColor : "border-slate-300"
+                        } flex justify-between items-end bg-white`}
+                      >
+                        <span
+                          className={`${
+                            p2 === "BYE"
+                              ? "text-green-600 font-black"
+                              : w2
+                              ? `${bracketStyle.textColor} font-black`
+                              : "text-slate-700 font-bold"
+                          } text-xs md:text-sm uppercase truncate
+                          cursor-pointer hover:underline`}
+                         onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
+                        >
+                          {renderSeed(p2)}
+                          {p2 || ""}
+                        </span>
+                        <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                          {s ? s[idx + 1] : ""}
+                        </span>
                       </div>
                       <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                       <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] h-[50px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
@@ -204,23 +338,65 @@ export const BracketView = ({
             </div>
           )}
 
+          {/* COLUMNA: CUARTOS DE FINAL */}
           <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-            {.map((idx, i) => {
+            {[0, 2, 4, 6].map((idx, i) => {
               const [r, s, nextR] = getRoundData('qf');
-              const p1 = r ? r[idx] : null; const p2 = r ? r[idx + 1] : null;
-              const w1 = p1 && nextR && nextR.includes(p1); const w2 = p2 && nextR && nextR.includes(p2);
+              const p1 = r ? r[idx] : null;
+              const p2 = r ? r[idx + 1] : null;
+              const w1 = p1 && nextR && nextR.includes(p1);
+              const w2 = p2 && nextR && nextR.includes(p2);
+
               const isFirstCol = getSize === 8;
 
               return (
                 <React.Fragment key={idx}>
                   <div className={isFirstCol ? "relative flex flex-col space-y-8 z-10" : "absolute w-full z-10"} style={isFirstCol ? {} : { top: `calc(${(2*i + 0.5) / 8 * 100}% + ${baseOffset}px)`, height: `${1 / 8 * 100}%` }}>
-                    <div className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${w1 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white text-center`}>
-                      <PlayerName name={p1} isWinner={w1} className="text-xs md:text-sm uppercase truncate" />
-                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx] : ""}</span>
+                    <div
+                      className={`${isFirstCol ? 'h-8 relative' : 'absolute top-0 w-full h-8 -translate-y-[100%]'} border-b-2 ${
+                        w1 ? bracketStyle.borderColor : "border-slate-300"
+                      } flex justify-between items-end bg-white text-center`}
+                    >
+                      <span
+                        className={`${
+                          p1 === "BYE"
+                            ? "text-green-600 font-black"
+                            : w1
+                            ? `${bracketStyle.textColor} font-black`
+                            : "text-slate-700 font-bold"
+                        } text-xs md:text-sm uppercase truncate
+                         cursor-pointer hover:underline`}
+                         onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
+                      >
+                        {renderSeed(p1)}
+                        {p1 || ""}
+                      </span>
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                        {s ? s[idx] : ""}
+                      </span>
                     </div>
-                    <div className={`${isFirstCol ? 'h-8 relative' : 'absolute bottom-0 w-full h-8'} border-b-2 ${w2 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white text-center`}>
-                      <PlayerName name={p2} isWinner={w2} className="text-xs md:text-sm uppercase truncate" />
-                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx + 1] : ""}</span>
+                    <div
+                      className={`${isFirstCol ? 'h-8 relative' : 'absolute bottom-0 w-full h-8'} border-b-2 ${
+                        w2 ? bracketStyle.borderColor : "border-slate-300"
+                      } flex justify-between items-end bg-white text-center`}
+                    >
+                      <span
+                        className={`${
+                          p2 === "BYE"
+                            ? "text-green-600 font-black"
+                            : w2
+                            ? `${bracketStyle.textColor} font-black`
+                            : "text-slate-700 font-bold"
+                        } text-xs md:text-sm uppercase truncate
+                        cursor-pointer hover:underline`}
+                         onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
+                      >
+                        {renderSeed(p2)}
+                        {p2 || ""}
+                      </span>
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                        {s ? s[idx + 1] : ""}
+                      </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                     <div className={`absolute right-0 ${isFirstCol ? 'top-[30px] h-[66px]' : 'top-0 bottom-0'} w-[2px] bg-slate-300 z-0`} />
@@ -231,10 +407,12 @@ export const BracketView = ({
             })}
           </div>
 
+          {/* COLUMNA: SEMIFINALES */}
           <div className="flex flex-col justify-around min-w-[220px] md:min-w-0 md:flex-1 relative">
-            {.map((idx, i) => {
+            {[0, 2].map((idx, i) => {
               const [r, s] = getRoundData('sf');
-              const p1 = r ? r[idx] : null; const p2 = r ? r[idx + 1] : null;
+              const p1 = r ? r[idx] : null;
+              const p2 = r ? r[idx + 1] : null;
 
               let finals = [];
               if (getSize === 64) finals = bracketData.r6 || [];
@@ -248,18 +426,58 @@ export const BracketView = ({
                   return finals.includes(p);
               };
 
-              const w1 = isFinalist(p1); const w2 = isFinalist(p2);
+              const w1 = isFinalist(p1);
+              const w2 = isFinalist(p2);
 
               return (
                 <React.Fragment key={idx}>
+                  {/* Semifinal NUNCA es la primera columna, así que siempre es absoluta */}
                   <div className="absolute w-full z-10" style={{ top: `calc(${(2*i + 0.5) / 4 * 100}% + ${baseOffset}px)`, height: `${1 / 4 * 100}%` }}>
-                    <div className={`absolute top-0 w-full h-8 -translate-y-[100%] border-b-2 ${w1 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white text-center`}>
-                      <PlayerName name={p1} isWinner={w1} className="text-xs md:text-sm uppercase truncate" />
-                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx] : ""}</span>
+                    <div
+                      className={`absolute top-0 w-full h-8 -translate-y-[100%] border-b-2 ${
+                        w1 ? bracketStyle.borderColor : "border-slate-300"
+                      } flex justify-between items-end bg-white text-center`}
+                    >
+                      <span
+                        className={`${
+                          p1 === "BYE"
+                            ? "text-green-600 font-black"
+                            : w1
+                            ? `${bracketStyle.textColor} font-black`
+                            : "text-slate-700 font-bold"
+                        } text-xs md:text-sm uppercase truncate
+                         cursor-pointer hover:underline`}
+                         onClick={() => p1 && p1 !== "BYE" && onPlayerClick && onPlayerClick(p1)}
+                      >
+                        {renderSeed(p1)}
+                        {p1 || ""}
+                      </span>
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                        {s ? s[idx] : ""}
+                      </span>
                     </div>
-                    <div className={`absolute bottom-0 w-full h-8 border-b-2 ${w2 ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white text-center`}>
-                      <PlayerName name={p2} isWinner={w2} className="text-xs md:text-sm uppercase truncate" />
-                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{s ? s[idx + 1] : ""}</span>
+                    <div
+                      className={`absolute bottom-0 w-full h-8 border-b-2 ${
+                        w2 ? bracketStyle.borderColor : "border-slate-300"
+                      } flex justify-between items-end bg-white text-center`}
+                    >
+                      <span
+                        className={`${
+                          p2 === "BYE"
+                            ? "text-green-600 font-black"
+                            : w2
+                            ? `${bracketStyle.textColor} font-black`
+                            : "text-slate-700 font-bold"
+                        } text-xs md:text-sm uppercase truncate
+                        cursor-pointer hover:underline`}
+                         onClick={() => p2 && p2 !== "BYE" && onPlayerClick && onPlayerClick(p2)}
+                      >
+                        {renderSeed(p2)}
+                        {p2 || ""}
+                      </span>
+                      <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                        {s ? s[idx + 1] : ""}
+                      </span>
                     </div>
                     <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                     <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-slate-300 z-0" />
@@ -270,33 +488,91 @@ export const BracketView = ({
             })}
           </div>
 
+          {/* COLUMNA: FINAL - INTACTA COMO PEDISTE */}
           <div className="flex flex-col justify-center min-w-[220px] md:min-w-0 md:flex-1 relative">
             {(() => {
-              let topFinalistName = ""; let botFinalistName = "";
-              let finalRound = []; let finalScores: any[] = []; 
+              let topFinalistName = "";
+              let botFinalistName = "";
               
-              if (getSize === 64) { finalRound = bracketData.r6; finalScores = bracketData.s6 || []; }
-              else if (getSize === 32) { finalRound = bracketData.r5; finalScores = bracketData.s5 || []; }
-              else if (getSize === 16) { finalRound = bracketData.r4; finalScores = bracketData.s4 || []; }
-              else { finalRound = bracketData.r3; finalScores = bracketData.s3 || []; }
+              let finalRound = [];
+              let finalScores = []; 
+              
+              if (getSize === 64) {
+                  finalRound = bracketData.r6;
+                  finalScores = bracketData.s6 || [];
+              }
+              else if (getSize === 32) {
+                  finalRound = bracketData.r5;
+                  finalScores = bracketData.s5 || [];
+              }
+              else if (getSize === 16) {
+                  finalRound = bracketData.r4;
+                  finalScores = bracketData.s4 || [];
+              }
+              else {
+                  finalRound = bracketData.r3;
+                  finalScores = bracketData.s3 || [];
+              }
 
               if (finalRound && finalRound.length >= 2) {
-                topFinalistName = finalRound; botFinalistName = finalRound;
-              } else if (bracketData.winner) {
-                topFinalistName = bracketData.winner; botFinalistName = bracketData.runnerUp;
+                topFinalistName = finalRound[0];
+                botFinalistName = finalRound[1];
+              } else {
+                if (bracketData.winner) {
+                  topFinalistName = bracketData.winner;
+                  botFinalistName = bracketData.runnerUp;
+                }
               }
-              const isTopWinner = topFinalistName && topFinalistName === bracketData.winner;
-              const isBotWinner = botFinalistName && botFinalistName === bracketData.winner;
+              const isTopWinner =
+                topFinalistName && topFinalistName === bracketData.winner;
+              const isBotWinner =
+                botFinalistName && botFinalistName === bracketData.winner;
 
               return (
                 <div className="relative flex flex-col space-y-2 z-10">
-                  <div className={`h-8 border-b-2 ${isTopWinner ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white relative`}>
-                    <PlayerName name={topFinalistName} isWinner={isTopWinner} className="text-xs md:text-sm uppercase truncate" />
-                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{isTopWinner ? (finalScores || "") : ""}</span>
+                  <div
+                    className={`h-8 border-b-2 ${
+                      isTopWinner ? bracketStyle.borderColor : "border-slate-300"
+                    } flex justify-between items-end bg-white relative`}
+                  >
+                    <span
+                      className={`${
+                        topFinalistName === "BYE"
+                          ? "text-green-600 font-black"
+                          : isTopWinner
+                          ? `${bracketStyle.textColor} font-black`
+                          : "text-slate-700 font-bold"
+                      } text-xs md:text-sm uppercase truncate
+                      cursor-pointer hover:underline`}
+  onClick={() => botFinalistName && botFinalistName !== "BYE" && onPlayerClick && onPlayerClick(botFinalistName)}
+                    >
+                      {topFinalistName || ""}
+                    </span>
+                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                      {isTopWinner ? (finalScores[0] || "") : ""}
+                    </span>
                   </div>
-                  <div className={`h-8 border-b-2 ${isBotWinner ? bracketStyle.borderColor : "border-slate-300"} flex justify-between items-end bg-white relative`}>
-                    <PlayerName name={botFinalistName} isWinner={isBotWinner} className="text-xs md:text-sm uppercase truncate" />
-                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">{isBotWinner ? (finalScores || "") : ""}</span>
+                  <div
+                    className={`h-8 border-b-2 ${
+                      isBotWinner ? bracketStyle.borderColor : "border-slate-300"
+                    } flex justify-between items-end bg-white relative`}
+                  >
+                    <span
+                      className={`${
+                        botFinalistName === "BYE"
+                          ? "text-green-600 font-black"
+                          : isBotWinner
+                          ? `${bracketStyle.textColor} font-black`
+                          : "text-slate-700 font-bold"
+                      } text-xs md:text-sm uppercase truncate
+                      cursor-pointer hover:underline`}
+  onClick={() => botFinalistName && botFinalistName !== "BYE" && onPlayerClick && onPlayerClick(botFinalistName)}
+                    >
+                      {botFinalistName || ""}
+                    </span>
+                    <span className="text-black font-black text-xs ml-1 mr-2 md:mr-3">
+                      {isBotWinner ? (finalScores[1] || "") : ""}
+                    </span>
                   </div>
                   <div className="absolute top-1/2 -translate-y-1/2 -right-[10px] w-[10px] h-[1px] bg-slate-300" />
                   <div className="absolute right-0 top-[30px] h-[42px] w-[2px] bg-slate-300" />
@@ -305,42 +581,68 @@ export const BracketView = ({
             })()}
           </div>
 
+          {/* COLUMNA: CAMPEÓN */}
           <div className="flex flex-col justify-center min-w-[120px] md:min-w-0 md:flex-1 relative">
             <div className="relative flex flex-col items-center">
               <div className="h-px w-6 bg-slate-300 absolute left-0 top-1/2 -translate-y-1/2 -ml-1" />
-              <Trophy className={`w-14 h-14 ${bracketStyle.trophyColor} mb-2 animate-bounce`} />
-              <span className={`text-xs md:text-base font-black uppercase tracking-[0.2em] mb-1 scale-125 ${bracketStyle.textColor} opacity-70`}>CAMPEÓN</span>
-              
-              <span 
-                onClick={() => bracketData.winner && onPlayerClick && onPlayerClick(bracketData.winner)}
-                className={`${bracketStyle.textColor} font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight ${bracketData.winner && onPlayerClick ? "cursor-pointer hover:underline hover:opacity-70 transition-all" : ""}`}
+              <Trophy
+                className={`w-14 h-14 ${bracketStyle.trophyColor} mb-2 animate-bounce`}
+              />
+              <span
+                className={`text-xs md:text-base font-black uppercase tracking-[0.2em] mb-1 scale-125 ${bracketStyle.textColor} opacity-70`}
               >
-                {bracketData.winner || ""}
+                CAMPEÓN
               </span>
+              <span className={`${bracketStyle.textColor} font-black text-lg md:text-xl italic uppercase text-center w-full block drop-shadow-sm leading-tight
+              cursor-pointer hover:underline`}
+  onClick={() => bracketData.winner && onPlayerClick && onPlayerClick(bracketData.winner)}
+                >
+                {bracketData.winner || ""}
+                </span>
             </div>
           </div>
         </div>
       ) : (
+        /* ESTADO VACÍO */
         <div className="py-20 flex flex-col items-center justify-center text-slate-400">
           <AlertCircle className="w-20 h-20 mb-4 opacity-50" />
-          <h3 className="text-2xl font-black uppercase tracking-wider mb-2">Cuadro no definido aún</h3>
+          <h3 className="text-2xl font-black uppercase tracking-wider mb-2">
+            Cuadro no definido aún
+          </h3>
           {bracketData.canGenerate ? (
             <div className="mt-4">
-              <p className="font-medium text-slate-500 mb-4">Se encontraron clasificados en el sistema.</p>
+              <p className="font-medium text-slate-500 mb-4">
+                Se encontraron clasificados en el sistema.
+              </p>
               <div className="flex gap-2 justify-center">
               {getEffectiveTourType(navState.tournamentShort, navState.gender) === "direct" ? (
-                  <button onClick={() => runDirectDraw(navState.category, navState.tournamentShort)} className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}>
+                  <button
+                    onClick={() =>
+                      runDirectDraw(navState.category, navState.tournamentShort)
+                    }
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
+                  >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </button>
                 ) : (
-                  <button onClick={() => fetchQualifiersAndDraw(navState.category, navState.tournamentShort)} className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}>
+                  <button
+                    onClick={() =>
+                      fetchQualifiersAndDraw(
+                        navState.category,
+                        navState.tournamentShort
+                      )
+                    }
+                    className={`${bracketStyle.color} hover:brightness-110 transition-all text-white font-bold px-8 py-2 rounded-md shadow-lg flex items-center justify-center`}
+                  >
                     <Shuffle className="mr-2 w-4 h-4" /> Sortear
                   </button>
                 )}
               </div>
             </div>
           ) : (
-            <p className="font-medium text-slate-500">Los cruces para este torneo estarán disponibles próximamente.</p>
+            <p className="font-medium text-slate-500">
+              Los cruces para este torneo estarán disponibles próximamente.
+            </p>
           )}
         </div>
       )}
