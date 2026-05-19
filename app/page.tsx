@@ -790,7 +790,18 @@ export default function Home() {
         {navState.level === "direct-bracket" && (
            <div className="w-full relative">
                <PreclasificadosList seeds={bracketData?.seeds} gender={navState.gender} isDirect={getEffectiveTourType(activeTour, navState.gender) === 'direct'} currentStyle={currentStyle} bracketData={bracketData} />
-               <BracketView bracketData={bracketData} navState={navState} runDirectDraw={runDirectDraw} fetchQualifiersAndDraw={fetchQualifiersAndDraw} />
+               <BracketView 
+    bracketData={bracketData} 
+    navState={navState} 
+    runDirectDraw={runDirectDraw} 
+    fetchQualifiersAndDraw={fetchQualifiersAndDraw} 
+    onPlayerClick={(playerName) => {
+        if (playerName && playerName !== "BYE" && playerName !== "TBD") {
+            setSelectedPlayerForStats(playerName);
+            setNavState({ ...navState, level: "stats-player" });
+        }
+    }}
+/>
            </div>
         )}
 
