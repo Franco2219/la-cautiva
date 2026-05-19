@@ -400,7 +400,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan sorteados los cuadros de Montecarlo! Entra a ver contra quien vas a jugar!
+                  Ya estan abiertas las inscripciones para el torneo de Roland Garros! Entra para ver quienes van a competir en cada categoria!
                 </p>
               </div>
             </div>
