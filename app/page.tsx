@@ -400,7 +400,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan abiertas las inscripciones para el Roland Garros! Mas de 120 Inscriptos, no te quedes afuera!
+                  Ya estan abiertas las inscripciones para el Roland Garros! Mas de 140 Inscriptos, no te quedes afuera!
                 </p>
               </div>
             </div>
