@@ -15,6 +15,7 @@ import { RankingTable } from "@/components/tournament/RankingTable";
 import { CalculatedRankingModal } from "@/components/tournament/CalculatedRankingModal";
 import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView";
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
+import Countdown from "@/components/tournament/Countdown";
 
 const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketData }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any, bracketData?: any }) => {
   if (gender !== "caballeros" || !seeds || !isDirect) return null;
@@ -400,11 +401,12 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan abiertas las inscripciones para el Roland Garros! Mas de 140 Inscriptos, no te quedes afuera!
+                  Ya estan abiertas las inscripciones para el Roland Garros! Mas de 150 Inscriptos, no te quedes afuera!
                 </p>
               </div>
             </div>
           )}
+          {navState.level === "home" && <Countdown />}
           
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           
