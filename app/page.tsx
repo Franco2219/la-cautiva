@@ -406,7 +406,7 @@ export default function Home() {
               </div>
             </div>
           )}
-          {navState.level === "home" && <Countdown />}
+         
           
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           
