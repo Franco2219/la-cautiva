@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 export default function Countdown() {
   // Seteamos la fecha límite: 30 de Mayo de 2026 a las 12:00 hs
-  const TARGET_DATE = new Date('2026-05-30T12:00:00').getTime();
+  const TARGET_DATE = new Date('2026-05-26T19:00:00').getTime();
 
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
