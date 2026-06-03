@@ -78,52 +78,7 @@ const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketDat
       </div>
   );
 };
-import React from 'react';
 
-function SponsorBanner() {
-  return (
-    <a 
-      href="https://www.instagram.com/lunaz_indumentaria" 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="flex flex-row items-center justify-between bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-5 w-full max-w-md mx-auto mb-6 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer"
-    >
-      {/* Logo Sponsor (Izquierda) */}
-      <div className="w-2/5 pr-4 border-r border-gray-200 flex justify-center items-center">
-        {/* REEMPLAZAR: Poné la ruta correcta de tu logo dentro de la carpeta /public */}
-        <img 
-          src="/logo-lunaz.jpg" 
-          alt="Logo Lunaz Indumentaria" 
-          className="w-full object-contain"
-        />
-      </div>
-
-      {/* Textos (Derecha) */}
-      <div className="w-3/5 pl-4 flex flex-col justify-center gap-1.5 text-left">
-        <p className="text-sm sm:text-base font-semibold text-gray-900 leading-tight">
-          Indumentaria deportiva y más
-        </p>
-        
-        {/* El color #B8573A simula el ladrillo de tu botón, podés ajustarlo a tu variable de color exacta */}
-        <p className="text-xs sm:text-sm font-extrabold text-[#B8573A]">
-          ¡ENVÍO GRATIS A LA CAUTIVA!
-        </p>
-        
-        <div className="flex items-center gap-1.5 mt-1">
-          {/* Ícono de Instagram en SVG */}
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-          </svg>
-          <span className="text-xs sm:text-sm font-medium text-gray-800">
-            @lunaz_indumentaria
-          </span>
-        </div>
-      </div>
-    </a>
-  );
-}
 export default function Home() {
   const {
     navState, setNavState,
@@ -452,7 +407,7 @@ export default function Home() {
             </div>
           )}
          
-         {navState.level === "home" && <SponsorBanner />}
+          
           {navState.level === "home" && <Button onClick={() => setNavState({ level: "main-menu" })} className="w-full h-28 text-2xl bg-[#b35a38] text-white font-black rounded-3xl border-b-8 border-[#8c3d26]">INGRESAR</Button>}
           
           {navState.level === "main-menu" && (
