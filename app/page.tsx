@@ -534,31 +534,19 @@ export default function Home() {
             </div>
           )}
 
-          {/* NUEVO: SELECCIÓN DE MODALIDAD (SINGLES / DOBLES) PARA DAMAS AO */}
+          {/* NUEVO: SELECCIÓN DE MODALIDAD (SINGLES / DOBLES) PARA DAMAS */}
           {navState.level === "modality-selection" && (
             <div className="space-y-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h2 className="text-2xl font-black text-[#b35a38] uppercase italic mb-6">{navState.tournament}</h2>
                 <Button onClick={() => {
-                    // Guardamos la modalidad "S" en el estado
                     setNavState({ ...navState, modality: "S" });
-                    
-                    if (navState.category === "Damas A" || navState.category === "Damas B1") {
-                        // Esto va a hacer que fetchGroupPhase busque "Grupos AO Damas A Singles"
-                        fetchGroupPhase(`${navState.category} Singles`, navState.tournamentShort);
-                    } else {
-                        setNavState({ ...navState, level: "tournament-phases", tournament: navState.tournament, tournamentShort: navState.tournamentShort, currentTour: navState.tournamentShort, currentCat: navState.category, hasGroups: false, modality: "S" });
-                    }
+                    // Busca la fase de grupos para cualquier categoría en Singles
+                    fetchGroupPhase(`${navState.category} Singles`, navState.tournamentShort);
                 }} className={buttonStyle}>Singles</Button>
                 <Button onClick={() => {
-                    // Guardamos la modalidad "D" en el estado
                     setNavState({ ...navState, modality: "D" });
-
-                    if (navState.category === "Damas A" || navState.category === "Damas B1") {
-                        // Ambas categorías van a buscar la fase de grupos
-                        fetchGroupPhase(`${navState.category} Dobles`, navState.tournamentShort);
-                    } else {
-                        setNavState({ ...navState, level: "tournament-phases", tournament: navState.tournament, tournamentShort: navState.tournamentShort, currentTour: navState.tournamentShort, currentCat: navState.category, hasGroups: false, modality: "D" });
-                    }
+                    // Busca la fase de grupos para cualquier categoría en Dobles
+                    fetchGroupPhase(`${navState.category} Dobles`, navState.tournamentShort);
                 }} className={buttonStyle}>Dobles</Button>
             </div>
           )}
