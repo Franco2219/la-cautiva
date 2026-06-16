@@ -511,6 +511,9 @@ export default function Home() {
                 if (t.id === "s8_250" && navState.gender === "damas") return false;
                 if ((t.id === "s8_500" || t.id === "s8_250") && navState.category === "A") return false;
                 if (t.id === "s8_250" && navState.category === "C") return false;
+                if (navState.gender === "damas" && (t.name.includes("Miami") || t.name.includes("Montecarlo"))) {
+                  return false;
+                }
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
