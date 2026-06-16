@@ -401,7 +401,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  +157 Inscriptos! Ya estan sorteados los grupos del Roland Garros, entra para ver con quien te tocó!
+                  Ya estan sorteados los cuadros del Roland Garros, entra para ver con quien te tocó!
                 </p>
               </div>
             </div>
