@@ -517,7 +517,7 @@ export default function Home() {
                       sendGAEvent('event', 'button_click', { event_label: `Torneo ${t.name} - Cat ${navState.category}` });
                       
                       // LOGICA AUSTRALIAN OPEN DAMAS: MOSTRAR SELECCION MODALIDAD
-                      if (t.short === "AO" && navState.gender === "damas") {
+                      if ((t.short === "AO" || t.short === "RG") && navState.gender === "damas") {
                           setNavState({ ...navState, level: "modality-selection", tournament: t.name, tournamentShort: t.short });
                           return;
                       }

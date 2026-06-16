@@ -432,7 +432,7 @@ export const useTournamentData = () => {
     let searchTournament = tournamentShort;
     let searchCategory = categoryShort;
 
-    if (navState.gender === "damas" && tournamentShort === "AO") {
+    if (navState.gender === "damas" && (tournamentShort === "AO" || tournamentShort === "RG")) {
         searchTournament = modality === "S" ? "SWAO" : (modality === "D" ? "DWAO" : tournamentShort);
         searchCategory = cleanCategory; 
     }
@@ -759,7 +759,7 @@ export const useTournamentData = () => {
             let searchTournament = tournamentShort;
             let searchCategory = category;
 
-            if (navState.gender === "damas" && tournamentShort === "AO") {
+            if (navState.gender === "damas" && (tournamentShort === "AO" || tournamentShort === "RG")) {
                 searchTournament = modality === "S" ? "SWAO" : (modality === "D" ? "DWAO" : tournamentShort);
                 searchCategory = cleanCategory; 
             }
