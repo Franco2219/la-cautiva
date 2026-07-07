@@ -106,7 +106,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       borderColor: "border-[#00703C]", 
       textColor: "text-[#00703C]", 
       trophyColor: "text-[#00703C]", 
-      logo: "/logo.png", 
+      logo: "/logos/queens.png", 
       pointsLogo: null 
     },
 
@@ -116,7 +116,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         borderColor: "border-[#b35a38]", 
         textColor: "text-[#b35a38]", 
         trophyColor: "text-[#b35a38]", 
-        logo: "/logos/s8_500.png",
+        logo: "/logo.png", 
         pointsLogo: null 
     },
     "mc": { 
