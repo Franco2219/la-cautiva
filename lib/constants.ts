@@ -106,7 +106,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       borderColor: "border-[#00703C]", 
       textColor: "text-[#00703C]", 
       trophyColor: "text-[#00703C]", 
-      logo: "/logos/queens.png", 
+      logo: "/logos/pts_s8_500.png", 
       pointsLogo: null 
     },
 
