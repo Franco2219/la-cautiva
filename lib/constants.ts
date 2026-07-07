@@ -17,7 +17,7 @@ export const tournaments = [
   { id: "mc_500", name: "Montecarlo 500", short: "MC_500", type: "direct" },
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
-  { id: "queens", name: "Queens", short: "QUEENS" , type: "direct"}
+  { id: "queens", name: "Queens", short: "QUEENS" , type: "direct"},
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
 ];
