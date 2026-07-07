@@ -18,6 +18,7 @@ export const tournaments = [
   { id: "rg", name: "Roland Garros", short: "RG", type: "full" },
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "queens", name: "Queens", short: "QUEENS" , type: "direct"},
+  { id: "queens 2", name: "Queens 2", short: "QUEENS 2" , type: "direct"},
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
 ];
@@ -102,6 +103,14 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       pointsLogo: null 
     },
     "queens": { 
+      color: "bg-[#00703C]", 
+      borderColor: "border-[#00703C]", 
+      textColor: "text-[#00703C]", 
+      trophyColor: "text-[#00703C]", 
+      logo: "/logos/pts_s8_500.png", 
+      pointsLogo: null 
+    },
+    "queens 2": { 
       color: "bg-[#00703C]", 
       borderColor: "border-[#00703C]", 
       textColor: "text-[#00703C]", 

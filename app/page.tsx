@@ -516,6 +516,10 @@ export default function Home() {
                 }
                 if (t.id === "queens" && navState.gender === "damas") return false;
                 if (t.id === "queens" && navState.category === "A") return false;
+                if (t.id === "queens 2" && navState.gender === "damas") return false;
+                if (t.id === "queens 2" && navState.category === "A") return false;
+                if (t.id === "queens 2" && navState.category === "C") return false;
+                if (t.id === "queens 2" && navState.category === "B1") return false;
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
