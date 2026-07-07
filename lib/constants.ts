@@ -19,6 +19,7 @@ export const tournaments = [
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
+  { id: "queens", name: "Queens", short: "QUEENS" , type: "direct"}
 ];
 
 // --- CONFIGURACIÓN DE ESTILOS Y LOGOS POR TORNEO ---
@@ -100,6 +101,14 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       logo: "/logos/wimbledon.png", 
       pointsLogo: null 
     },
+    "queens": { 
+      color: "bg-[#00703C]", 
+      borderColor: "border-[#00703C]", 
+      textColor: "text-[#00703C]", 
+      trophyColor: "text-[#00703C]", 
+      logo: "/logos/queens.png", 
+      pointsLogo: null 
+    },
 
     // POLVO DE LADRILLO (NARANJA - DEFAULT)
     "rg": { 
@@ -107,7 +116,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         borderColor: "border-[#b35a38]", 
         textColor: "text-[#b35a38]", 
         trophyColor: "text-[#b35a38]", 
-        logo: "/logos/rg.svg", 
+        logo: "/logo.png", 
         pointsLogo: null 
     },
     "mc": { 

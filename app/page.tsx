@@ -514,6 +514,8 @@ export default function Home() {
                 if (navState.gender === "damas" && (t.name.includes("Miami") || t.name.includes("Montecarlo"))) {
                   return false;
                 }
+                if (t.id === "queens" && navState.gender === "damas") return false;
+                if (t.id === "queens" && navState.category === "A") return false;
                 return true;
               }).map((t) => (
                   <Button key={t.id} onClick={() => {
