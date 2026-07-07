@@ -42,7 +42,7 @@ export const getTournamentStyle = (shortName: string) => {
         "miami Open 500": "mi_500", "mi_500": "mi_500",
         "montecarlo 500": "mc_500", "mc_500": "mc_500",
         "queens": "queens",
-        "queens 2": "queens_2",
+        "queens_2": "queens_2",
     };
     const styleKey = map[key] || "default";
     return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
