@@ -110,7 +110,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       logo: "/logos/pts_s8_500.png", 
       pointsLogo: null 
     },
-    "queens 2": { 
+    "queens_2": { 
       color: "bg-[#00703C]", 
       borderColor: "border-[#00703C]", 
       textColor: "text-[#00703C]", 
