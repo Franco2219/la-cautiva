@@ -401,7 +401,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya hay mas de 135 personas inscriptas para el torneo de Wimbledon! No te quedes afuera!
+                  Ya hay mas de 155 personas inscriptas para el torneo de Wimbledon! No te quedes afuera!
                 </p>
               </div>
             </div>
