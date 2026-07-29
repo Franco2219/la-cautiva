@@ -401,7 +401,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya hay mas de 170 personas inscriptas para el torneo de Wimbledon! No te quedes afuera!
+                  Ya estan sorteados los grupos de Wimbledon 2026 con record de inscriptos! Entra a ver con quien te tocó!
                 </p>
               </div>
             </div>
