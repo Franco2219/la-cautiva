@@ -18,11 +18,11 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
       </div>
 
       {headers.length > 0 && data.length > 0 ? (
-        {/* AGREGADO: overflow-y-auto y max-h-[70vh] para mantener la barra horizontal siempre visible */}
+        /* AGREGADO: overflow-y-auto y max-h-[70vh] para mantener la barra horizontal siempre visible */
         <div className="overflow-x-auto overflow-y-auto max-h-[70vh] text-center">
-          {/* AGREGADO: min-w-max para forzar a la tabla a no comprimirse */}
+          /* AGREGADO: min-w-max para forzar a la tabla a no comprimirse */
           <table className="w-full min-w-max text-lg font-bold text-center">
-            {/* AGREGADO: sticky top-0 z-10 para que los encabezados no se pierdan al scrollear hacia abajo */}
+            /* AGREGADO: sticky top-0 z-10 para que los encabezados no se pierdan al scrollear hacia abajo */
             <thead className="sticky top-0 z-10">
               <tr className="bg-[#b35a38] text-white">
                 <th className="p-4 text-center font-black first:rounded-tl-xl">POS</th>
