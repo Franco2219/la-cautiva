@@ -22,8 +22,8 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
           <table className="w-full min-w-max text-lg font-bold text-center">
             <thead className="sticky top-0 z-10">
               <tr className="bg-[#b35a38] text-white">
-                <th className="p-4 text-center font-black first:rounded-tl-xl">POS</th>
-                <th className="p-4 text-center font-black">JUGADOR</th>
+                <th className="sticky left-0 top-0 z-30 w-20 p-4 text-center font-black bg-[#b35a38] first:rounded-tl-xl">POS</th>
+                <th className="sticky left-20 top-0 z-30 min-w-[200px] p-4 text-center font-black bg-[#b35a38]">JUGADOR</th>
                 {headers.map((h, i) => (
                   <th key={i} className="p-4 text-center font-black hidden sm:table-cell">
                     {h}
@@ -36,9 +36,9 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
             </thead>
             <tbody>
               {data.map((p, i) => (
-                <tr key={i} className="border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
-                  <td className="p-4 text-slate-400 text-center">{i + 1}</td>
-                  <td className="p-4 uppercase text-slate-700 text-center">{p.name}</td>
+                <tr key={i} className="group border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
+                  <td className="sticky left-0 z-20 w-20 p-4 text-slate-400 text-center bg-white group-hover:bg-[#fffaf5]">{i + 1}</td>
+                  <td className="sticky left-20 z-20 min-w-[200px] p-4 uppercase text-slate-700 text-center bg-white group-hover:bg-[#fffaf5]">{p.name}</td>
                   {p.points.map((val: any, idx: number) => (
                     <td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">
                       {val || 0}
@@ -53,13 +53,10 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
           </table>
         </div>
       ) : headers.length > 0 && data.length === 0 ? (
-        // --- MENSAJE DE "NO HAY PUNTOS" ---
         <div className="h-64 flex items-center justify-center text-slate-400 uppercase font-bold text-center p-8">
           Todavía no hay jugadores con puntos para esta sección
         </div>
-        // ----------------------------------
       ) : (
-        // --- ESTADO DE CARGA ---
         <div className="h-64 flex items-center justify-center text-slate-300 uppercase font-black animate-pulse text-center">
           Cargando datos...
         </div>
