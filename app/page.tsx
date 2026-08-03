@@ -304,7 +304,7 @@ export default function Home() {
             </div>
         )}
 
-{navState.gender === "caballeros" && ["tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
+{navState.gender === "caballeros" && ["tournament-selection","category-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
           <div className="w-full print:hidden">
             <SponsorsBanner />
           </div>
@@ -321,7 +321,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan sorteados los grupos de Wimbledon 2026 con record de inscriptos! Entra a ver con quien te tocó!
+                  Ya estan sorteados los grupos de Wimbledon con record de inscriptos! Entra a ver con quien te tocó!
                 </p>
               </div>
             </div>
