@@ -304,7 +304,7 @@ export default function Home() {
             </div>
         )}
 
-{navState.gender === "caballeros" && ["tournament-selection","category-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
+{navState.gender === "caballeros" && ["category-selection","tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
           <div className="w-full print:hidden">
             <SponsorsBanner />
           </div>
