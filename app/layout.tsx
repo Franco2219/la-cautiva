@@ -11,9 +11,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  // --- AGREGADO: TU DOMINIO OFICIAL ---
   metadataBase: new URL('https://www.lacautivatenisypadel.com.ar'),
-  // ------------------------------------
   title: "La Cautiva Tenis y Pádel - Cuadros y Ranking",
   description: "Sitio oficial de La Cautiva. Visualiza en tiempo real los cuadros, inscriptos y rankings de los torneos del club.",
   generator: "v0.app",
@@ -26,6 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      {/* --- ACÁ AGREGAMOS EL HEAD PARA LOS ÍCONOS --- */}
+      <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      </head>
+      {/* --------------------------------------------- */}
       <body className={`${poppins.variable} font-sans antialiased`}>
         {children}
         {/* TU CÓDIGO REAL DE GOOGLE ANALYTICS */}
