@@ -83,7 +83,7 @@ export default function SponsorsBanner() {
           <img 
             src="/logonewirons.png" 
             alt="Logo New Irons Rectificadora" 
-            className="w-[85%] md:w-[70%] max-h-[130px] object-contain rounded-md"
+            className="w-[95%] md:w-[70%] max-h-[130px] object-contain rounded-md"
           />
         </a>
       </div>
