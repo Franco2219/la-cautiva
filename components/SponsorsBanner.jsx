@@ -64,10 +64,10 @@ export default function SponsorsBanner() {
 
         {/* Redes Sociales Vitale */}
         <div className="absolute bottom-3 right-4 flex gap-3">
-          <a href="https://www.instagram.com/inmobiliariavitale/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Instagram">
+          <a href="https://www.instagram.com/vitalenegociosinmobiliarios/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Instagram">
             <i className="fa-brands fa-instagram"></i>
           </a>
-          <a href="https://www.facebook.com/GuillermoHVitaleNegociosInmobiliarios" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Facebook">
+          <a href="https://www.facebook.com/vitalenegociosinmobiliarios/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Facebook">
             <i className="fa-brands fa-facebook"></i>
           </a>
           <a href="https://www.vitaleinmobiliaria.com.ar/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Sitio Web">
