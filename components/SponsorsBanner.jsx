@@ -59,7 +59,7 @@ export default function SponsorsBanner() {
         
         {/* Dirección Vitale */}
         <div className="text-[#2B4E8C] font-['Montserrat',sans-serif] text-[13px] font-extrabold text-left mb-1">
-          Av. Capitán Claudio Rosales 1899 – El Palomar
+        Gaucho Cruz 5476 – Villa Bosch
         </div>
 
         {/* Redes Sociales Vitale */}
@@ -70,7 +70,7 @@ export default function SponsorsBanner() {
           <a href="https://www.facebook.com/GuillermoHVitaleNegociosInmobiliarios" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Facebook">
             <i className="fa-brands fa-facebook"></i>
           </a>
-          <a href="https://vitaleprop.com.ar/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Sitio Web">
+          <a href="https://www.vitaleinmobiliaria.com.ar/" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-lg transition-all duration-200 hover:scale-110 hover:text-[#2B4E8C]" title="Sitio Web">
             <i className="fa-solid fa-globe"></i>
           </a>
         </div>
