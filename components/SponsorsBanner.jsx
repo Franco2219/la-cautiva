@@ -78,16 +78,15 @@ export default function SponsorsBanner() {
           href="http://www.newirons.com.ar" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="w-full md:w-[48%] bg-white rounded-lg p-4 flex flex-col justify-center items-center min-h-[110px] border-2 border-[#D9232A] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+          className="w-full md:w-[48%] bg-white rounded-lg p-2 flex flex-col justify-center items-center border-2 border-[#D9232A] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
         >
           <img 
             src="/logonewirons.png" 
             alt="Logo New Irons Rectificadora" 
-            className="max-w-full max-h-[85px] object-contain rounded-md"
+            className="w-[85%] md:w-[70%] max-h-[130px] object-contain rounded-md"
           />
         </a>
       </div>
-
-    </div>
-  );
-}
+      </div>
+    );
+  }
