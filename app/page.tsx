@@ -17,6 +17,7 @@ import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView"
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 import SponsorsBanner from "@/components/SponsorsBanner"; // 
 import Countdown from "@/components/tournament/Countdown";
+import { useState, useEffect } from "react";
 
 const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketData }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any, bracketData?: any }) => {
   if (gender !== "caballeros" || !seeds || !isDirect) return null;
@@ -111,6 +112,22 @@ export default function Home() {
   const [historyTourSelected, setHistoryTourSelected] = useState<string | null>(null);
   const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      setLoadingProgress(0);
+      // Avanza 1% cada 100ms (Llega al 90% en 9 segundos)
+      interval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          if (prev >= 90) return 90; // Se frena en 90% hasta que lleguen los datos
+          return prev + 1;
+        });
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   const minSwipeDistance = 50; 
@@ -310,7 +327,23 @@ export default function Home() {
           </div>
         )}
         
-        {isLoading && <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center print:hidden"><Loader2 className="w-12 h-12 text-[#b35a38] animate-spin" /></div>}
+        {isLoading && (
+  <div className="fixed inset-0 bg-white/80 backdrop-blur-md z-50 flex flex-col items-center justify-center print:hidden">
+    <Loader2 className="w-12 h-12 text-[#b35a38] animate-spin mb-4" />
+    <h3 className="text-xl font-black text-[#b35a38] uppercase tracking-wider mb-4 animate-pulse">
+      Cargando Datos...
+    </h3>
+    <div className="w-64 h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+      <div 
+        className="h-full bg-[#b35a38] transition-all duration-100 ease-linear rounded-full"
+        style={{ width: `${loadingProgress}%` }}
+      ></div>
+    </div>
+    <p className="text-xs font-bold text-slate-400 mt-3 uppercase tracking-widest">
+      Sincronizando con el servidor
+    </p>
+  </div>
+)}
 
         <div className="space-y-4 max-w-xl mx-auto print:w-full print:max-w-none">
           {navState.level === "home" && (
