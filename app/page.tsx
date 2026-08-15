@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react"; 
+import { useState, useEffect } from "react"; 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Grid3x3, RefreshCw, ArrowLeft, Trash2, Loader2, Send, List, Shuffle, FileText, X, MapPin, Phone, MessageSquare, CheckCircle, AlertCircle, BarChart2, TrendingUp, History, Construction } from "lucide-react";
@@ -17,7 +17,7 @@ import { TournamentHistoryView } from "@/components/stats/TournamentHistoryView"
 import { PlayerStatsView } from "@/components/stats/PlayerStatsView";
 import SponsorsBanner from "@/components/SponsorsBanner"; // 
 import Countdown from "@/components/tournament/Countdown";
-import { useState, useEffect } from "react";
+
 
 const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketData }: { seeds: Record<string, string> | undefined, gender: string, isDirect: boolean, currentStyle: any, bracketData?: any }) => {
   if (gender !== "caballeros" || !seeds || !isDirect) return null;
