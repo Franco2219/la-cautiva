@@ -354,7 +354,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Ya estan sorteados los grupos de Wimbledon con record de inscriptos! Entra a ver con quien te tocó!
+                  Ya estan sorteados los cuadros principales de Wimbledon! Entrá a ver con quien te tocó!
                 </p>
               </div>
             </div>
