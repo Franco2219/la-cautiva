@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { ArrowLeft, Search, User, Crown } from "lucide-react"; 
 
+// --- NUEVO: Lo sacamos afuera para poder usarlo tanto en el mejor resultado como en el orden ---
+const ROUND_HIERARCHY: Record<string, number> = {
+    "campeon": 12, "final": 10, "semifinal": 8, "semi": 8, "cuartos": 6, "octavos": 4, "16avos": 3, "32avos": 2, "64avos": 1, "grupo": 0.5, "zona": 0.5
+};
+
 interface MatchRecord {
   Torneo: string;
   Categoria: string;
@@ -30,8 +35,8 @@ interface PlayerDetailViewProps {
   onBack: () => void; 
   matchesData: MatchRecord[];
   profileData?: ProfileData | null;
-  fromBracket?: boolean;      // <-- Agregar
-  onBackToBracket?: () => void; // <-- Agregar
+  fromBracket?: boolean;      
+  onBackToBracket?: () => void; 
 }
 
 export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData, fromBracket, onBackToBracket }: PlayerDetailViewProps) => {
@@ -80,9 +85,67 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
         const dateB = parseDate(getDate(b));
         const timeA = dateA ? dateA.getTime() : 0;
         const timeB = dateB ? dateB.getTime() : 0;
-        return timeB - timeA; 
+        
+        // --- 3. NUEVO: Lógica de desempate por Instancia si la fecha es igual ---
+        if (timeB !== timeA) return timeB - timeA; 
+
+        const roundA = getRound(a).toLowerCase();
+        const roundB = getRound(b).toLowerCase();
+        
+        let valA = 0; let valB = 0;
+        Object.keys(ROUND_HIERARCHY).forEach(k => { if (roundA.includes(k)) valA = Math.max(valA, ROUND_HIERARCHY[k]); });
+        Object.keys(ROUND_HIERARCHY).forEach(k => { if (roundB.includes(k)) valB = Math.max(valB, ROUND_HIERARCHY[k]); });
+        
+        return valB - valA; // La final (10) va arriba de la semi (8)
     });
   }, [matchesData, playerName]);
+
+  // --- 1. NUEVO: Calcular Victorias y Derrotas Totales ---
+  const { totalWins, totalLosses } = useMemo(() => {
+    let wins = 0;
+    let losses = 0;
+    
+    playerMatches.forEach((match: any) => {
+        const originalP1 = getP1(match); 
+        const originalP2 = getP2(match); 
+        const originalScore = getScore(match);
+        
+        let winnerNum = 1; 
+        const lowerScore = originalScore.toLowerCase();
+        const hasAbandono = lowerScore.includes('a') && lowerScore.includes('b');
+
+        if (hasAbandono) {
+            winnerNum = 1;
+        } else {
+            let p1Sets = 0;
+            let p2Sets = 0;
+            const sets = originalScore.trim().split(/\s+/);
+            sets.forEach(s => {
+                let p1Games, p2Games;
+                if (s.includes('/')) {
+                    const parts = s.split('/');
+                    p1Games = parseInt(parts[0], 10);
+                    p2Games = parseInt(parts[1], 10);
+                } else if (s.includes('-')) {
+                    const parts = s.split('-');
+                    p1Games = parseInt(parts[0], 10);
+                    p2Games = parseInt(parts[1], 10);
+                }
+                if (p1Games !== undefined && p2Games !== undefined && !isNaN(p1Games) && !isNaN(p2Games)) {
+                    if (p1Games > p2Games) p1Sets++;
+                    else if (p2Games > p1Games) p2Sets++;
+                }
+            });
+            if (p2Sets > p1Sets) winnerNum = 2;
+        }
+        
+        const actualWinnerName = winnerNum === 1 ? originalP1 : originalP2;
+        if (actualWinnerName === playerName) wins++;
+        else losses++;
+    });
+    
+    return { totalWins: wins, totalLosses: losses };
+  }, [playerMatches, playerName]);
 
   const bestResults2026 = useMemo(() => {
     const matches2026 = playerMatches.filter((m: any) => {
@@ -92,17 +155,12 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
 
     if (matches2026.length === 0) return ["Sin torneos en 2026"];
 
-    const roundHierarchy: Record<string, number> = {
-        "campeon": 12, 
-        "final": 10, "semifinal": 8, "semi": 8, "cuartos": 6, "octavos": 4, "16avos": 3, "32avos": 2, "64avos": 1, "grupo": 0.5
-    };
-
     let maxPoints = 0;
     let bestTournaments: string[] = [];
 
     matches2026.forEach((m: any) => {
         const roundKey = getRound(m).toLowerCase();
-        let points = roundHierarchy[roundKey] || 0;
+        let points = ROUND_HIERARCHY[roundKey] || 0;
         
         let resultLabel = "";
         const tourName = getTour(m);
@@ -110,8 +168,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
 
         if (roundKey === "final") {
             const p1 = getP1(m);
-            // Acá también usamos el cálculo de ganador por score si quisieramos más precisión
-            // pero mantenemos tu lógica intacta para el resumen
             if (p1 === playerName) {
                 points = 12;
                 resultLabel = `Campeón ${tourName}`;
@@ -173,7 +229,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
   return (
     <div className="w-full max-w-4xl mx-auto animate-in slide-in-from-right duration-500 px-2 md:px-0 pb-20">
       
-      {/* --- NUEVO: BOTÓN VOLVER AL CUADRO --- */}
       {fromBracket && onBackToBracket && (
         <div className="flex justify-start mb-2 mt-4 print:hidden">
           <button 
@@ -185,7 +240,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
         </div>
       )}
       
-      {/* HEADER PERFIL */}
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 flex flex-col items-center text-center mb-8 relative overflow-hidden mt-8">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#b35a38]/10 to-transparent pointer-events-none" />
         
@@ -209,6 +263,10 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
             <InfoBox label="Edad" value={profileData?.age || "-"} />
             
             <InfoBox label="Categoría" value={`Cat ${lastCategory}`} highlight />
+
+            {/* --- 1. NUEVO: Globitos de W-L --- */}
+            <InfoBox label="W - L" value={`${totalWins} - ${totalLosses}`} />
+
             <div className="bg-[#b35a38] text-white px-6 py-3 rounded-2xl shadow-md flex flex-col min-w-[140px]">
                 <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Mejor 2026</span>
                 {bestResults2026.map((res, i) => (
@@ -218,7 +276,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
         </div>
       </div>
 
-      {/* BUSCADOR RIVAL */}
       <div className="flex items-center gap-4 mb-6 bg-slate-100 p-2 rounded-2xl md:w-2/3 mx-auto">
          <div className="bg-white p-2 rounded-xl shadow-sm">
             <Search className="w-5 h-5 text-[#b35a38]" />
@@ -232,7 +289,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
          />
       </div>
 
-      {/* LISTADO PARTIDOS */}
       <div className="space-y-3">
         {displayedMatches.length > 0 ? (
             displayedMatches.map((match, idx) => {
@@ -240,7 +296,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
                 const originalP2 = getP2(match); 
                 const originalScore = getScore(match);
                 
-                // --- 1. Calcular Ganador Analizando el Score ---
                 let winnerNum = 1; 
                 
                 const lowerScore = originalScore.toLowerCase();
@@ -277,12 +332,10 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
                 const actualWinnerName = winnerNum === 1 ? originalP1 : originalP2;
                 const didProfileWin = actualWinnerName === playerName;
                 
-                // --- 2. Anclar jugador del perfil a la izquierda siempre ---
                 const isProfileP1 = originalP1 === playerName;
                 const displayLeftName = playerName;
                 const displayRightName = isProfileP1 ? originalP2 : originalP1;
                 
-                // --- 3. Invertir el resultado visualmente si se cambiaron de lado ---
                 let displayScore = originalScore;
                 if (!isProfileP1) {
                     const sets = originalScore.trim().split(/\s+/);
@@ -302,18 +355,21 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
                     <div key={idx} className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-4 border-l-4 ${didProfileWin ? 'border-green-500' : 'border-red-400'}`}>
                         <div className="flex flex-col items-center min-w-[60px] border-r border-slate-100 pr-4">
                             <span className="text-xs font-black text-slate-400 uppercase">{formatDateDisplay(getDate(match))}</span>
-                            <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full mt-1">{getTour(match)}</span>
+                            
+                            {/* --- 2. NUEVO: Agregamos el globo de la Categoría al lado del Torneo --- */}
+                            <div className="flex gap-1 mt-1">
+                                <span className="text-[10px] font-bold text-[#b35a38] bg-[#b35a38]/10 px-2 py-0.5 rounded-full">{getTour(match)}</span>
+                                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full uppercase">{safeStr((match as any).Categoria || (match as any).category)}</span>
+                            </div>
                         </div>
                         
                         <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4 text-center">
                             
-                            {/* LADO IZQUIERDO: PERFIL ACTUAL */}
                             <div className={`flex items-center justify-end gap-1 font-bold text-sm md:text-base text-slate-900`}>
                                 {displayLeftName} 
                                 {didProfileWin && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />}
                             </div>
 
-                            {/* SCORE (SE ADAPTA DINAMICAMENTE) */}
                             <div className={`px-3 py-1 rounded-lg font-black tracking-widest text-sm whitespace-nowrap border-2 ${
                                 didProfileWin 
                                 ? 'bg-green-100 text-green-700 border-green-200' 
@@ -322,7 +378,6 @@ export const PlayerDetailView = ({ playerName, onBack, matchesData, profileData,
                                 {displayScore}
                             </div>
 
-                            {/* LADO DERECHO: RIVAL */}
                             <div className={`flex items-center justify-start gap-1 font-bold text-sm md:text-base text-slate-500`}>
                                 {!didProfileWin && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />} 
                                 {displayRightName}
