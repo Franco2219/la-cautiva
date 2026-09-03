@@ -19,6 +19,7 @@ export const tournaments = [
   { id: "queens", name: "Queens", short: "QUEENS" , type: "direct"},
   { id: "queens_2", name: "Queens 2", short: "QUEENS_2" , type: "direct"},
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
+  { id: "washington", name: "Washington Open", short: "WA", type: "direct" },
   { id: "us", name: "US Open", short: "US", type: "direct" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
 ];
@@ -41,9 +42,17 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         borderColor: "border-blue-900", 
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
-        logo: "/logos/adelaide.png", 
+        logo: "/logos/washington.png", 
         pointsLogo: "/logos/pts_s8_500.png" 
     },
+    "washington": { 
+      color: "bg-blue-900", 
+      borderColor: "border-blue-900", 
+      textColor: "text-blue-900", 
+      trophyColor: "text-blue-900", 
+      logo: "/logos/adelaide.png", 
+      pointsLogo: "/logos/pts_s8_500.png" 
+  },
     "adelaide_250": {
         color: "bg-blue-900", 
         borderColor: "border-blue-900", 
