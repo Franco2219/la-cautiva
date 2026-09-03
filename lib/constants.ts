@@ -42,7 +42,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         borderColor: "border-blue-900", 
         textColor: "text-blue-900", 
         trophyColor: "text-blue-900", 
-        logo: "/logos/washington.png", 
+        logo: "/logos/adelaide.png", 
         pointsLogo: "/logos/pts_s8_500.png" 
     },
     "washington": { 
@@ -50,7 +50,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
       borderColor: "border-blue-900", 
       textColor: "text-blue-900", 
       trophyColor: "text-blue-900", 
-      logo: "/logos/adelaide.png", 
+      logo: "/logos/washington.png", 
       pointsLogo: "/logos/pts_s8_500.png" 
   },
     "adelaide_250": {
