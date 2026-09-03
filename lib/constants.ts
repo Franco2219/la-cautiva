@@ -45,7 +45,7 @@ export const TOURNAMENT_STYLES: Record<string, TournamentStyle> = {
         logo: "/logos/adelaide.png", 
         pointsLogo: "/logos/pts_s8_500.png" 
     },
-    "washington": { 
+    "wa": { 
       color: "bg-blue-900", 
       borderColor: "border-blue-900", 
       textColor: "text-blue-900", 
