@@ -43,7 +43,7 @@ export const getTournamentStyle = (shortName: string) => {
         "montecarlo 500": "mc_500", "mc_500": "mc_500",
         "queens": "queens",
         "queens_2": "queens_2",
-        "washington": "wa",
+        "wa": "washington",
     };
     const styleKey = map[key] || "default";
     return TOURNAMENT_STYLES[styleKey] || TOURNAMENT_STYLES["default"];
