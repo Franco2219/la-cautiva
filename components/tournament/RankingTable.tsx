@@ -29,9 +29,9 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
                     {h}
                   </th>
                 ))}
-                <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl">
-                  TOTAL
-                </th>
+                <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl sm:sticky sm:right-0 sm:top-0 sm:z-30">
+  TOTAL
+</th>
               </tr>
             </thead>
             <tbody>
@@ -44,9 +44,9 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
                       {val || 0}
                     </td>
                   ))}
-                  <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center">
-                    {p.total}
-                  </td>
+                  <td className="p-4 text-[#b35a38] text-2xl font-black bg-[#fffaf5] text-center sm:sticky sm:right-0 sm:z-20">
+  {p.total}
+</td>
                 </tr>
               ))}
             </tbody>
