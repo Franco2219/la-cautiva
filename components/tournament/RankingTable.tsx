@@ -9,7 +9,7 @@ interface RankingTableProps {
 
 export const RankingTable = ({ headers, data, category, year }: RankingTableProps) => {
   return (
-    <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-4 md:p-8 shadow-2xl overflow-hidden text-center">
+    <div className="bg-white border-2 border-[#b35a38]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden text-center">
       {/* Header Naranja */}
       <div className="bg-[#b35a38] p-6 rounded-2xl mb-8 text-white italic text-center">
         <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wider text-center">
@@ -23,7 +23,7 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
             <thead className="sticky top-0 z-10">
               <tr className="bg-[#b35a38] text-white">
                 <th className="sticky left-0 top-0 z-30 w-20 p-4 text-center font-black bg-[#b35a38] first:rounded-tl-xl">POS</th>
-                <th className="sticky left-20 top-0 z-30 min-w-[130px] md:min-w-[200px] p-4 text-center font-black bg-[#b35a38]">JUGADOR</th>
+                <th className="sticky left-20 top-0 z-30 min-w-[200px] p-4 text-center font-black bg-[#b35a38]">JUGADOR</th>
                 {headers.map((h, i) => (
                   <th key={i} className="p-4 text-center font-black hidden sm:table-cell">
                     {h}
@@ -38,7 +38,7 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
               {data.map((p, i) => (
                 <tr key={i} className="group border-b border-[#fffaf5] hover:bg-[#fffaf5] text-center">
                   <td className="sticky left-0 z-20 w-20 p-4 text-slate-400 text-center bg-white group-hover:bg-[#fffaf5]">{i + 1}</td>
-                  <td className="sticky left-20 z-20 min-w-[130px] md:min-w-[200px] p-4 uppercase text-slate-700 text-center bg-white group-hover:bg-[#fffaf5]">{p.name}</td>
+                  <td className="sticky left-20 z-20 min-w-[200px] p-4 uppercase text-slate-700 text-center bg-white group-hover:bg-[#fffaf5]">{p.name}</td>
                   {p.points.map((val: any, idx: number) => (
                     <td key={idx} className="p-4 text-center text-slate-400 hidden sm:table-cell">
                       {val || 0}
