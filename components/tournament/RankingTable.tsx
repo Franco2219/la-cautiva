@@ -29,9 +29,9 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
                     {h}
                   </th>
                 ))}
-                <th className="sticky right-0 top-0 z-30 p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl">
-  TOTAL
-</th>
+                <th className="p-4 text-center font-black bg-[#8c3d26] last:rounded-tr-xl">
+                  TOTAL
+                </th>
               </tr>
             </thead>
             <tbody>
