@@ -19,8 +19,8 @@ export const RankingTable = ({ headers, data, category, year }: RankingTableProp
 
       {headers.length > 0 && data.length > 0 ? (
         <div className="overflow-x-auto overflow-y-auto max-h-[70vh] text-center">
-          <table className="w-full min-w-max text-lg font-bold text-center">
-            <thead className="sticky top-0 z-10">
+          <table className="w-full min-w-[500px] text-lg font-bold text-center">
+              <thead className="sticky top-0 z-10">
               <tr className="bg-[#b35a38] text-white">
                 <th className="sticky left-0 top-0 z-30 w-20 p-4 text-center font-black bg-[#b35a38] first:rounded-tl-xl">POS</th>
                 <th className="sticky left-20 top-0 z-30 min-w-[200px] p-4 text-center font-black bg-[#b35a38]">JUGADOR</th>
