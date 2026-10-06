@@ -20,6 +20,38 @@ export const useTournamentData = () => {
   const [footerClicks, setFooterClicks] = useState(0);
   const [showRankingCalc, setShowRankingCalc] = useState(false);
   const [calculatedRanking, setCalculatedRanking] = useState<any[]>([]);
+  // Función ultra-robusta para encontrar la columna TOTAL sin importar cuántos torneos agregues
+const findTotalColumnIndex = (rows: any[]): number => {
+    if (!rows || rows.length === 0) return 11;
+  
+    // 1. Busca de derecha a izquierda en los encabezados (filas 0, 1 o 2)
+    for (let r = 0; r < Math.min(rows.length, 3); r++) {
+      const row = rows[r];
+      if (!row) continue;
+      for (let c = row.length - 1; c >= 0; c--) {
+        const cell = row[c] ? row[c].toString().toUpperCase().trim() : "";
+        if (cell.includes("TOTAL") || cell.includes("PUNTOS") || cell === "PTS" || cell === "TOT") {
+          return c;
+        }
+      }
+    }
+  
+    // 2. Si no halla el texto "TOTAL", busca en las filas de datos la ÚLTIMA columna que contenga números
+    for (let r = 1; r < Math.min(rows.length, 10); r++) {
+      const row = rows[r];
+      if (!row || !row[1]) continue;
+      for (let c = row.length - 1; c >= 2; c--) {
+        const val = row[c] ? row[c].toString().replace(/['"]+/g, '').trim() : "";
+        if (val !== "" && !isNaN(Number(val))) {
+          return c;
+        }
+      }
+    }
+  
+    // 3. Respaldo: última columna
+    const headerRow = rows[0] || [];
+    return headerRow.length > 0 ? headerRow.length - 1 : 11;
+  };
 
   // --- ESTADOS PARA INSCRIPTOS ---
   const [inscriptosList, setInscriptosList] = useState<string[]>([]);
@@ -45,7 +77,7 @@ export const useTournamentData = () => {
         const headerRow = rows[ 0 ];
         
         // BUSCADOR ROBUSTO: Encuentra "TOTAL" sin importar comillas
-        let totalIdx = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
+        let totalIdx = findTotalColumnIndex(rows);
 
         // Si no la encuentra, mantenemos tus backups por defecto
         if (totalIdx === -1) totalIdx = year === "2025" ? 9 : 11;
@@ -351,7 +383,7 @@ export const useTournamentData = () => {
        const txt = await res.text();
        const rows = parseCSV(txt);
        const headers = rows[ 0 ];
-       let totalIdx = headers.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
+       let totalIdx = findTotalColumnIndex(rows);
        if (totalIdx === -1) totalIdx = 11;
 
        const rankingRows = rows.slice(1).map(r => ({ name: r[ 1 ], total: (r[ totalIdx ] ? parseInt(r[ totalIdx ]) : 0) }));
@@ -443,7 +475,7 @@ export const useTournamentData = () => {
         const headerRow = rawRows || [];
         
         // Buscamos dinámicamente la columna "TOTAL" con limpieza de comillas
-        let totalIndex = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
+        let totalIndex = findTotalColumnIndex(rawRows);
         
         if (totalIndex === -1) totalIndex = 11;
 
