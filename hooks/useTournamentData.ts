@@ -44,12 +44,8 @@ export const useTournamentData = () => {
       if (rows.length > 0) {
         const headerRow = rows[ 0 ];
         
-        // BUSCADOR ROBUSTO: Limpia comillas y espacios para encontrar "TOTAL"
-        let totalIdx = headerRow.findIndex((h: any) => {
-            if (!h) return false;
-            const cleanHeader = h.toString().replace(/['"]+/g, '').toUpperCase().trim();
-            return cleanHeader === "TOTAL";
-        });
+        // BUSCADOR ROBUSTO: Encuentra "TOTAL" sin importar comillas
+        let totalIdx = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
 
         // Si no la encuentra, mantenemos tus backups por defecto
         if (totalIdx === -1) totalIdx = year === "2025" ? 9 : 11;
@@ -355,7 +351,7 @@ export const useTournamentData = () => {
        const txt = await res.text();
        const rows = parseCSV(txt);
        const headers = rows[ 0 ];
-       let totalIdx = headers.findIndex(h => h && h.toUpperCase().trim() === "TOTAL"); 
+       let totalIdx = headers.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
        if (totalIdx === -1) totalIdx = 11;
 
        const rankingRows = rows.slice(1).map(r => ({ name: r[ 1 ], total: (r[ totalIdx ] ? parseInt(r[ totalIdx ]) : 0) }));
@@ -447,11 +443,7 @@ export const useTournamentData = () => {
         const headerRow = rawRows || [];
         
         // Buscamos dinámicamente la columna "TOTAL" con limpieza de comillas
-        let totalIndex = headerRow.findIndex((h: any) => {
-            if (!h) return false;
-            const clean = h.toString().replace(/['"]+/g, '').toUpperCase().trim();
-            return clean === "TOTAL";
-        });
+        let totalIndex = headerRow.findIndex((h: any) => h && h.toString().toUpperCase().includes("TOTAL"));
         
         if (totalIndex === -1) totalIndex = 11;
 
