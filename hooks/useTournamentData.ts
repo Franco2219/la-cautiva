@@ -560,6 +560,35 @@ const findTotalColumnIndex = (rows: any[]): number => {
         const popBalancedPair = () => { if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) { const randIdx = Math.floor(Math.random() * topPairs.length); return topPairs.splice(randIdx, 1)[ 0 ]; } else if (botPairs.length > 0) { const randIdx = Math.floor(Math.random() * botPairs.length); return botPairs.splice(randIdx, 1)[ 0 ]; } return -1; };
         while (byesRemaining > 0) { const pairIdx = popBalancedPair(); if (pairIdx !== -1) { const slotOffset = Math.random() > 0.5 ? 0 : 1; slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 }; byesRemaining--; } else { break; } }
         const nonSeedsStartIndex = bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)); const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
+        // === REGLA ESPECIAL CATEGORÍA C: VECCHIO JUAN IGNACIO ===
+        const isCatC = categoryShort.toUpperCase().trim() === "C" || categoryShort.toUpperCase().includes(" C");
+        if (isCatC) {
+            const vecchioIdx = nonSeeds.findIndex(p => {
+                const nom = p.name ? p.name.toLowerCase() : "";
+                return nom.includes("vecchio") && nom.includes("ignacio");
+            });
+
+            if (vecchioIdx !== -1) {
+                const vecchio = nonSeeds.splice(vecchioIdx, 1)[0];
+                
+                // Buscamos los lugares libres donde el rival NO sea un preclasificado (rank > 0)
+                const safeSlots = slots.map((s, i) => {
+                    if (s !== null) return -1;
+                    const rivalIdx = getRivalIndex(i);
+                    const rival = slots[rivalIdx];
+                    const isRivalSeed = rival && rival.rank && rival.rank > 0;
+                    return isRivalSeed ? -1 : i;
+                }).filter(i => i !== -1);
+
+                if (safeSlots.length > 0) {
+                    const targetIdx = safeSlots[Math.floor(Math.random() * safeSlots.length)];
+                    slots[targetIdx] = vecchio;
+                } else {
+                    nonSeeds.push(vecchio);
+                }
+            }
+        }
+        // =========================================================
         let countRealTop = slots.slice(0, bracketSize/2).filter(x => x && x.name !== "BYE").length; let countRealBot = slots.slice(bracketSize/2).filter(x => x && x.name !== "BYE").length; let emptySlots = slots.map((s, i) => s === null ? i : -1).filter(i => i !== -1);
         for (const player of nonSeeds) { const emptyTop = emptySlots.filter(i => i < bracketSize/2); const emptyBot = emptySlots.filter(i => i >= bracketSize/2); let targetIdx = -1; if (countRealTop < countRealBot && emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (countRealBot < countRealTop && emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else { if (emptyTop.length > 0 && emptyBot.length > 0) { targetIdx = Math.random() > 0.5 ? emptyTop[Math.floor(Math.random() * emptyTop.length)] : emptyBot[Math.floor(Math.random() * emptyBot.length)]; } else if (emptyTop.length > 0) { targetIdx = emptyTop[Math.floor(Math.random() * emptyTop.length)]; } else if (emptyBot.length > 0) { targetIdx = emptyBot[Math.floor(Math.random() * emptyBot.length)]; } } if (targetIdx !== -1) { slots[targetIdx] = player; if (targetIdx < bracketSize/2) countRealTop++; else countRealBot++; emptySlots = emptySlots.filter(i => i !== targetIdx); } }
         for (let i = 0; i < slots.length; i++) { if (slots[ i ] === null) slots[ i ] = { name: "BYE", rank: 0 }; }
