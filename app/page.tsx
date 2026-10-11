@@ -354,7 +354,7 @@ export default function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#b35a38]"></span>
                 </span>
                 <p className="font-black uppercase tracking-wide text-sm md:text-base">
-                  Hoy se sortea el US Open! 
+                  Ya esta sorteado el US Open! 
                 </p>
               </div>
             </div>
