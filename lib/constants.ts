@@ -20,7 +20,7 @@ export const tournaments = [
   { id: "queens_2", name: "Queens 2", short: "QUEENS_2" , type: "direct"},
   { id: "wimbledon", name: "Wimbledon", short: "W", type: "full" },
   { id: "washington", name: "Washington Open", short: "WA", type: "direct" },
-  { id: "us", name: "US Open", short: "US", type: "direct" },
+  { id: "us", name: "US Open", short: "US", type: "direct", typeDamas: "full" },
   { id: "masters", name: "Masters", short: "Masters", type: "full" },
 ];
 
