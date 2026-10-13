@@ -357,22 +357,6 @@ export default function Home() {
         </div>
 
         {navState.level !== "home" && (
-            <div className="flex justify-center mb-8 w-full print:hidden">
-                <Button 
-                    onClick={handleBackAction} 
-                    className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal"
-                >
-                    <ArrowLeft className="w-6 h-6 shrink-0" />
-                    <span>
-                        {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
-                         (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : 
-                         (navState.level === "stats-player" && selectedPlayerForStats) ? "VOLVER AL LISTADO" : 
-                         "VOLVER"}
-                    </span>
-                </Button>
-            </div>
-        )}
-{navState.level !== "home" && (
             <div className="flex flex-col items-center mb-8 w-full print:hidden">
                 <Button 
                     onClick={handleBackAction} 
