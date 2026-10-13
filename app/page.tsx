@@ -80,7 +80,59 @@ const PreclasificadosList = ({ seeds, gender, isDirect, currentStyle, bracketDat
       </div>
   );
 };
+const RenderBreadcrumb = ({ navState, historyTourSelected, selectedPlayerForStats }: any) => {
+  if (navState.level === "home" || navState.level === "main-menu") return null;
 
+  const items: string[] = [];
+
+  // Rama Principal
+  if (navState.type === "ranking" || navState.level === "year-selection" || navState.level === "ranking-view") {
+    items.push("Ranking");
+    if (navState.year) items.push(navState.year);
+    if (navState.selectedCategory) items.push(navState.selectedCategory);
+  } else if (navState.level === "statistics-menu" || navState.level === "stats-player" || navState.level === "stats-tournaments") {
+    items.push("Estadísticas");
+    if (navState.level === "stats-player") {
+      items.push("Por Jugador");
+      if (selectedPlayerForStats) items.push(selectedPlayerForStats);
+    }
+    if (navState.level === "stats-tournaments") {
+      items.push("Historial de Torneos");
+      if (historyTourSelected) items.push(getTournamentName(historyTourSelected));
+    }
+  } else if (navState.level === "contact") {
+    items.push("Contacto");
+  } else {
+    // Rama Torneos (Caballeros / Damas)
+    const genderLabel = navState.gender ? (navState.gender.charAt(0).toUpperCase() + navState.gender.slice(1)) : (navState.type ? navState.type.charAt(0).toUpperCase() + navState.type.slice(1) : "");
+    if (genderLabel) items.push(genderLabel);
+
+    const categoryLabel = navState.selectedCategory || navState.category || navState.currentCat;
+    if (categoryLabel) items.push(categoryLabel.startsWith("Categoría") ? categoryLabel : `Categoría ${categoryLabel}`);
+
+    const tournamentLabel = navState.tournament || navState.currentTour;
+    if (tournamentLabel) items.push(getTournamentName(tournamentLabel));
+
+    if (navState.level === "group-phase") items.push("Fase de Grupos");
+    if (navState.level === "direct-bracket") items.push("Cuadro de Eliminación");
+    if (navState.level === "modality-selection") items.push("Selección de Modalidad");
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="flex items-center justify-center flex-wrap gap-2 text-xs md:text-sm font-bold uppercase tracking-wider text-slate-500 mb-6 print:hidden">
+      {items.map((item, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          {idx > 0 && <span className="text-[#b35a38]/40 font-black">/</span>}
+          <span className={idx === items.length - 1 ? "text-[#b35a38] font-black" : "text-slate-400"}>
+            {item}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
 export default function Home() {
   const {
     navState, setNavState,
@@ -320,7 +372,29 @@ export default function Home() {
                 </Button>
             </div>
         )}
+{navState.level !== "home" && (
+            <div className="flex flex-col items-center mb-8 w-full print:hidden">
+                <Button 
+                    onClick={handleBackAction} 
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-black text-lg md:text-xl py-6 px-8 rounded-2xl shadow-xl border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 transition-all uppercase tracking-widest flex items-center gap-3 w-full md:w-auto justify-center h-auto whitespace-normal mb-4"
+                >
+                    <ArrowLeft className="w-6 h-6 shrink-0" />
+                    <span>
+                        {navState.level === "tournament-selection" ? "VOLVER A CATEGORIAS" : 
+                         (navState.level === "stats-tournaments" && historyTourSelected) ? "VOLVER A TORNEOS" : 
+                         (navState.level === "stats-player" && selectedPlayerForStats) ? "VOLVER AL LISTADO" : 
+                         "VOLVER"}
+                    </span>
+                </Button>
 
+                {/* BREADCRUMB INDICADOR DE UBICACIÓN */}
+                <RenderBreadcrumb 
+                  navState={navState} 
+                  historyTourSelected={historyTourSelected} 
+                  selectedPlayerForStats={selectedPlayerForStats} 
+                />
+            </div>
+        )}
 {(navState.gender === "caballeros" || navState.type === "caballeros") && ["category-selection", "tournament-selection", "tournament-phases", "group-phase", "direct-bracket", "generate-bracket", "modality-selection"].includes(navState.level) && (
           <div className="w-full print:hidden mb-6">
             <SponsorsBanner />
