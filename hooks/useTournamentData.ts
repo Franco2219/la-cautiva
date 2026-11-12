@@ -561,7 +561,7 @@ const findTotalColumnIndex = (rows: any[]): number => {
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2); let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
         const popBalancedPair = () => { if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) { const randIdx = Math.floor(Math.random() * topPairs.length); return topPairs.splice(randIdx, 1)[ 0 ]; } else if (botPairs.length > 0) { const randIdx = Math.floor(Math.random() * botPairs.length); return botPairs.splice(randIdx, 1)[ 0 ]; } return -1; };
         while (byesRemaining > 0) { const pairIdx = popBalancedPair(); if (pairIdx !== -1) { const slotOffset = Math.random() > 0.5 ? 0 : 1; slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 }; byesRemaining--; } else { break; } }
-        const nonSeedsStartIndex = bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)); const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
+const nonSeedsStartIndex = isChallenger125 ? 4 : (bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)));const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
         // === REGLA ESPECIAL CATEGORÍA C: VECCHIO JUAN IGNACIO ===
         const isCatC = categoryShort.toUpperCase().trim() === "C" || categoryShort.toUpperCase().includes(" C");
         if (isCatC) {
