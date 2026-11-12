@@ -550,7 +550,7 @@ const findTotalColumnIndex = (rows: any[]): number => {
         let slots: any[] = Array(bracketSize).fill(null);
         let pos1 = 0; let pos2 = bracketSize - 1; let pos34 = [ (bracketSize / 2) - 1, bracketSize / 2 ]; let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [ 2, 5, 10, 13 ]; else if (bracketSize === 32) pos58 = [ 7, 8, 23, 24 ]; else if (bracketSize === 64) pos58 = [ 15, 16, 47, 48 ];
-        const seeds = entryList.slice(0, 16).map((p: any, i: number) => ({ ...p, rank: i + 1 }));
+        const seeds = entryList.slice(0, 16).map((p: any, i: number) => ({ ...p, rank: i < maxNumerados ? i + 1 : 0 }));
         if (seeds[ 0 ]) slots[pos1] = seeds[ 0 ]; if (seeds[ 1 ]) slots[pos2] = seeds[ 1 ];
         if (seeds[ 2 ] && seeds[ 3 ]) { const group34 = [ seeds[ 2 ], seeds[ 3 ] ].sort(() => Math.random() - 0.5); slots[pos34[ 0 ]] = group34[ 0 ]; slots[pos34[ 1 ]] = group34[ 1 ]; } else if (seeds[ 2 ]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[ 2 ]; }
         if (seeds.length >= 8 && pos58.length === 4) { const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5); const seedsTop = group58.slice(0, 2); const seedsBot = group58.slice(2, 4); const posTop = [ pos58[ 0 ], pos58[ 1 ] ].sort(() => Math.random() - 0.5); slots[posTop[ 0 ]] = seedsTop[ 0 ]; slots[posTop[ 1 ]] = seedsTop[ 1 ]; const posBot = [ pos58[ 2 ], pos58[ 3 ] ].sort(() => Math.random() - 0.5); slots[posBot[ 0 ]] = seedsBot[ 0 ]; slots[posBot[ 1 ]] = seedsBot[ 1 ]; }
