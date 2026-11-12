@@ -552,7 +552,7 @@ const findTotalColumnIndex = (rows: any[]): number => {
         const seeds = entryList.slice(0, 16).map((p: any, i: number) => ({ ...p, rank: i + 1 }));
         if (seeds[ 0 ]) slots[pos1] = seeds[ 0 ]; if (seeds[ 1 ]) slots[pos2] = seeds[ 1 ];
         if (seeds[ 2 ] && seeds[ 3 ]) { const group34 = [ seeds[ 2 ], seeds[ 3 ] ].sort(() => Math.random() - 0.5); slots[pos34[ 0 ]] = group34[ 0 ]; slots[pos34[ 1 ]] = group34[ 1 ]; } else if (seeds[ 2 ]) { slots[pos34[Math.floor(Math.random()*2)]] = seeds[ 2 ]; }
-        if (!isChallenger125 && seeds.length >= 8 && pos58.length === 4) { const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5); const seedsTop = group58.slice(0, 2); const seedsBot = group58.slice(2, 4); const posTop = [ pos58[ 0 ], pos58[ 1 ] ].sort(() => Math.random() - 0.5); slots[posTop[ 0 ]] = seedsTop[ 0 ]; slots[posTop[ 1 ]] = seedsTop[ 1 ]; const posBot = [ pos58[ 2 ], pos58[ 3 ] ].sort(() => Math.random() - 0.5); slots[posBot[ 0 ]] = seedsBot[ 0 ]; slots[posBot[ 1 ]] = seedsBot[ 1 ]; }
+        if (seeds.length >= 8 && pos58.length === 4) { const group58 = seeds.slice(4, 8).sort(() => Math.random() - 0.5); const seedsTop = group58.slice(0, 2); const seedsBot = group58.slice(2, 4); const posTop = [ pos58[ 0 ], pos58[ 1 ] ].sort(() => Math.random() - 0.5); slots[posTop[ 0 ]] = seedsTop[ 0 ]; slots[posTop[ 1 ]] = seedsTop[ 1 ]; const posBot = [ pos58[ 2 ], pos58[ 3 ] ].sort(() => Math.random() - 0.5); slots[posBot[ 0 ]] = seedsBot[ 0 ]; slots[posBot[ 1 ]] = seedsBot[ 1 ]; }
         if (bracketSize === 64 && seeds.length >= 16) { const group9to16 = seeds.slice(8, 16).sort(() => Math.random() - 0.5); const pos9to16 = [ 7, 8, 23, 24, 39, 40, 55, 56 ].sort(() => Math.random() - 0.5); for(let i=0; i<8; i++) { if (group9to16[ i ]) slots[pos9to16[ i ]] = group9to16[ i ]; } }
         const getRivalIndex = (idx: number) => (idx % 2 === 0) ? idx + 1 : idx - 1;
         let byesRemaining = byeCount; const maxSeedCheck = bracketSize === 64 ? 16 : 8;
@@ -561,7 +561,7 @@ const findTotalColumnIndex = (rows: any[]): number => {
         let topPairs = emptyPairsIndices.filter(i => i < bracketSize / 2); let botPairs = emptyPairsIndices.filter(i => i >= bracketSize / 2);
         const popBalancedPair = () => { if (topPairs.length > 0 && (botPairs.length === 0 || Math.random() > 0.5)) { const randIdx = Math.floor(Math.random() * topPairs.length); return topPairs.splice(randIdx, 1)[ 0 ]; } else if (botPairs.length > 0) { const randIdx = Math.floor(Math.random() * botPairs.length); return botPairs.splice(randIdx, 1)[ 0 ]; } return -1; };
         while (byesRemaining > 0) { const pairIdx = popBalancedPair(); if (pairIdx !== -1) { const slotOffset = Math.random() > 0.5 ? 0 : 1; slots[pairIdx + slotOffset] = { name: "BYE", rank: 0 }; byesRemaining--; } else { break; } }
-const nonSeedsStartIndex = isChallenger125 ? 4 : (bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)));const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
+        const nonSeedsStartIndex = bracketSize === 64 ? 16 : (bracketSize === 8 ? 4 : (bracketSize === 4 ? 2 : 8)); const nonSeeds = entryList.slice(nonSeedsStartIndex).map((p: any) => ({ ...p, rank: 0 })); nonSeeds.sort(() => Math.random() - 0.5);
         // === REGLA ESPECIAL CATEGORÍA C: VECCHIO JUAN IGNACIO ===
         const isCatC = categoryShort.toUpperCase().trim() === "C" || categoryShort.toUpperCase().includes(" C");
         if (isCatC) {
