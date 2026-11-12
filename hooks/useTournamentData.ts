@@ -546,6 +546,7 @@ const findTotalColumnIndex = (rows: any[]): number => {
         const byeCount = bracketSize - totalPlayers;
         const tourName = getTournamentName(tournamentShort) || tournamentShort;
         const isChallenger125 = tourName.toLowerCase().includes("challenger 125") || tournamentShort.toUpperCase() === "CHA";
+        const maxNumerados = isChallenger125 ? 4 : 16;
         let slots: any[] = Array(bracketSize).fill(null);
         let pos1 = 0; let pos2 = bracketSize - 1; let pos34 = [ (bracketSize / 2) - 1, bracketSize / 2 ]; let pos58: number[] = [];
         if (bracketSize === 16) pos58 = [ 2, 5, 10, 13 ]; else if (bracketSize === 32) pos58 = [ 7, 8, 23, 24 ]; else if (bracketSize === 64) pos58 = [ 15, 16, 47, 48 ];
